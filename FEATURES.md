@@ -69,6 +69,15 @@ Rules for this table:
 | Monte Carlo — seeded, 10k paths, P(ruin) and 5th percentile | `@plumb/backtest` | internal | `analysis.test.ts` › Monte Carlo |
 | Eligibility gate — 5 criteria, signed record, tamper-evident | `@plumb/backtest` | internal | `analysis.test.ts` › gate |
 | Markdown report with inline SVG equity curve + "what this does not prove" | `@plumb/backtest` | `reports/` | `analysis.test.ts` › report |
+| Trade Kit wrapper — demo-only, timeout, error classification, retry-transient-only | `@plumb/executor` | internal | `executor/src/executor.test.ts` |
+| Bracketed placement — stop attached; stop failure closes the entry immediately | `@plumb/executor` | internal | `executor.test.ts` › fault injection |
+| Idempotency — clOrdId from signal id, replay opens one position | `@plumb/executor` | internal | `executor.test.ts` › idempotency |
+| Crash recovery — intent persisted before placement, adopted on boot | `@plumb/executor` | internal | `executor.test.ts` › crash recovery |
+| Reconciliation — unmatched fill / drift / missing / unknown all halt | `@plumb/executor` | internal | `executor.test.ts` › reconciliation |
+| Stop never moves away from entry (fuzzed) | `@plumb/executor` | internal | `executor.test.ts` › lifecycle |
+| maxHoldBars expiry + invalidation close | `@plumb/executor` | internal | `executor.test.ts` › lifecycle |
+| Cycle loop — never overlaps, overrun skipped not queued | `@plumb/executor` | internal | `executor.test.ts` › cycle loop |
+| Eligibility lock — refuses unsigned/failed/forged records | `@plumb/executor` | internal | `executor.test.ts` › eligibility lock |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
@@ -78,6 +87,7 @@ Rules for this table:
 | 180-day signal-frequency replay | — | `npm run replay` | `engine.test.ts` (fixture-scale twin) |
 | Hostile-strategy simulation, full history, 5 scenarios | — | `npm run hostile` | `hostile.test.ts` (fixture-scale twin) |
 | Walk-forward backtest of every strategy config | — | `npm run backtest` | `analysis.test.ts`, `engine.test.ts` |
+| Live-data execution session (simulated venue) | — | `npm run demo-session` | `executor.test.ts` |
 
 ## Phase status
 
@@ -88,7 +98,8 @@ Rules for this table:
 | 2 | `@plumb/strategy` — pure signal engine, regime, gate, portfolio | ✅ shipped |
 | 3 | `@plumb/risk` — governor, sizing, drawdown ladder, kill switch | ✅ shipped |
 | 4 | `@plumb/backtest` — walk-forward harness, cost model, eligibility gate | ✅ shipped |
-| 5–10 | Not yet written | — |
+| 5 | `@plumb/executor` — bracketed placement, idempotency, reconciliation | ✅ shipped (ATK demo session blocked on a demo API key) |
+| 6–10 | Not yet written | — |
 
 ## Data on hand
 
@@ -170,6 +181,7 @@ Full reports with equity curves in `reports/`.
 Recorded so that nothing looks accidentally missing:
 
 
-- `@plumb/executor` — Agent Trade Kit execution + reconciliation. Placeholder only.
+- **The Agent Trade Kit CLI adapter is not wired.** `AtkClient` is implemented by `MockAtk`; the
+  real CLI-backed client needs a demo API key and lands with P9's live work.
 - `@plumb/asp` — subscription feed + published ledger. Placeholder only.
 - `@plumb/ops` — alerts, daily review, health. Placeholder only.

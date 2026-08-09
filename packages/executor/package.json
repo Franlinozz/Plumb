@@ -2,7 +2,7 @@
   "name": "@plumb/executor",
   "version": "0.1.0",
   "private": true,
-  "description": "OKX Agent Trade Kit execution: bracketed orders and fill-to-signal reconciliation.",
+  "description": "The only component that places orders. Bracketed placement, idempotency, reconciliation.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,8 +20,13 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@plumb/asp": "^0.1.0",
     "@plumb/core": "^0.1.0",
+    "@plumb/market": "^0.1.0",
     "@plumb/risk": "^0.1.0",
-    "@plumb/asp": "^0.1.0"
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }

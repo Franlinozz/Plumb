@@ -81,6 +81,7 @@ export {
   evaluateEligibility,
   outlierDependence,
   signRecord,
+  summaryOf,
   verifyRecord,
   type CriterionResult,
   type EligibilityRecord,

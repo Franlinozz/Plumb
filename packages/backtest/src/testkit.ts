@@ -40,7 +40,11 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
   // Alternate direction off the bar timestamp so the book is not accidentally hedged into safety.
   const bar = candles[candles.length - 1];
   const side = bar !== undefined && Math.floor(bar.ts / 3_600_000) % 2 === 0 ? 'long' : 'short';
-  const stopPrice = side === 'long' ? entryPrice - 1.5 * atrValue : entryPrice + 1.5 * atrValue;
+  // Stop width comes from config so a caller can widen it. A TIGHT stop demands a large notional,
+  // and MAX_TOTAL_NOTIONAL (800 on 400 equity) binds long before the 3x leverage ceiling does —
+  // so a 1.5x-ATR permissive strategy is vetoed on every single bar and never reaches placement.
+  const multiple = config.trendEma.atrMultiple;
+  const stopPrice = side === 'long' ? entryPrice - multiple * atrValue : entryPrice + multiple * atrValue;
   if (stopPrice <= 0) return [];
 
   return [
@@ -54,7 +58,7 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
       strategyId: PERMISSIVE_ID,
       version: '0.0.0-test',
       regime,
-      inputs: { atr: atrValue, close: entryPrice, regimeConfidence: regime.confidence },
+      inputs: { atr: atrValue, close: entryPrice, atrMultiple: multiple, regimeConfidence: regime.confidence },
       conditions: ['test strategy — no thesis'],
       config,
       now,

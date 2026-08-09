@@ -11,7 +11,7 @@
  * go back to work, which is enormously cheaper than finding out with money.
  */
 
-import { createHash } from 'node:crypto';
+import { signEligibility, type EligibilitySummary } from '@plumb/core';
 
 import type { BacktestTrade } from './engine.js';
 import { computeMetrics, drawdownStats, type Metrics } from './metrics.js';
@@ -220,32 +220,34 @@ function rebuildCurve(
  * "passed: true" into a JSON file.
  */
 export function signRecord(record: Omit<EligibilityRecord, 'signature'>): string {
-  const canonical = JSON.stringify({
+  return signEligibility(summaryOf(record));
+}
+
+/**
+ * The decisive subset the signature covers. Shared with `@plumb/executor` through
+ * `@plumb/core` so the producer and the consumer cannot drift apart.
+ */
+export function summaryOf(record: Omit<EligibilityRecord, 'signature'>): EligibilitySummary {
+  return {
     label: record.label,
     eligible: record.eligible,
     failedOn: record.failedOn,
-    criteria: record.criteria.map((c) => [c.name, c.passed, c.actual]),
+    criteria: record.criteria.map((c) => ({ name: c.name, passed: c.passed, actual: c.actual })),
     tradeCount: record.outOfSampleMetrics.tradeCount,
-    profitFactor: round(record.outOfSampleMetrics.profitFactor),
-    totalReturnUsdt: round(record.outOfSampleMetrics.totalReturnUsdt),
-    maxDrawdownPct: round(record.outOfSampleMetrics.maxDrawdownPct),
-    probabilityOfRuin: round(record.monteCarlo.probabilityOfRuin),
-    p5Equity: round(record.monteCarlo.p5Equity),
-    criteriaUsed: record.criteriaUsed,
+    profitFactor: record.outOfSampleMetrics.profitFactor,
+    totalReturnUsdt: record.outOfSampleMetrics.totalReturnUsdt,
+    maxDrawdownPct: record.outOfSampleMetrics.maxDrawdownPct,
+    probabilityOfRuin: record.monteCarlo.probabilityOfRuin,
+    p5Equity: record.monteCarlo.p5Equity,
+    criteriaUsed: record.criteriaUsed as unknown as Readonly<Record<string, number>>,
     evaluatedAt: record.evaluatedAt,
-  });
-  return createHash('sha256').update(canonical).digest('hex');
+  };
 }
 
 /** Verify a record has not been edited since it was signed. */
 export function verifyRecord(record: EligibilityRecord): boolean {
   const { signature, ...rest } = record;
   return signRecord(rest) === signature;
-}
-
-function round(value: number): number | string {
-  if (!Number.isFinite(value)) return String(value);
-  return Number(value.toFixed(8));
 }
 
 function fmt(value: number): string {

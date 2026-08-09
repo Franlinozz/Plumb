@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-08-09
+
+Phase 5 — `@plumb/executor`, the only component that places orders. **Demo mode only.**
+
+### Added
+- `atk.ts` — Agent Trade Kit wrapper. `assertDemo` refuses to construct a live client without two
+  deliberate flags this phase never sets. Errors are classified so a REJECTION is never retried
+  blindly — retries are for timeouts and transport failures only.
+- `bracket.ts` — the entry and its stop are one operation. Where an attached stop cannot be used,
+  the fallback places the entry, places the stop, and **if the stop fails, immediately closes the
+  entry** and raises an alarm. A naked position never survives a cycle.
+- `idempotency.ts` — the signal id is the client order id; intent is persisted BEFORE placement
+  (`synchronous = FULL`), so a crash between the two is recoverable from the venue's own records.
+- `clord.ts` — OKX accepts only alphanumerics in `clOrdId`, so signal ids are sanitised on the way
+  out and resolved back by lookup, never by computation.
+- `reconcile.ts` — the audit loop. An unmatched fill, a missing position, size drift or a position
+  we never opened all halt trading.
+- `lifecycle.ts` — breakeven trailing at 1R, maxHoldBars expiry, invalidation closes, and a stop
+  that can only ever move CLOSER to entry.
+- `runner.ts` — serialised cycle loop that cannot overlap itself, plus `assertEligible`, the lock
+  that refuses to trade a configuration without a signature-verified passing backtest record.
+- `mock.ts` — a fault-injectable venue implementing the same interface as the real client.
+- Eligibility signing moved to `@plumb/core` so executor can verify a record without importing
+  `@plumb/backtest`.
+- 51 new tests (435 total).
+
+### Verified
+- Live-data session: 6 cycles against real OKX market data, one order placed with the stop
+  attached, idempotency held, reconciliation clean throughout, and an injected orphan fill
+  correctly caught and halted.
+
+### Not done
+- **The Agent Trade Kit `--demo` session was NOT run.** Demo mode requires a separate demo API key;
+  the key we hold is a live sub-account key and guardrail 10 forbids using it before P9. The
+  session script therefore runs real data through a simulated venue, which is stated in its header,
+  in the checkpoint, and here.
+
 ## [0.5.0] — 2026-08-09
 
 Phase 4 — `@plumb/backtest`, the evidence gate. **All five configurations FAILED the gate.**
@@ -198,7 +235,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Franlinozz/Plumb/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Franlinozz/Plumb/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Franlinozz/Plumb/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Franlinozz/Plumb/compare/v0.2.0...v0.3.0

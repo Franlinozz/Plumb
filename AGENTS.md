@@ -160,6 +160,31 @@ that touches payments, subscriptions or the trade kit.
   tests.** `tsc -b` resolves `@plumb/*` through the built `dist/*.d.ts` (so build order is enforced
   topologically and cannot compile against a stale dist — the Occestra failure), while vitest maps
   `@plumb/*` straight to `src` so `npm test` needs no prior build.
+- **P5 · THE ATK `--demo` SESSION IS BLOCKED ON A DEMO API KEY — not run.** Demo mode requires a
+  SEPARATE demo key (okx.com/account/my-api?go-demo-trading=1); the key we hold is a LIVE
+  sub-account key and guardrail 10 forbids touching it before P9. `npm run demo-session` therefore
+  runs the full loop against **real live market data with a SIMULATED venue**: every snapshot,
+  every strategy decision, every governor verdict and every reconciliation is real; only the order
+  fills are mocked. This is stated in the script header and in the checkpoint rather than papered
+  over. **Operator action: create a demo API key** and the same script runs unchanged.
+- **P5 · `clOrdId` must be stripped of non-alphanumerics.** OKX accepts letters and digits only,
+  1–32 chars, but our signal ids are `SIG-abc_DEF` — a hyphen and possibly an underscore from the
+  nanoid alphabet. Sending one verbatim is rejected with an opaque message. `toClOrdId` sanitises,
+  and because that is lossy the reverse direction is a LOOKUP over known signal ids, never a
+  computation. An unresolvable clOrdId is precisely the reconciliation alarm.
+- **P5 · The eligibility lock lives in `@plumb/core`.** `executor` must verify a backtest
+  eligibility record, and importing `@plumb/backtest` to reach the type would give the executor a
+  transitive path to strategy internals. `signEligibility`/`verifyEligibility` moved to core;
+  backtest delegates to them, so producer and consumer cannot drift apart. **All five P4
+  configurations fail this lock, so nothing can currently be run live — which is correct.**
+- **P5 · A tight-stopped permissive strategy never reaches placement**, for the same reason the P3
+  hostile sim found: `MAX_TOTAL_NOTIONAL` (800) binds before the 3× leverage ceiling on 400 equity.
+  At 1.5×ATR on 1H the demanded notional is ~1,700 and every bar is vetoed. The demo session widens
+  the stop to 6×ATR to produce order flow. This is the governor working, not a defect.
+- **P5 · Intent is persisted BEFORE the order is placed**, with `synchronous = FULL`. Placing first
+  and recording after loses a real position on a crash, which is the failure that cannot be
+  repaired; recording first can only ever leave an orphan intent, which boot-time recovery resolves
+  against the venue.
 - **P4 · ALL FIVE CONFIGURATIONS FAILED THE ELIGIBILITY GATE.** Reported as-is; no parameter was
   tuned to make something pass, because tuning until something passes IS overfitting.
   `breakout_range` was the only positive out-of-sample config (+14.41 USDT, PF 1.19, and it did not

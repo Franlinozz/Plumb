@@ -1,31 +1,101 @@
 import { LOCKED } from '@plumb/core';
-import { ASP_PACKAGE } from '@plumb/asp';
-import { RISK_PACKAGE } from '@plumb/risk';
 
 /**
- * @plumb/executor — OKX Agent Trade Kit execution.
+ * @plumb/executor — the only component that places orders.
  *
- * Placeholder. The real executor lands in a later phase. Its contract is fixed now:
- *
- *  - It reads approved signals out of the **published** feed (`@plumb/asp`), never out of
- *    strategy internals (guardrail 2). That is what makes a fill provably signal-derived.
- *  - It refuses any signal whose risk verdict is not `approved` (guardrail 1).
- *  - It brackets at placement: **no stop → no order** (guardrail 3).
- *  - It reconciles every fill back to a signal ID; an unmatched fill raises an alarm and
- *    halts trading immediately (guardrail 5).
+ * Guardrail 2: it reads approved signals from the PUBLISHED feed (`@plumb/asp`), never from
+ * strategy internals — which is what makes a fill provably signal-derived when audited.
+ * Guardrail 3: every position has a stop before it opens; a naked position never survives a cycle.
+ * Guardrail 5: every fill must match a signal id, and an unmatched fill halts trading.
+ * Guardrail 10: **DEMO MODE ONLY** in this phase — live credentials are not used until P9.
  */
 export const EXECUTOR_PACKAGE = Object.freeze({
   name: '@plumb/executor',
   responsibility: 'execute',
-  /** Guardrail 2 — the published feed is the only input. */
-  readsFrom: ASP_PACKAGE.name,
-  /** Guardrail 1 — anything else is refused. */
+  readsFrom: '@plumb/asp',
   requiresVerdict: 'approved',
-  /** Guardrail 3 — bracket at placement, or no order at all. */
   requiresStopBeforeOpen: true,
-  /** Guardrail 5 — an orphan fill halts trading. */
   haltsOnUnmatchedFill: true,
-  vetoedBy: RISK_PACKAGE.name,
-  /** Only trades through the Agent Trade Kit count toward the competition. */
+  vetoedBy: '@plumb/risk',
   accountingBasis: LOCKED.ACCOUNTING_BASIS,
+  /** Pinned by a test: this phase cannot construct a live client. */
+  demoOnly: true,
 });
+
+export {
+  AtkError,
+  DEFAULT_BIN,
+  DEFAULT_RETRY,
+  assertDemo,
+  classifyError,
+  withRetry,
+  type AtkClient,
+  type AtkErrorKind,
+  type CliClientOptions,
+  type OrderRef,
+  type PlaceOrderRequest,
+  type RetryPolicy,
+  type VenueBalance,
+  type VenueFill,
+  type VenueOrder,
+  type VenuePosition,
+} from './atk.js';
+
+export {
+  matchesSignal,
+  resolveSignalId,
+  toCloseClOrdId,
+  toClOrdId,
+} from './clord.js';
+
+export {
+  IntentStore,
+  type IntentStatus,
+  type LedgerEntry,
+  type OrderIntent,
+} from './idempotency.js';
+
+export {
+  NakedPositionError,
+  entrySide,
+  placeBracket,
+  type BracketDeps,
+  type BracketRequest,
+  type BracketResult,
+} from './bracket.js';
+
+export {
+  fillsBySignal,
+  reconcile,
+  recoverPendingIntents,
+  type ReconcileInput,
+  type ReconcileIssue,
+  type ReconcileIssueKind,
+  type ReconcileResult,
+  type RecordedPosition,
+} from './reconcile.js';
+
+export {
+  DEFAULT_LIFECYCLE,
+  StopRegressionError,
+  currentR,
+  isTighter,
+  manage,
+  tightenStop,
+  type LifecycleAction,
+  type LifecycleActionKind,
+  type LifecycleConfig,
+  type LifecycleInput,
+  type ManagedPosition,
+} from './lifecycle.js';
+
+export {
+  CycleRunner,
+  NotEligibleError,
+  assertEligible,
+  type CycleOutcome,
+  type CycleReport,
+  type RunnerDeps,
+} from './runner.js';
+
+export { MockAtk, type MockFaults } from './mock.js';

@@ -46,3 +46,10 @@ export {
   type SignalIdFactory,
 } from './ids.js';
 
+export {
+  signEligibility,
+  verifyEligibility,
+  type EligibilityCriterion,
+  type EligibilitySummary,
+} from './eligibility.js';
+
