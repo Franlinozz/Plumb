@@ -160,6 +160,37 @@ that touches payments, subscriptions or the trade kit.
   tests.** `tsc -b` resolves `@plumb/*` through the built `dist/*.d.ts` (so build order is enforced
   topologically and cannot compile against a stale dist — the Occestra failure), while vitest maps
   `@plumb/*` straight to `src` so `npm test` needs no prior build.
+- **P4 · ALL FIVE CONFIGURATIONS FAILED THE ELIGIBILITY GATE.** Reported as-is; no parameter was
+  tuned to make something pass, because tuning until something passes IS overfitting.
+  `breakout_range` was the only positive out-of-sample config (+14.41 USDT, PF 1.19, and it did not
+  degrade — OOS was 104% of IS) but it fails on two counts: **without its single best trade it is
+  −37.34**, so one trade carried the entire result; and Monte-Carlo P(ruin) is **6.16%** against a
+  5% ceiling, with a 5th-percentile equity of 334.32 — below the kill switch.
+- **P4 · `funding_skew` can NEVER fire when run alone, by design.** It requires a same-side peer
+  from another strategy, so a solo backtest of it is structurally guaranteed to produce zero
+  trades. That is the strategy working as specified, not a harness fault. It only has a chance of
+  firing in the combined configuration.
+- **P4 · `revert_band` produced ZERO out-of-sample trades** over 5,100 bars per instrument,
+  confirming P2's finding that its conditions (RSI extreme AND band touch AND `ranging` regime AND
+  ADX < 20) are close to mutually exclusive. It is not tradeable as specified.
+- **P4 · Funding history only reaches back ~97 days**, while candles reach 180+. OKX does not
+  retain more. Settlements outside the covered window are charged a pessimistic fallback rate as a
+  COST regardless of direction — never a credit we did not observe — and every report prints the
+  count of fallback settlements.
+- **P4 · "Costs make the final equity worse" is NOT a sound assertion, and the test was corrected.**
+  Slippage moves fill prices, which moves when stops trigger, which produces a different SET of
+  trades — a zero-cost and a full-cost run are not the same experiment. What is guaranteed, and
+  what is now tested, is per-trade: fees and funding are always subtracted from gross, never added.
+- **P4 · Entries fill at the NEXT bar's open, not the signal bar's close.** A decision made from
+  bar N's close cannot be executed at bar N's close. This is stricter than most backtests and costs
+  the results real money — deliberately.
+- **P4 · A `permissive_test` strategy ships in `@plumb/backtest`.** The four candidates fire too
+  rarely to demonstrate that the governor is in the loop; the phase's own test requires non-zero
+  veto counts, which needs a strategy that signals constantly. It is not a candidate and claims
+  nothing.
+- **P4 · Eligibility records are signed** (sha256 over the decisive contents). Not a cryptographic
+  authority — anyone with the code can recompute it — but it makes a hand-edited `"eligible": true`
+  obvious, so a config cannot be promoted to live by editing a JSON file.
 - **P3 · The `Signal` type MOVED to `@plumb/core`** (with the id factories and the regime-label
   vocabulary). `risk` must read signals to veto them, but routing that through `@plumb/strategy`
   would have given `@plumb/executor` a transitive path back to strategy internals via

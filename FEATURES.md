@@ -60,6 +60,15 @@ Rules for this table:
 | No model, no network, no key reachable from `@plumb/risk` | `@plumb/risk` | internal | `risk/src/no-llm.test.ts` |
 | Fuzz: 10,000 random signals never breach a locked parameter | `@plumb/risk` | internal | `risk/src/fuzz.test.ts` |
 | Hostile-strategy simulation over real history | `@plumb/risk` | `npm run hostile` | `risk/src/hostile.test.ts` |
+| Funding-rate history storage + backfill | `@plumb/market` | `npm run backfill` | `backtest/src/costs.test.ts` |
+| Full-pipeline bar-by-bar replay (governor in the loop) | `@plumb/backtest` | internal | `backtest/src/engine.test.ts` |
+| Lookahead detection — a cheating window throws | `@plumb/backtest` | internal | `engine.test.ts` › lookahead |
+| Pessimistic cost model — taker fees, slippage, gap-side stop fills, real funding | `@plumb/backtest` | internal | `backtest/src/costs.test.ts` |
+| Walk-forward IS/OOS windows that never overlap | `@plumb/backtest` | internal | `backtest/src/analysis.test.ts` |
+| Full metrics incl. per-regime and per-strategy breakdown | `@plumb/backtest` | internal | `analysis.test.ts` › metrics |
+| Monte Carlo — seeded, 10k paths, P(ruin) and 5th percentile | `@plumb/backtest` | internal | `analysis.test.ts` › Monte Carlo |
+| Eligibility gate — 5 criteria, signed record, tamper-evident | `@plumb/backtest` | internal | `analysis.test.ts` › gate |
+| Markdown report with inline SVG equity curve + "what this does not prove" | `@plumb/backtest` | `reports/` | `analysis.test.ts` › report |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
@@ -68,6 +77,7 @@ Rules for this table:
 | Strategy event-fixture verification | — | `npm run probe:strategies` | `strategies.test.ts` pins each |
 | 180-day signal-frequency replay | — | `npm run replay` | `engine.test.ts` (fixture-scale twin) |
 | Hostile-strategy simulation, full history, 5 scenarios | — | `npm run hostile` | `hostile.test.ts` (fixture-scale twin) |
+| Walk-forward backtest of every strategy config | — | `npm run backtest` | `analysis.test.ts`, `engine.test.ts` |
 
 ## Phase status
 
@@ -77,7 +87,8 @@ Rules for this table:
 | 1 | `@plumb/market` — data, indicators, snapshot, watchdog, cache, history | ✅ shipped |
 | 2 | `@plumb/strategy` — pure signal engine, regime, gate, portfolio | ✅ shipped |
 | 3 | `@plumb/risk` — governor, sizing, drawdown ladder, kill switch | ✅ shipped |
-| 4–10 | Not yet written | — |
+| 4 | `@plumb/backtest` — walk-forward harness, cost model, eligibility gate | ✅ shipped |
+| 5–10 | Not yet written | — |
 
 ## Data on hand
 
@@ -133,14 +144,32 @@ From the locked 400 starting capital the ladder keeps the account 35+ USDT clear
 Vetoes are dominated by `no_new_positions` (13,128 in the baseline) — the drawdown ladder does most
 of the work, and the kill switch is the backstop behind it.
 
+## Eligibility gate results — NONE PASSED
+
+`npm run backtest` over 5,100 bars/instrument on 1H with full pessimistic costs, walk-forward
+60d IS / 20d OOS rolling 20d. **Reported exactly as measured; no parameter was tuned to make
+anything pass, because tuning until something passes is overfitting.**
+
+| Config | OOS trades | Win% | PF | Net USDT | MaxDD% | P5 equity | P(ruin) | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `trend_ema` | 9 | 44.4 | 0.52 | −11.23 | 2.4 | 370 | 0.0% | REJECTED — PF, sample size, outlier |
+| `revert_band` | 0 | — | — | 0.00 | 0.0 | 400 | 0.0% | REJECTED — no trades at all |
+| `breakout_range` | 30 | 40.0 | **1.19** | **+14.41** | 7.8 | 334 | **6.2%** | REJECTED — P(ruin), outlier |
+| `funding_skew` | 0 | — | — | 0.00 | 0.0 | 400 | 0.0% | REJECTED — cannot fire alone by design |
+| `all_four_combined` | 37 | 40.5 | 0.74 | −24.46 | 9.5 | 332 | 16.7% | REJECTED — P(ruin), PF, outlier |
+
+`breakout_range` is the only configuration with a positive out-of-sample result, and it did not
+degrade (OOS profit factor was 104% of in-sample). It fails anyway, for two reasons that matter:
+**removing its single best trade turns +14.41 into −37.34**, and Monte-Carlo P(ruin) is 6.16%
+against a 5% ceiling with a 5th-percentile equity of 334.32 — below the kill switch.
+
+Full reports with equity curves in `reports/`.
+
 ## Not yet built
 
 Recorded so that nothing looks accidentally missing:
 
-- **Funding-rate history is not stored.** `@plumb/market` fetches it live but the candle store has
-  no table for it, so `funding_skew` cannot be replayed. **P4 prerequisite.**
 
-- `@plumb/backtest` — replay + metrics. Placeholder only. **No backtest has been run.**
 - `@plumb/executor` — Agent Trade Kit execution + reconciliation. Placeholder only.
 - `@plumb/asp` — subscription feed + published ledger. Placeholder only.
 - `@plumb/ops` — alerts, daily review, health. Placeholder only.

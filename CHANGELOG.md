@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-08-09
+
+Phase 4 — `@plumb/backtest`, the evidence gate. **All five configurations FAILED the gate.**
+Reported as measured; nothing was tuned to make anything pass.
+
+### Added
+- `engine.ts` — bar-by-bar replay of the FULL pipeline (snapshot → strategy → gate → portfolio →
+  governor → simulated execution), with `assertNoLookahead` run on every window.
+- `costs.ts` — OKX's published Lv1 taker rate (0.05%, fetched not guessed), a slippage model that
+  scales with size and bar volatility, entries filling at the NEXT bar's open, stops filling at the
+  WORSE of stop price and next-bar open, and funding booked from the real historical series.
+- `walkforward.ts` — rolling 60d IS / 20d OOS windows that never overlap, reported side by side
+  with an explicit overfit verdict.
+- `metrics.ts` — every metric, max drawdown first, plus per-regime and per-strategy breakdowns.
+- `monte_carlo.ts` — seeded 10,000-path resampling reporting P(ruin) and the 5th percentile.
+- `gate.ts` — five eligibility criteria and a signed, tamper-evident record.
+- `report.ts` — markdown reports with a self-contained inline SVG equity curve and an explicit
+  "what this does not prove" section.
+- Funding-rate storage and backfill in `@plumb/market` — the P4 prerequisite P2 identified.
+- 67 new tests (390 total).
+
+### Results — none eligible
+| Config | OOS trades | PF | Net | P(ruin) | Rejected on |
+| --- | --- | --- | --- | --- | --- |
+| `trend_ema` | 9 | 0.52 | −11.23 | 0.0% | PF, sample size, outlier |
+| `revert_band` | 0 | — | 0.00 | 0.0% | no trades at all |
+| `breakout_range` | 30 | 1.19 | +14.41 | 6.2% | P(ruin), outlier dependence |
+| `funding_skew` | 0 | — | 0.00 | 0.0% | cannot fire alone, by design |
+| `all_four_combined` | 37 | 0.74 | −24.46 | 16.7% | P(ruin), PF, outlier |
+
+`breakout_range` was the only positive out-of-sample configuration and did not degrade (OOS profit
+factor 104% of in-sample), but removing its single best trade turns +14.41 into −37.34, and its
+5th-percentile equity is 334.32 — below the kill switch.
+
+### Fixed
+- The cost-model test asserted that full costs produce a worse final equity than zero costs. That
+  is unsound: slippage moves fills, which moves when stops trigger, which produces a different set
+  of trades. The test now asserts the property that actually holds — per trade, fees and funding
+  are always subtracted from gross, never added.
+
 ## [0.4.0] — 2026-08-09
 
 Phase 3 — `@plumb/risk`, the component that decides whether money moves. Deterministic, persisted,
@@ -158,7 +198,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Franlinozz/Plumb/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Franlinozz/Plumb/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Franlinozz/Plumb/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Franlinozz/Plumb/compare/v0.1.0...v0.2.0

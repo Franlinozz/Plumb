@@ -172,3 +172,66 @@ export async function backfillCandles(
 export function daysAgo(now: number, days: number): number {
   return now - days * 86_400_000;
 }
+
+export interface FundingBackfillResult {
+  readonly instId: Instrument;
+  readonly pages: number;
+  readonly fetched: number;
+  readonly inserted: number;
+  readonly rows: number;
+  readonly oldestTs: number | undefined;
+  readonly newestTs: number | undefined;
+}
+
+/**
+ * Backfill settled funding rates, paging backwards exactly as the candle backfill does
+ * (`after` means OLDER). Funding settles every 8h, so 180 days is ~540 rows per instrument.
+ */
+export async function backfillFundingRates(
+  client: OkxPublicClient,
+  store: CandleStore,
+  options: {
+    readonly instId: Instrument;
+    readonly fromTs: number;
+    readonly pageLimit?: number;
+    readonly maxPages?: number;
+  },
+): Promise<FundingBackfillResult> {
+  const { instId, fromTs } = options;
+  const pageLimit = options.pageLimit ?? 100;
+  const maxPages = options.maxPages ?? 500;
+
+  let after: number | undefined;
+  let pages = 0;
+  let fetched = 0;
+  let inserted = 0;
+
+  while (pages < maxPages) {
+    const page = await client.fundingRateHistory(instId, {
+      limit: pageLimit,
+      ...(after === undefined ? {} : { after }),
+    });
+    pages += 1;
+    if (page.length === 0) break;
+
+    const result = store.putFundingRates(instId, page);
+    fetched += page.length;
+    inserted += result.inserted;
+
+    const oldest = page.reduce((min, r) => (r.fundingTime < min ? r.fundingTime : min), Number.POSITIVE_INFINITY);
+    if (oldest <= fromTs) break;
+    if (after !== undefined && oldest >= after) break; // no progress — bail out
+    after = oldest;
+  }
+
+  const stored = store.getFundingRates(instId);
+  return {
+    instId,
+    pages,
+    fetched,
+    inserted,
+    rows: stored.length,
+    oldestTs: stored[0]?.fundingTime,
+    newestTs: stored[stored.length - 1]?.fundingTime,
+  };
+}

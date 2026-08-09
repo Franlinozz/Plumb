@@ -18,6 +18,7 @@ import {
   CandleStore,
   OkxPublicClient,
   backfillCandles,
+  backfillFundingRates,
   daysAgo,
   findDuplicates,
   findGaps,
@@ -72,6 +73,18 @@ for (const instId of tradableUniverse()) {
         `${new Date(gaps[0].afterTs).toISOString()} → ${new Date(gaps[0].beforeTs).toISOString()})`);
     }
   }
+}
+
+// Funding rates — settled every 8h. P4's backtest cannot price a held position without them,
+// and P2's replay could not evaluate funding_skew at all for want of them.
+console.log('\nfunding rates:');
+for (const instId of tradableUniverse()) {
+  const r = await backfillFundingRates(client, store, { instId, fromTs });
+  const span = r.oldestTs === undefined ? 0 : (r.newestTs - r.oldestTs) / 86_400_000;
+  console.log(
+    `  ${instId.padEnd(16)} ${String(r.rows).padStart(5)} rows  ${span.toFixed(1)} days  ` +
+      `(${r.pages} pages, ${r.inserted} new)`,
+  );
 }
 
 console.log(`\ninventory (${dbPath}):`);

@@ -32,6 +32,14 @@ CREATE TABLE IF NOT EXISTS candles (
   closed       INTEGER NOT NULL,
   PRIMARY KEY (inst_id, tf, ts)
 ) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS funding_rates (
+  inst_id      TEXT    NOT NULL,
+  funding_time INTEGER NOT NULL,
+  rate         REAL    NOT NULL,
+  realized     REAL    NOT NULL,
+  PRIMARY KEY (inst_id, funding_time)
+) WITHOUT ROWID;
 `;
 
 interface Row {
@@ -241,6 +249,72 @@ export class CandleStore {
            FROM candles GROUP BY inst_id, tf ORDER BY inst_id, tf`,
       )
       .all() as ReturnType<CandleStore['inventory']>[number][];
+  }
+
+  // ─────────────────────────────────────────────────────────────── funding rates
+
+  /**
+   * Store settled funding rates. Like closed candles these are immutable history, so an
+   * existing row is left alone rather than overwritten.
+   *
+   * Added in P4: P2's replay could not evaluate `funding_skew` at all because funding history
+   * was not stored, and a strategy that cannot be backtested cannot be trusted with money.
+   */
+  putFundingRates(
+    instId: string,
+    entries: ReadonlyArray<{ readonly fundingTime: number; readonly fundingRate: number; readonly realizedRate: number }>,
+  ): { readonly inserted: number; readonly skipped: number } {
+    const insert = this.db.prepare(
+      'INSERT OR IGNORE INTO funding_rates (inst_id, funding_time, rate, realized) VALUES (?, ?, ?, ?)',
+    );
+    let inserted = 0;
+    this.db.transaction(() => {
+      for (const entry of entries) {
+        const info = insert.run(instId, entry.fundingTime, entry.fundingRate, entry.realizedRate);
+        if (info.changes > 0) inserted += 1;
+      }
+    })();
+    return { inserted, skipped: entries.length - inserted };
+  }
+
+  getFundingRates(
+    instId: string,
+    options: { readonly fromTs?: number; readonly toTs?: number } = {},
+  ): ReadonlyArray<{ readonly fundingTime: number; readonly fundingRate: number; readonly realizedRate: number }> {
+    const clauses = ['inst_id = ?'];
+    const params: (string | number)[] = [instId];
+    if (options.fromTs !== undefined) {
+      clauses.push('funding_time >= ?');
+      params.push(options.fromTs);
+    }
+    if (options.toTs !== undefined) {
+      clauses.push('funding_time <= ?');
+      params.push(options.toTs);
+    }
+    const rows = this.db
+      .prepare(
+        `SELECT funding_time AS fundingTime, rate AS fundingRate, realized AS realizedRate
+           FROM funding_rates WHERE ${clauses.join(' AND ')} ORDER BY funding_time ASC`,
+      )
+      .all(...params) as Array<{ fundingTime: number; fundingRate: number; realizedRate: number }>;
+    return Object.freeze(rows);
+  }
+
+  /** The most recent settled funding rate at or before `ts`, or undefined if none is stored. */
+  fundingRateAt(instId: string, ts: number): number | undefined {
+    const row = this.db
+      .prepare<[string, number], { rate: number }>(
+        'SELECT rate FROM funding_rates WHERE inst_id = ? AND funding_time <= ? ORDER BY funding_time DESC LIMIT 1',
+      )
+      .get(instId, ts);
+    return row?.rate;
+  }
+
+  countFundingRates(instId: string): number {
+    const row = this.db
+      .prepare<[string], { v: number }>('SELECT COUNT(*) AS v FROM funding_rates WHERE inst_id = ?')
+      .get(instId);
+    return row?.v ?? 0;
   }
 
   close(): void {

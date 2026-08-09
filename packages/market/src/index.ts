@@ -94,12 +94,14 @@ export {
 
 export {
   backfillCandles,
+  backfillFundingRates,
   daysAgo,
   findDuplicates,
   findGaps,
   type BackfillOptions,
   type BackfillProgress,
   type BackfillResult,
+  type FundingBackfillResult,
   type Gap,
 } from './history.js';
 
