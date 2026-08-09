@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyPortfolioRules, signalQuality } from './portfolio.js';
-import type { SignalDraft } from './signal.js';
+import type { SignalDraft } from '@plumb/core';
 import { DEFAULT_STRATEGY_CONFIG, EMPTY_STATE, type EngineState } from './types.js';
 
 const NOW = Date.parse('2026-08-01T01:00:00Z');

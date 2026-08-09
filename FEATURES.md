@@ -43,6 +43,23 @@ Rules for this table:
 | LLM rationale payload interface + unsanctioned-number detector (not called) | `@plumb/strategy` | internal | `engine.test.ts` › "rationale interface" |
 | Synthetic market testkit (regime + event fixtures, seeded) | `@plumb/strategy` | `@plumb/strategy/testkit` | `regime.test.ts`, `strategies.test.ts` |
 | Snapshot from candles alone (historical replay) | `@plumb/market` | internal | `strategy/src/engine.test.ts` |
+| Instrument specs (ctVal, minSz, lotSz, tickSz) recorded from the live exchange | `@plumb/market` | internal | `risk/src/sizing.test.ts` |
+| Position sizing from stop distance, leverage clamp, lot rounding | `@plumb/risk` | internal | `risk/src/sizing.test.ts` |
+| Post-rounding actual risk never exceeds the budget | `@plumb/risk` | internal | `sizing.test.ts` › "post-rounding risk" |
+| Below-minimum size rejected rather than traded | `@plumb/risk` | internal | `sizing.test.ts` › rejections |
+| Funding-cost estimate (credits never counted as benefit) | `@plumb/risk` | internal | `sizing.test.ts` › funding |
+| Persisted governor state — a killed system stays killed across restart | `@plumb/risk` | internal | `risk/src/state.test.ts` |
+| UTC daily roll (not the UTC+8 competition boundary) | `@plumb/risk` | internal | `state.test.ts` › "the UTC daily roll" |
+| The veto — 14 codes in fixed precedence, first failure wins | `@plumb/risk` | internal | `risk/src/governor.test.ts` |
+| Averaging-down prohibition, unreachable by any config | `@plumb/risk` | internal | `governor.test.ts` › 6, 6b, 6c |
+| Drawdown ladder −2/−5/−8/−12%, unwinds only on realised gains | `@plumb/risk` | internal | `state.test.ts` › ladder |
+| Kill switch at 335, permanent, flattens | `@plumb/risk` | internal | `governor.test.ts` › 2, 2b, 2c |
+| Idempotent flatten — calling twice does not double-close | `@plumb/risk` | internal | `risk/src/flatten.test.ts` |
+| Manual re-arm requires an operator token + reason, writes an audit record | `@plumb/risk` | internal | `flatten.test.ts` › re-arm |
+| Second locked-parameter tripwire inside the money package | `@plumb/risk` | internal | `state.test.ts` › "the second tripwire" |
+| No model, no network, no key reachable from `@plumb/risk` | `@plumb/risk` | internal | `risk/src/no-llm.test.ts` |
+| Fuzz: 10,000 random signals never breach a locked parameter | `@plumb/risk` | internal | `risk/src/fuzz.test.ts` |
+| Hostile-strategy simulation over real history | `@plumb/risk` | `npm run hostile` | `risk/src/hostile.test.ts` |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
@@ -50,6 +67,7 @@ Rules for this table:
 | Regime fixture verification | — | `npm run probe:regimes` | `regime.test.ts` pins each label |
 | Strategy event-fixture verification | — | `npm run probe:strategies` | `strategies.test.ts` pins each |
 | 180-day signal-frequency replay | — | `npm run replay` | `engine.test.ts` (fixture-scale twin) |
+| Hostile-strategy simulation, full history, 5 scenarios | — | `npm run hostile` | `hostile.test.ts` (fixture-scale twin) |
 
 ## Phase status
 
@@ -58,7 +76,8 @@ Rules for this table:
 | 0 | Scaffold + constitution | ✅ shipped |
 | 1 | `@plumb/market` — data, indicators, snapshot, watchdog, cache, history | ✅ shipped |
 | 2 | `@plumb/strategy` — pure signal engine, regime, gate, portfolio | ✅ shipped |
-| 3–10 | Not yet written | — |
+| 3 | `@plumb/risk` — governor, sizing, drawdown ladder, kill switch | ✅ shipped |
+| 4–10 | Not yet written | — |
 
 ## Data on hand
 
@@ -93,6 +112,27 @@ Regime distribution: trending_down 25.7% · trending_up 23.4% · unclear 18.2% �
 compressed 11.3% · expanding 3.8%. Total emitted 64 signals (0.51% of bars); 155 drafts were
 produced and 91 rejected, dominated by `regime_low_confidence`.
 
+## Hostile-strategy simulation over 180 days of real history
+
+`npm run hostile` — a strategy that tries to open the maximum permitted size on every bar of every
+instrument, widening its stop until the governor lets something through. **The governor held in
+every scenario.**
+
+| Scenario | Equity | Min | Worst risk | Worst leverage | Peak notional | Kill switch |
+| --- | --- | --- | --- | --- | --- | --- |
+| baseline | 400 → 370.74 | 370.74 | 3.9986 / 4 | 1.358 / 3 | 798.65 / 800 | not fired |
+| brutal slippage (0.5%) | 400 → 356.58 | 356.58 | 3.9961 / 4 | 1.375 / 3 | 798.65 / 800 | not fired |
+| punitive funding | 400 → 420.15 | 400.00 | 3.9983 / 4 | 1.329 / 3 | 599.13 / 800 | not fired |
+| starting near the floor (340) | 340 → 342.05 | **331.17** | 3.9934 / 4 | 1.574 / 3 | 798.65 / 800 | **fired**, halted, flat |
+| long holds (48 bars) | 400 → 414.06 | 386.69 | 3.9998 / 4 | 1.318 / 3 | 799.45 / 800 | not fired |
+
+The 331.17 is real and expected: a position was already open when equity crossed 335, and its stop
+filled with slippage. **The kill switch bounds new risk, not equity** — see AGENTS.md § Deviations.
+From the locked 400 starting capital the ladder keeps the account 35+ USDT clear of the floor.
+
+Vetoes are dominated by `no_new_positions` (13,128 in the baseline) — the drawdown ladder does most
+of the work, and the kill switch is the backstop behind it.
+
 ## Not yet built
 
 Recorded so that nothing looks accidentally missing:
@@ -100,7 +140,6 @@ Recorded so that nothing looks accidentally missing:
 - **Funding-rate history is not stored.** `@plumb/market` fetches it live but the candle store has
   no table for it, so `funding_skew` cannot be replayed. **P4 prerequisite.**
 
-- `@plumb/risk` — risk governor. Placeholder only; the locked limits exist but nothing enforces them yet.
 - `@plumb/backtest` — replay + metrics. Placeholder only. **No backtest has been run.**
 - `@plumb/executor` — Agent Trade Kit execution + reconciliation. Placeholder only.
 - `@plumb/asp` — subscription feed + published ledger. Placeholder only.

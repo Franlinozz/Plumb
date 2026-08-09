@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { StrategyContext } from './module.js';
 import { classifyRegime } from './regime.js';
-import type { SignalDraft } from './signal.js';
-import { stopIsOnCorrectSide } from './signal.js';
+import type { SignalDraft } from '@plumb/core';
+import { stopIsOnCorrectSide } from '@plumb/core';
 import { ALL_STRATEGIES, breakoutRange, fundingSkew, revertBand, trendEma } from './strategies/index.js';
 import { EVENT_SPECS, REGIME_SPECS, snapshotOf, syntheticCandles } from './testkit.js';
 import { DEFAULT_STRATEGY_CONFIG, EMPTY_STATE, type RegimeAssessment } from './types.js';

@@ -13,7 +13,7 @@
 import { atr as computeAtr, closes, latest, seriesFor } from '@plumb/market';
 
 import { makeDraft, type StrategyContext, type StrategyModule } from '../module.js';
-import type { SignalDraft } from '../signal.js';
+import type { SignalDraft } from '@plumb/core';
 import { rangeExcludingLast } from '../stats.js';
 
 export const BREAKOUT_RANGE_ID = 'breakout_range';

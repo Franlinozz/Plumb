@@ -2,9 +2,9 @@ import { fixtureCandles } from '@plumb/market';
 import { describe, expect, it } from 'vitest';
 
 import { runCycle, runCycleSeeded } from './engine.js';
-import { createSeededIdFactory } from './ids.js';
+import { createSeededIdFactory } from '@plumb/core';
 import { buildRationalePayload, findUnsanctionedNumbers } from './rationale.js';
-import { FORBIDDEN_SIGNAL_FIELDS, SignalSchema, stopIsOnCorrectSide } from './signal.js';
+import { FORBIDDEN_SIGNAL_FIELDS, SignalSchema, stopIsOnCorrectSide } from '@plumb/core';
 import { EVENT_SPECS, REGIME_SPECS, snapshotOf, syntheticCandles } from './testkit.js';
 import { DEFAULT_STRATEGY_CONFIG, EMPTY_STATE } from './types.js';
 

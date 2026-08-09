@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-08-09
+
+Phase 3 — `@plumb/risk`, the component that decides whether money moves. Deterministic, persisted,
+and with no model anywhere near it.
+
+### Added
+- `params.ts` — imports the locked constants from `@plumb/core` and adds a startup assertion plus a
+  SECOND tripwire, deliberately redundant with P0's. If somebody edits `locked.ts` and its test in
+  one commit, this still fails.
+- `sizing.ts` — position sizing from stop distance. Notional is reduced to satisfy the leverage
+  ceiling; the stop is NEVER widened to fit a size. Below-minimum sizes are rejected outright.
+  Lot rounding is downward, so post-rounding risk is always at or under the budget, and the REAL
+  risk is reported rather than the intended one.
+- `state.ts` — persisted governor state in SQLite. Halt flags survive a restart; the daily counter
+  rolls on the UTC boundary, explicitly not the UTC+8 competition boundary.
+- `governor.ts` — the veto: 14 structured codes in a fixed precedence, first failure wins.
+- `drawdown.ts` — the ladder at −2/−5/−8/−12%, unwinding only on realised gains.
+- `flatten.ts` — idempotent emergency close-out that depends only on persisted state, so it works
+  when everything upstream is broken.
+- `rearm.ts` — manual re-arm requiring an operator token and a reason, writing an audit record.
+  The system cannot re-arm itself; denied attempts are recorded too.
+- `simulate.ts` — the hostile-strategy harness, pure and shared by the test and `npm run hostile`.
+- `INSTRUMENT_SPECS` in `@plumb/market`, recorded from the live exchange (BTC ctVal 0.01,
+  ETH 0.1, SOL 1; all minSz/lotSz 0.01).
+- 92 new tests (323 total), including a 10,000-case fuzz and the hostile simulation.
+
+### Changed
+- **The `Signal` type, the id factories and the regime-label vocabulary moved to `@plumb/core`.**
+  `risk` must read signals to veto them, and reaching that type through `@plumb/strategy` would
+  have given `@plumb/executor` a transitive path back to strategy internals. `strategy` re-exports
+  them; all 231 prior tests passed unchanged across the move.
+
+### Verified
+- **Fuzz: 10,000 random signals against random equity states.** No approved signal ever breached
+  the per-trade risk, the leverage ceiling, the notional cap, the concurrency limit, the kill
+  switch, the daily limit or the averaging-down prohibition.
+- **Hostile simulation over 180 days of real history, 5 scenarios — the governor held in all of
+  them.** Worst approved risk 3.9998 of 4; worst leverage 1.57 of 3; peak notional 799.45 of 800;
+  zero approvals after a kill switch.
+- Starting at 340 USDT, equity reached **331.17** before the switch fired: a position was already
+  open and its stop filled with slippage. **The kill switch bounds new risk, not equity.** From the
+  locked 400 the ladder keeps the account 35+ USDT clear of the floor (baseline min 370.74).
+- `MAX_TOTAL_NOTIONAL` (800) binds before the 3× leverage ceiling on 400 USDT of equity, and
+  `correlated_exposure` (600) binds before both.
+
 ## [0.3.0] — 2026-08-09
 
 Phase 2 — `@plumb/strategy`, pure signal generation. Zero I/O, zero network, zero clock reads, zero
@@ -113,7 +158,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Franlinozz/Plumb/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Franlinozz/Plumb/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Franlinozz/Plumb/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Franlinozz/Plumb/releases/tag/v0.1.0

@@ -18,11 +18,11 @@
 import type { MarketSnapshot, Timeframe } from '@plumb/market';
 
 import { runGate, type GateConflict, type GateRejection } from './gate.js';
-import { createSeededIdFactory, type SignalIdFactory } from './ids.js';
+import { createSeededIdFactory, type SignalIdFactory } from '@plumb/core';
 import type { StrategyContext, StrategyModule } from './module.js';
 import { applyPortfolioRules, type PortfolioDrop } from './portfolio.js';
 import { classifyRegime } from './regime.js';
-import { parseSignal, type Signal, type SignalDraft } from './signal.js';
+import { parseSignal, type Signal, type SignalDraft } from '@plumb/core';
 import { ALL_STRATEGIES } from './strategies/index.js';
 import {
   DEFAULT_STRATEGY_CONFIG,

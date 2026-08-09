@@ -2,7 +2,7 @@
   "name": "@plumb/risk",
   "version": "0.1.0",
   "private": true,
-  "description": "The deterministic risk governor. May veto any signal; never creates one.",
+  "description": "The deterministic risk governor. Decides whether money moves. No LLM, ever.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +20,11 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@plumb/core": "^0.1.0"
+    "@plumb/core": "^0.1.0",
+    "@plumb/market": "^0.1.0",
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }

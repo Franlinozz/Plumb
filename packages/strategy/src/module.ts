@@ -1,6 +1,6 @@
 import { TIMEFRAME_MS, type MarketSnapshot, type Timeframe } from '@plumb/market';
 
-import { stopDistancePct, takeProfitLevels, type SignalDraft } from './signal.js';
+import { stopDistancePct, takeProfitLevels, type SignalDraft } from '@plumb/core';
 import type { EngineState, RegimeAssessment, StrategyConfig } from './types.js';
 
 /**

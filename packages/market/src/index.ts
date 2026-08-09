@@ -130,3 +130,13 @@ export {
   type Ticker,
   type Timeframe,
 } from './types.js';
+
+export {
+  INSTRUMENT_SPECS,
+  contractsToNotional,
+  notionalToContracts,
+  roundToLot,
+  specFor,
+  type InstrumentSpec,
+} from './instruments.js';
+

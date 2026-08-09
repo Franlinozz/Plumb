@@ -1,21 +1,16 @@
 import type { Instrument } from '@plumb/core';
+import { REGIME_LABELS, type RegimeLabel } from '@plumb/core';
 import type { Timeframe } from '@plumb/market';
 
 /**
  * Market regimes. `unclear` is a first-class, frequent answer — not a failure mode.
  * A classifier that always has an opinion is a classifier that is often wrong, and in this
  * system "I don't know" suppresses signals rather than degrading into a guess.
+ *
+ * The vocabulary lives in `@plumb/core` because it appears on a `Signal`; the classifier that
+ * produces a label lives here.
  */
-export const REGIME_LABELS = Object.freeze([
-  'trending_up',
-  'trending_down',
-  'ranging',
-  'expanding',
-  'compressed',
-  'unclear',
-] as const);
-
-export type RegimeLabel = (typeof REGIME_LABELS)[number];
+export { REGIME_LABELS, type RegimeLabel };
 
 export interface RegimeAssessment {
   readonly label: RegimeLabel;

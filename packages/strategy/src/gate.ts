@@ -13,7 +13,7 @@
 import { isInstrument } from '@plumb/core';
 import { isTradeable, type MarketSnapshot } from '@plumb/market';
 
-import { assertNoSizing, stopIsOnCorrectSide, type SignalDraft } from './signal.js';
+import { assertNoSizing, stopIsOnCorrectSide, type SignalDraft } from '@plumb/core';
 import type { EngineState, RegimeAssessment, StrategyConfig } from './types.js';
 
 export type GateRejectionCode =

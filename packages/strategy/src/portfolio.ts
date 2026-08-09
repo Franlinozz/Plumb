@@ -10,7 +10,7 @@
  * enforces hard limits on what IS emitted, and cannot know that three signals were siblings.
  */
 
-import type { SignalDraft } from './signal.js';
+import type { SignalDraft } from '@plumb/core';
 import type { EngineState, PortfolioConfig } from './types.js';
 
 export type PortfolioDropCode =

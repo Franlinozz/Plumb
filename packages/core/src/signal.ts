@@ -1,8 +1,8 @@
-import { INSTRUMENTS } from '@plumb/core';
-import { TIMEFRAMES } from '@plumb/market';
 import { z } from 'zod';
 
-import { REGIME_LABELS } from './types.js';
+import { INSTRUMENTS } from './locked.js';
+import { REGIME_LABELS } from './regime-labels.js';
+import { SIGNAL_TIMEFRAMES } from './timeframes.js';
 
 /**
  * The Signal — everything `strategy` is allowed to say, and nothing more.
@@ -39,7 +39,7 @@ export const SignalSchema = z
     takeProfit: z
       .array(z.object({ price: positive, rMultiple: positive }))
       .optional(),
-    timeframe: z.enum(TIMEFRAMES),
+    timeframe: z.enum(SIGNAL_TIMEFRAMES),
     strategyId: z.string().min(1),
     regime: z.enum(REGIME_LABELS),
     inputs: z.record(z.string(), finite),

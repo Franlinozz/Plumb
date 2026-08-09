@@ -16,7 +16,7 @@
 import { atr as computeAtr, closes, latest, seriesFor } from '@plumb/market';
 
 import { makeDraft, type StrategyContext, type StrategyModule } from '../module.js';
-import type { SignalDraft } from '../signal.js';
+import type { SignalDraft } from '@plumb/core';
 import { percentileRank } from '../stats.js';
 
 export const FUNDING_SKEW_ID = 'funding_skew';

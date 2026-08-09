@@ -25,6 +25,9 @@ export const STRATEGY_PACKAGE = Object.freeze({
   isPure: true,
 });
 
+// The Signal type and the id factories live in @plumb/core — every package downstream of a
+// signal needs them, and routing `risk` through `strategy` to reach a type would have given
+// `executor` a transitive path back to strategy internals. Re-exported for convenience.
 export {
   SignalSchema,
   SignalSizingLeakError,
@@ -34,15 +37,12 @@ export {
   stopDistancePct,
   stopIsOnCorrectSide,
   takeProfitLevels,
-  type Signal,
-  type SignalDraft,
-} from './signal.js';
-
-export {
   createEntropyIdFactory,
   createSeededIdFactory,
+  type Signal,
+  type SignalDraft,
   type SignalIdFactory,
-} from './ids.js';
+} from '@plumb/core';
 
 export { classifyRegime } from './regime.js';
 

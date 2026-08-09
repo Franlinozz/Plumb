@@ -18,7 +18,7 @@ import {
 } from '@plumb/market';
 
 import { makeDraft, type StrategyContext, type StrategyModule } from '../module.js';
-import type { SignalDraft } from '../signal.js';
+import type { SignalDraft } from '@plumb/core';
 
 export const REVERT_BAND_ID = 'revert_band';
 const VERSION = '1.0.0';

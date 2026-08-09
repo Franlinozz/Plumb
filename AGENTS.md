@@ -160,6 +160,33 @@ that touches payments, subscriptions or the trade kit.
   tests.** `tsc -b` resolves `@plumb/*` through the built `dist/*.d.ts` (so build order is enforced
   topologically and cannot compile against a stale dist — the Occestra failure), while vitest maps
   `@plumb/*` straight to `src` so `npm test` needs no prior build.
+- **P3 · The `Signal` type MOVED to `@plumb/core`** (with the id factories and the regime-label
+  vocabulary). `risk` must read signals to veto them, but routing that through `@plumb/strategy`
+  would have given `@plumb/executor` a transitive path back to strategy internals via
+  `executor → risk → strategy`, weakening guardrail 1. Core is where a domain type shared by
+  strategy, risk, asp, executor and backtest belongs. `strategy` re-exports it; 231 tests passed
+  unchanged across the move.
+- **P3 · THE KILL SWITCH BOUNDS NEW RISK, NOT EQUITY.** Verified on 180 days of real history:
+  starting at 340 USDT the hostile simulation reached **331.17**, below the 335 floor, because a
+  position was already open and its stop filled with slippage. A switch cannot un-take a trade that
+  is already on. What it does guarantee — and what the tests assert — is that it fires, flattens,
+  and approves nothing afterwards. From the locked 400 the ladder keeps this far away: the baseline
+  hostile run bottomed at **370.74**, never within 35 USDT of the floor. The undershoot is bounded
+  by roughly one per-trade risk plus slippage, and that bound is now a test.
+- **P3 · `MAX_TOTAL_NOTIONAL` (800) binds before the 3× leverage ceiling ever does** on 400 USDT of
+  equity, since 400 × 3 = 1,200. The leverage clamp is therefore a second line of defence rather
+  than the operative limit, and `correlated_exposure` (600) binds before both. Found because the
+  first hostile simulation got ZERO approvals — every attempt was vetoed on notional. The sim now
+  ladders its stop outward until something is approved, which is what a real adversary would do.
+- **P3 · `params.ts` deliberately duplicates the core tripwire.** If somebody edits `locked.ts` and
+  updates its test in the same commit, `assertLockedParameters()` still fails. Redundancy is the
+  point in the one package where being wrong costs money.
+- **P3 · `simulate.ts` ships in `dist`.** The hostile simulation is a pure function used by both
+  the committed test (300-bar fixtures) and `npm run hostile` (full history), and P4's backtest
+  will want the same harness.
+- **P3 · `rearm` reads no environment.** The expected `PLUMB_ADMIN_TOKEN` is passed IN, so the
+  package has no ambient authority and the token comparison is testable. Comparison is
+  length-independent so a token cannot be probed a character at a time.
 - **P2 · THE STALE-SNAPSHOT TEST BUG (found by the engine, not by the strategies).** The synthetic
   test helper pinned `now` to a fixed instant while slicing windows that ended earlier, so every
   synthetic snapshot was older than its own freshness budget. Module-level probes bypassed the gate

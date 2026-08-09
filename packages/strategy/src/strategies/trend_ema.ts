@@ -10,7 +10,7 @@
 import { closes, ema, latest, seriesFor, adx as computeAdx, atr as computeAtr } from '@plumb/market';
 
 import { makeDraft, type StrategyContext, type StrategyModule } from '../module.js';
-import type { SignalDraft } from '../signal.js';
+import type { SignalDraft } from '@plumb/core';
 
 export const TREND_EMA_ID = 'trend_ema';
 const VERSION = '1.0.0';

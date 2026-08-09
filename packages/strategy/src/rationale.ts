@@ -17,7 +17,7 @@
  * the payload carries `inputs` verbatim rather than a summary.
  */
 
-import type { Signal } from './signal.js';
+import type { Signal } from '@plumb/core';
 import type { RegimeAssessment } from './types.js';
 
 export interface RationalePayload {

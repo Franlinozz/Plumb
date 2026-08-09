@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cooldownKey, runGate, type GateRejectionCode } from './gate.js';
 import { classifyRegime } from './regime.js';
-import type { SignalDraft } from './signal.js';
+import type { SignalDraft } from '@plumb/core';
 import { REGIME_SPECS, snapshotOf, syntheticCandles } from './testkit.js';
 import { DEFAULT_STRATEGY_CONFIG, EMPTY_STATE, type RegimeAssessment } from './types.js';
 
