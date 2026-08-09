@@ -77,6 +77,8 @@ export {
   buildSnapshot,
   computeIndicators,
   seriesFor,
+  snapshotFromCandles,
+  type SyntheticSnapshotInput,
   type IndicatorValues,
   type MarketSnapshot,
   type SnapshotFunding,

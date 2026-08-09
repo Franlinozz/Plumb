@@ -27,10 +27,29 @@ Rules for this table:
 | Recorded-fixture replay (`PLUMB_MODE=fake`) — raw OKX envelopes, zero network | `@plumb/market` | internal | every `market` test |
 | No credentials reachable from `@plumb/market` | `@plumb/market` | internal | `market/src/no-credentials.test.ts` |
 | Signal primacy — `strategy` cannot reach `executor` at any depth | `@plumb/strategy` | internal | `strategy/src/no-order-path.test.ts` |
+| Strategy purity — no clock, no randomness, no network, no I/O | `@plumb/strategy` | internal | `strategy/src/purity.test.ts` |
+| `Signal` type + zod schema, with NO size/leverage/notional field | `@plumb/strategy` | internal | `strategy/src/signal.test.ts` |
+| Deterministic + entropy signal-id factories (nanoid shape, injected source) | `@plumb/strategy` | internal | `signal.test.ts` › "signal ids" |
+| Deterministic regime classifier — 6 labels, `unclear` first-class, confidence 0–1 | `@plumb/strategy` | internal | `strategy/src/regime.test.ts` |
+| Model regime hint may lower confidence, never change the label | `@plumb/strategy` | internal | `regime.test.ts` › "corroborate, never override" |
+| Candidate strategy: `trend_ema` (EMA cross + ADX + trending regime) | `@plumb/strategy` | internal | `strategy/src/strategies.test.ts` |
+| Candidate strategy: `revert_band` (band touch + RSI extreme, ranging only) | `@plumb/strategy` | internal | `strategies.test.ts` › revert_band |
+| Candidate strategy: `breakout_range` (ATR-normalised range break) | `@plumb/strategy` | internal | `strategies.test.ts` › breakout_range |
+| Candidate strategy: `funding_skew` (percentile funding extreme, never alone) | `@plumb/strategy` | internal | `strategies.test.ts` › funding_skew |
+| Pre-emission gate — 14 structured rejection codes, degraded rejects all | `@plumb/strategy` | internal | `strategy/src/gate.test.ts` |
+| Conflicting sides in one cycle → neither emitted, conflict logged | `@plumb/strategy` | internal | `gate.test.ts` › "emits NEITHER side" |
+| Portfolio coordination — correlation cap, one signal per instrument, no adding to open direction | `@plumb/strategy` | internal | `strategy/src/portfolio.test.ts` |
+| Engine — regime → strategies → gate → portfolio → validated `Signal[]` | `@plumb/strategy` | internal | `strategy/src/engine.test.ts` |
+| LLM rationale payload interface + unsanctioned-number detector (not called) | `@plumb/strategy` | internal | `engine.test.ts` › "rationale interface" |
+| Synthetic market testkit (regime + event fixtures, seeded) | `@plumb/strategy` | `@plumb/strategy/testkit` | `regime.test.ts`, `strategies.test.ts` |
+| Snapshot from candles alone (historical replay) | `@plumb/market` | internal | `strategy/src/engine.test.ts` |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
 | Indicator divergence vs OKX Agent Trade Kit | — | `npm run divergence` | manual, findings in AGENTS.md |
+| Regime fixture verification | — | `npm run probe:regimes` | `regime.test.ts` pins each label |
+| Strategy event-fixture verification | — | `npm run probe:strategies` | `strategies.test.ts` pins each |
+| 180-day signal-frequency replay | — | `npm run replay` | `engine.test.ts` (fixture-scale twin) |
 
 ## Phase status
 
@@ -38,7 +57,8 @@ Rules for this table:
 | --- | --- | --- |
 | 0 | Scaffold + constitution | ✅ shipped |
 | 1 | `@plumb/market` — data, indicators, snapshot, watchdog, cache, history | ✅ shipped |
-| 2–10 | Not yet written | — |
+| 2 | `@plumb/strategy` — pure signal engine, regime, gate, portfolio | ✅ shipped |
+| 3–10 | Not yet written | — |
 
 ## Data on hand
 
@@ -57,11 +77,29 @@ Stored in `data/plumb.db` (gitignored — 65,700 rows is repo bloat, and it is r
 Fixtures in `packages/market/fixtures/` (committed): 33 files, 3,318 rows — 8 point-in-time
 endpoints × 3 instruments, plus 300 candles each at 15m / 1H / 4H.
 
+## Signal frequency over 180 days of real history
+
+`npm run replay --tf 1H` over 12,603 cycles (3 instruments × ~4,200 bars). **This is a smoke test,
+not a performance claim — no edge is claimed for any strategy until P4 produces evidence.**
+
+| Strategy | Signals | Rate | Verdict |
+| --- | --- | --- | --- |
+| `trend_ema` | 16 | 0.13% | plausible |
+| `revert_band` | 2 | 0.02% | plausible, but barely reachable — see checkpoint |
+| `breakout_range` | 46 | 0.36% | plausible |
+| `funding_skew` | 0 | 0.00% | **unevaluable** — no funding history in the store (P4 prerequisite) |
+
+Regime distribution: trending_down 25.7% · trending_up 23.4% · unclear 18.2% · ranging 17.7% ·
+compressed 11.3% · expanding 3.8%. Total emitted 64 signals (0.51% of bars); 155 drafts were
+produced and 91 rejected, dominated by `regime_low_confidence`.
+
 ## Not yet built
 
 Recorded so that nothing looks accidentally missing:
 
-- `@plumb/strategy` — signal generation. Placeholder only. **No edge is claimed.**
+- **Funding-rate history is not stored.** `@plumb/market` fetches it live but the candle store has
+  no table for it, so `funding_skew` cannot be replayed. **P4 prerequisite.**
+
 - `@plumb/risk` — risk governor. Placeholder only; the locked limits exist but nothing enforces them yet.
 - `@plumb/backtest` — replay + metrics. Placeholder only. **No backtest has been run.**
 - `@plumb/executor` — Agent Trade Kit execution + reconciliation. Placeholder only.

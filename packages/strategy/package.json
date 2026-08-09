@@ -2,7 +2,7 @@
   "name": "@plumb/strategy",
   "version": "0.1.0",
   "private": true,
-  "description": "Signal generation. Emits Signal objects and cannot place orders (guardrail 1).",
+  "description": "Signal generation. Pure: no I/O, no clock, no unseeded randomness. Cannot place orders (guardrail 1).",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testkit": {
+      "types": "./dist/testkit.d.ts",
+      "default": "./dist/testkit.js"
     }
   },
   "files": [
@@ -21,6 +25,7 @@
   },
   "dependencies": {
     "@plumb/core": "^0.1.0",
-    "@plumb/market": "^0.1.0"
+    "@plumb/market": "^0.1.0",
+    "zod": "^4.4.3"
   }
 }

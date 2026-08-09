@@ -160,6 +160,39 @@ that touches payments, subscriptions or the trade kit.
   tests.** `tsc -b` resolves `@plumb/*` through the built `dist/*.d.ts` (so build order is enforced
   topologically and cannot compile against a stale dist — the Occestra failure), while vitest maps
   `@plumb/*` straight to `src` so `npm test` needs no prior build.
+- **P2 · THE STALE-SNAPSHOT TEST BUG (found by the engine, not by the strategies).** The synthetic
+  test helper pinned `now` to a fixed instant while slicing windows that ended earlier, so every
+  synthetic snapshot was older than its own freshness budget. Module-level probes bypassed the gate
+  and showed strategies firing; the full engine emitted nothing, because the watchdog was correctly
+  rejecting stale data. Both were right — they were being asked different questions. The clock is
+  now derived from the window (`snapshot.ts`) everywhere. **Rule: a probe that bypasses the gate is
+  not evidence about the system, only about the component.**
+- **P2 · `revert_band` emitted geometrically impossible stops.** When price collapsed far through
+  the lower band, `lower − k·ATR` landed ABOVE the close — a "stop" on the profitable side. The gate
+  caught all six occurrences across 180 days of real history, but a strategy should not rely on a
+  downstream check to tidy up after it. Guarded at the source; `stop_wrong_side` rejections went
+  6 → 0.
+- **P2 · `percentileRank` now uses the MID-RANK convention.** The naive at-or-below form scores a
+  perfectly flat series at 1.0 — "the highest it has ever been" — which would read a dead-quiet
+  market as violently expanding. Ties now score 0.5.
+- **P2 · Signal ids use the nanoid ALPHABET but an injected entropy source**, not the `nanoid`
+  package. The phase specified `nanoid(10)`; importing it would put an ambient RNG inside a package
+  whose defining property is that the same snapshot yields a byte-identical `Signal[]`.
+  `createSeededIdFactory` (tests, backtests) and `createEntropyIdFactory` (production, fed from
+  `@plumb/ops`) produce the same shape.
+- **P2 · `engine.ts` was added** beyond the listed files. The phase specified the parts but not the
+  thing that composes them, and the required "replay history through the engine" test needs one.
+- **P2 · `snapshotFromCandles` was added to `@plumb/market`**, not `@plumb/strategy`. It builds a
+  snapshot from candles alone for replay. Two approximations are documented in the code: `mark` is
+  set equal to `last` (no historical mark series exists on the public API), and all timestamps are
+  set to `now` so replayed bars are never `degraded` — historical data is old, not stale.
+- **P2 · The 180-day replay lives in a SCRIPT; the committed test replays the fixtures.** The full
+  history is in gitignored `data/plumb.db`, so a test depending on it would be green on this box and
+  red everywhere else.
+- **P2 · `funding_skew` is UNEVALUABLE in replay, not dead.** The candle store holds no funding-rate
+  history, so the strategy cannot rank funding against its own past. It is proven to fire by unit
+  test when history and a confirming peer exist. **Storing funding-rate history is a P4
+  prerequisite** and is recorded in FEATURES.md as not-yet-built.
 - **P1 · THE CANDLE-ORDER BUG (found by the live run, not by the tests).** `client.candles()`
   originally returned OKX's own newest-first order, while every indicator assumes chronological
   order. The unit tests missed it because `fixtureCandles()` sorts and `buildSnapshot()` sorts

@@ -218,6 +218,75 @@ export function buildSnapshot(input: SnapshotInput): MarketSnapshot {
   });
 }
 
+export interface SyntheticSnapshotInput {
+  readonly now: number;
+  readonly instId: Instrument;
+  readonly candles: readonly CandleSeries[];
+  readonly fundingRate?: number;
+  readonly fundingHistory?: readonly FundingRateHistoryEntry[];
+  readonly openInterest?: number;
+  readonly openInterestUsd?: number;
+  readonly openInterestHistory?: readonly OpenInterestHistoryEntry[];
+}
+
+/**
+ * Build a snapshot from candles alone — the historical-replay path used by backtests.
+ *
+ * **Two honest approximations, stated rather than hidden:**
+ *  1. `mark` is set equal to `last`. There is no historical mark-price series on the public API,
+ *     and inventing a basis would be inventing data. On these instruments the two track within a
+ *     few basis points (measured live in P1), so the error is small — but it IS an error, and any
+ *     strategy that trades the mark/last basis must not be backtested through this path.
+ *  2. Every timestamp is set to `now`, so a replayed snapshot is never `degraded`. That is
+ *     correct: historical data is old, not *stale*. Staleness is a liveness property of a running
+ *     feed, and replaying it would make every backtest bar unusable.
+ */
+export function snapshotFromCandles(input: SyntheticSnapshotInput): MarketSnapshot {
+  const primary = input.candles[0];
+  const newest = primary?.ohlcv[primary.ohlcv.length - 1];
+  if (newest === undefined) {
+    throw new RangeError('snapshotFromCandles needs at least one candle in the first series');
+  }
+  const rate = input.fundingRate ?? 0;
+  return buildSnapshot({
+    now: input.now,
+    instId: input.instId,
+    ticker: {
+      instId: input.instId,
+      last: newest.close,
+      askPx: newest.close,
+      bidPx: newest.close,
+      open24h: newest.open,
+      high24h: newest.high,
+      low24h: newest.low,
+      vol24h: newest.volume,
+      ts: input.now,
+    },
+    markPrice: { instId: input.instId, markPx: newest.close, ts: input.now },
+    funding: {
+      instId: input.instId,
+      fundingRate: rate,
+      fundingTime: input.now,
+      nextFundingRate: undefined,
+      nextFundingTime: input.now + 28_800_000,
+      prevFundingTime: input.now - 28_800_000,
+      minFundingRate: -0.00375,
+      maxFundingRate: 0.00375,
+      ts: input.now,
+    },
+    fundingHistory: input.fundingHistory ?? [],
+    openInterest: {
+      instId: input.instId,
+      oi: input.openInterest ?? 0,
+      oiCcy: 0,
+      oiUsd: input.openInterestUsd ?? 0,
+      ts: input.now,
+    },
+    openInterestHistory: input.openInterestHistory ?? [],
+    candles: input.candles,
+  });
+}
+
 /** The candle series for one timeframe, or `undefined` if the snapshot does not carry it. */
 export function seriesFor(
   snapshot: MarketSnapshot,

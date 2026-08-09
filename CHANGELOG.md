@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-08-09
+
+Phase 2 — `@plumb/strategy`, pure signal generation. Zero I/O, zero network, zero clock reads, zero
+unseeded randomness, enforced by a source scan. **No edge is claimed for any strategy.**
+
+### Added
+- `Signal` type + zod schema with **no `size`, `leverage` or `notional` field** — sizing belongs to
+  `@plumb/risk`. Enforced by the type, by `.strict()` parsing, and by a runtime `assertNoSizing`.
+- Deterministic regime classifier: `trending_up | trending_down | ranging | expanding | compressed |
+  unclear`, with a confidence in 0–1. `unclear` is a first-class answer with a deliberate dead zone
+  between the ranging ceiling and the trending floor.
+- `RegimeHint` interface for a future model label — it may only LOWER confidence when it disagrees,
+  never change the label, never contribute a number. Nothing calls it.
+- Four candidate strategies, each individually enable/disable-able: `trend_ema`, `revert_band`,
+  `breakout_range`, `funding_skew` (which never fires without a same-side peer).
+- Pre-emission gate with 14 structured rejection codes. A degraded snapshot rejects everything
+  before any other check. Opposite sides on one instrument emit NEITHER and log the conflict.
+- Portfolio coordination: correlation cap across BTC/ETH/SOL (default 1 per direction per cycle),
+  one signal per instrument per cycle, and never adding to an already-open direction.
+- `rationale.ts` — payload interface for LLM-written rationale plus `findUnsanctionedNumbers`,
+  which catches a figure the model invented. Not called in this phase.
+- `engine.ts` — regime → strategies → gate → portfolio → validated `Signal[]`, clock and id source
+  injected.
+- Seeded synthetic-market testkit exported at `@plumb/strategy/testkit`, with regime fixtures and
+  event fixtures verified by probe scripts.
+- `snapshotFromCandles` in `@plumb/market` for historical replay.
+- 123 new tests (231 total).
+
+### Fixed
+- `revert_band` could emit a stop on the PROFITABLE side of entry when price had already collapsed
+  through the band. The gate caught all six occurrences across 180 days of real history; the
+  strategy now refuses to build the order at all. `stop_wrong_side` rejections: 6 → 0.
+- `percentileRank` now uses the mid-rank convention. The naive form scored a perfectly flat series
+  at 1.0, which would read a dead-quiet market as violently expanding.
+
+### Verified
+- Purity: byte-identical `Signal[]` across 100 runs with the same snapshot and seed; source scan
+  finds no clock read, randomness, network call or I/O.
+- A degraded snapshot emits zero signals for every strategy in every regime, including on a window
+  that otherwise emits.
+- 180-day replay: 12,603 cycles, no throw. `trend_ema` 16 signals (0.13%), `revert_band` 2 (0.02%),
+  `breakout_range` 46 (0.36%), `funding_skew` unevaluable (no stored funding history).
+
 ## [0.2.0] — 2026-08-09
 
 Phase 1 — `@plumb/market`, the only component that talks to market data. **No API key is used
@@ -70,6 +113,7 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Franlinozz/Plumb/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Franlinozz/Plumb/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Franlinozz/Plumb/releases/tag/v0.1.0
