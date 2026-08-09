@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# secrets — NEVER commit (AGENTS.md guardrail 7)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# local state
+data/
+*.db
+*.db-shm
+*.db-wal
+state/
+
+# logs
+logs/
+*.log
+npm-debug.log*
+
+# test + tooling output
+coverage/
+.vitest/
+.nyc_output/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# scratch
+tmp/
+.tmp/

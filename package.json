@@ -1,0 +1,31 @@
+{
+  "name": "plumb",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plumb — a risk-first perpetual-futures signal service and Trading ASP on OKX.AI. Every signal, measured before it's sent.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --force",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "backtest": "node scripts/phase-pending.mjs backtest 6 \"historical replay + honest metrics\"",
+    "paper": "node scripts/phase-pending.mjs paper 8 \"paper-trading loop against live market data, fake execution\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

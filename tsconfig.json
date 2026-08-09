@@ -1,0 +1,14 @@
+{
+  "//": "Solution file. It compiles nothing itself — `tsc -b` walks the references in dependency order. Every workspace MUST appear here or it is silently never typechecked (see AGENTS.md gotchas).",
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/market" },
+    { "path": "packages/strategy" },
+    { "path": "packages/risk" },
+    { "path": "packages/backtest" },
+    { "path": "packages/executor" },
+    { "path": "packages/asp" },
+    { "path": "packages/ops" }
+  ]
+}

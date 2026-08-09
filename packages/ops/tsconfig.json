@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../market"
+    },
+    {
+      "path": "../strategy"
+    },
+    {
+      "path": "../risk"
+    },
+    {
+      "path": "../asp"
+    },
+    {
+      "path": "../executor"
+    }
+  ]
+}
