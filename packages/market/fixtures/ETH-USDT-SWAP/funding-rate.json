@@ -1,0 +1,25 @@
+{
+  "code": "0",
+  "data": [
+    {
+      "formulaType": "withRate",
+      "fundingRate": "0.0000113429146588",
+      "fundingTime": "1786291200000",
+      "impactValue": "20000.0000000000000000",
+      "instId": "ETH-USDT-SWAP",
+      "instType": "SWAP",
+      "interestRate": "0.0001000000000000",
+      "maxFundingRate": "0.0075",
+      "method": "current_period",
+      "minFundingRate": "-0.0075",
+      "nextFundingRate": "",
+      "nextFundingTime": "1786320000000",
+      "premium": "-0.0005822507109177",
+      "prevFundingTime": "1786262400000",
+      "settFundingRate": "0.0000698565916673",
+      "settState": "settled",
+      "ts": "1786285753361"
+    }
+  ],
+  "msg": ""
+}

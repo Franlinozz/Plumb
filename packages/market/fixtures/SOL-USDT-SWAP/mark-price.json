@@ -1,0 +1,12 @@
+{
+  "code": "0",
+  "data": [
+    {
+      "instId": "SOL-USDT-SWAP",
+      "instType": "SWAP",
+      "markPx": "76.63",
+      "ts": "1786285770912"
+    }
+  ],
+  "msg": ""
+}

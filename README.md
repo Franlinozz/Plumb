@@ -9,9 +9,10 @@ Plumb publishes every signal with its rationale **before any order exists**, the
 it published. Strategy proposes, a deterministic risk governor disposes, and the executor obeys the
 published ledger — so every fill is joinable to the signal that caused it.
 
-> **Status: Phase 0.** Scaffold and constitution only. No strategy edge is claimed, no backtest has
-> been run, and no live keys exist. See [PLUMB.md](./PLUMB.md) for the full vision and
-> [FEATURES.md](./FEATURES.md) for what actually works today.
+> **Status: Phase 1.** Market data, indicators, snapshots and the data watchdog work and are
+> exercised against real recorded OKX payloads. No strategy edge is claimed, no backtest has been
+> run, and **no API key exists or is needed yet** — every endpoint used so far is public. See
+> [PLUMB.md](./PLUMB.md) for the vision and [FEATURES.md](./FEATURES.md) for what actually works.
 
 ## Layout
 
@@ -46,6 +47,10 @@ npm test            # vitest, PLUMB_MODE=fake, zero network, zero spend
 | `npm run build` | `tsc -b` across all workspaces in dependency order |
 | `npm run typecheck` | `tsc -b --force` — full re-check including `*.test.ts` |
 | `npm test` | Vitest across all workspaces |
+| `npm run snapshot` | Fetch live public data and print a MarketSnapshot per instrument |
+| `npm run backfill -- --days 180 --tf 15m,1H` | Download historical candles into `data/plumb.db` |
+| `npm run record-fixtures` | Re-record the offline test fixtures from the live public API |
+| `npm run divergence` | Compare local indicators against the OKX Agent Trade Kit |
 | `npm run backtest` | Historical replay (Phase 6) |
 | `npm run paper` | Paper-trading loop (Phase 8) |
 

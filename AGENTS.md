@@ -78,6 +78,37 @@ valid**. The three things that kill entrants are disqualification (trades not tr
 signals), downtime (ASP offline or subscription service deleted), and blowup (leverage destroying the
 account before day 14). All three are engineering problems. Build accordingly.
 
+## COMPETITION STATUS — Season 1 NOT ENTERED (operator decision, 2026-08-09)
+
+Verified live from https://www.okx.ai/hackathon on 2026-08-09:
+
+| | |
+| --- | --- |
+| Registration | Jul 31 – **Aug 11, 12:00 UTC+8** (= 2026-08-11 04:00 UTC), no entries after |
+| Competition | Aug 11 12:00 → **Aug 25 12:00 UTC+8**, two weeks |
+| Minimum capital | **300 USDT** equivalent (our locked 400 clears it) |
+| Prize | 1st $10,000 · 2nd $7,000 · 3rd $4,500 · **ranks 4–40 $500 each** |
+| Accounting basis | Onchain OS **or** Agent Trade Kit — chosen at registration, **cannot be changed after** |
+| Agent Trade Kit restriction | **USDT Perpetual only**; trades outside the kit do not count |
+| Subscription service | **Exactly one**, snapshotted at start as the scoring basis; if several exist the earliest-created is used; **deleting it mid-competition loses eligibility** |
+| Other eligibility | ≥1 valid trade during the period; ASP online and subscribable throughout |
+
+The binding constraint was ASP review: it takes ~24h and must COMPLETE before competition
+registration, which left ~12 working hours. **The operator elected not to enter Season 1** and to
+build Plumb properly across all ten phases as a subscription signal product, targeting a later
+event.
+
+**Nothing else in this constitution changes.** The LOCKED PARAMETERS stay exactly as they are —
+they are sound risk discipline for a real signal service, not competition-specific tuning — and
+every guardrail still holds. The competition rules above remain in force as design constraints
+because they are what a future entry will be judged against, and because "one subscription service,
+created once, never deleted" is already asserted in `@plumb/asp`.
+
+**ASP identity (decided):** Plumb registers as a NEW ASP agent under the existing
+**archonaudit@gmail.com** profile, alongside Assay #8599 — not by reusing #8599, whose
+earliest-created service is a résumé scan and would become the scoring basis. That profile is also
+already the active `onchainos` session.
+
 ## COST DISCIPLINE
 
 `PLUMB_MODE=fake` is default for all dev and tests — deterministic fixtures, zero spend, zero network.
@@ -129,6 +160,44 @@ that touches payments, subscriptions or the trade kit.
   tests.** `tsc -b` resolves `@plumb/*` through the built `dist/*.d.ts` (so build order is enforced
   topologically and cannot compile against a stale dist — the Occestra failure), while vitest maps
   `@plumb/*` straight to `src` so `npm test` needs no prior build.
+- **P1 · THE CANDLE-ORDER BUG (found by the live run, not by the tests).** `client.candles()`
+  originally returned OKX's own newest-first order, while every indicator assumes chronological
+  order. The unit tests missed it because `fixtureCandles()` sorts and `buildSnapshot()` sorts
+  defensively — so the two paths the tests exercised were both correct, and only a script using
+  the raw client fed indicators a **reversed price series**. It did not throw; it produced
+  plausible, confidently wrong numbers. Fixed at the boundary: the client now normalises to
+  oldest-first once, and a test pins it (and asserts the raw envelope really is the other way
+  round, so the test cannot go vacuous). **Rule: normalise ordering where data enters the system,
+  never at each call site.**
+- **P1 · Trade Kit indicator divergence — measured, explained, and accepted.**
+  `scripts/indicator-divergence.mjs` compares our locals against `okx market indicator` (no auth
+  needed) over 19 settled 1H bars of BTC-USDT-SWAP:
+  - **Exact match** (≤0.0001%, i.e. their display rounding): `MA(14)`, `BB upper/middle/lower`.
+    **EMA(14)** matches to 0.006%.
+  - **Divergent**: `RSI(14)` 13%, `ATR(14)` 8%, `ADX(14)` 14%, `±DI` 6–10%, `MACD dif/dea` large.
+  - **Cause: warm-up length, not formula.** Recomputing ours over shrinking windows shows our
+    values converge and stay flat from ~150 bars (RSI 69.691, ATR 104.308, ADX 18.439), while
+    OKX's sit near our **40–80 bar** values (their ADX 20.69 vs our 60-bar 20.732; their RSI 70.20
+    vs our 60-bar 70.497). Exactly the indicators with long recursive memory (Wilder RSI/ATR/ADX,
+    the EMA-26 inside MACD) diverge; windowed ones (SMA, Bollinger) match exactly, and EMA(14)
+    matches because it converges inside their window. This is inferred from behaviour, not from
+    their source.
+  - **We keep ours.** Our value at a bar is a function of all history up to that bar, so it is
+    identical live and in backtest — which is the entire reason for computing locally. A value
+    that depends on how many bars a server happened to load is not replayable.
+  - **Noted for P3:** ATR sets position size, so a ~2.8% ATR difference is a ~2.8% size
+    difference. Immaterial against a 4 USDT per-trade risk budget, but recorded rather than
+    discovered later.
+- **P1 · Two freshness budgets beyond the three specified.** The phase named candles (2× the
+  timeframe), funding (1h) and mark (30s). `last` (30s, same reasoning as mark — it is a price)
+  and `openInterest` (1h) are also aged, because a snapshot field with no budget is a field that
+  can silently freeze.
+- **P1 · Fixtures live at the PACKAGE root, not under `src/`.** `packages/market/fixtures/` is
+  reachable by the same relative path from both `src/` (vitest) and `dist/` (runtime); `tsc` does
+  not copy `.json` into `outDir`, so a `src/fixtures/` would exist in tests and vanish in prod.
+- **P1 · The Trade Kit CLI is installed OUTSIDE the repo**, at `/root/.plumb/atk` (a global
+  `npm i -g` is blocked in this environment). `scripts/indicator-divergence.mjs` finds it via
+  `PLUMB_ATK_BIN` and degrades to "UNAVAILABLE" rather than failing when it is absent.
 - **P0 · `AVERAGING_DOWN` is deliberately absent from `LOCKED`.** The constitution says it is not a
   parameter, so encoding it as `averagingDown: false` would be the first step toward a config value
   that enables it. Instead the tripwire asserts no key in `LOCKED` matches an averaging-down-shaped

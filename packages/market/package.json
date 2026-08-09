@@ -2,7 +2,7 @@
   "name": "@plumb/market",
   "version": "0.1.0",
   "private": true,
-  "description": "Market data ingest — OKX public endpoints, candles and funding. Read-only.",
+  "description": "Market data ingest — OKX public endpoints, candles and funding. Read-only, no credentials.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,12 +14,17 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "fixtures"
   ],
   "scripts": {
     "build": "tsc -b"
   },
   "dependencies": {
-    "@plumb/core": "^0.1.0"
+    "@plumb/core": "^0.1.0",
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }

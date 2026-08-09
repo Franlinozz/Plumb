@@ -1,0 +1,184 @@
+{
+  "recordedAt": 1786285795518,
+  "recordedAtIso": "2026-08-09T14:29:55.518Z",
+  "source": "https://www.okx.com",
+  "note": "Real OKX public market data, recorded once. Tests replay these and never hit the network. Raw {code,msg,data} envelopes, unedited.",
+  "instruments": [
+    "BTC-USDT-SWAP",
+    "ETH-USDT-SWAP",
+    "SOL-USDT-SWAP"
+  ],
+  "timeframes": [
+    "15m",
+    "1H",
+    "4H"
+  ],
+  "candleLimit": 300,
+  "inventory": [
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "ticker",
+      "rows": 1
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "mark-price",
+      "rows": 1
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "index-ticker",
+      "rows": 1
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "funding-rate",
+      "rows": 1
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "funding-rate-history",
+      "rows": 100
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "open-interest",
+      "rows": 1
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "open-interest-history",
+      "rows": 100
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "price-limit",
+      "rows": 1
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "candles-15m",
+      "rows": 300
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "candles-1H",
+      "rows": 300
+    },
+    {
+      "instId": "BTC-USDT-SWAP",
+      "name": "candles-4H",
+      "rows": 300
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "ticker",
+      "rows": 1
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "mark-price",
+      "rows": 1
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "index-ticker",
+      "rows": 1
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "funding-rate",
+      "rows": 1
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "funding-rate-history",
+      "rows": 100
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "open-interest",
+      "rows": 1
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "open-interest-history",
+      "rows": 100
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "price-limit",
+      "rows": 1
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "candles-15m",
+      "rows": 300
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "candles-1H",
+      "rows": 300
+    },
+    {
+      "instId": "ETH-USDT-SWAP",
+      "name": "candles-4H",
+      "rows": 300
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "ticker",
+      "rows": 1
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "mark-price",
+      "rows": 1
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "index-ticker",
+      "rows": 1
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "funding-rate",
+      "rows": 1
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "funding-rate-history",
+      "rows": 100
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "open-interest",
+      "rows": 1
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "open-interest-history",
+      "rows": 100
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "price-limit",
+      "rows": 1
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "candles-15m",
+      "rows": 300
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "candles-1H",
+      "rows": 300
+    },
+    {
+      "instId": "SOL-USDT-SWAP",
+      "name": "candles-4H",
+      "rows": 300
+    }
+  ]
+}

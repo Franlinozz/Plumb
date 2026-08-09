@@ -13,3 +13,13 @@ export {
   type AccountingBasis,
   type Locked,
 } from './locked.js';
+
+export {
+  COMPETITION_UTC_OFFSET_MINUTES,
+  utc8ToUtcMs,
+  utcMsToUtc8Parts,
+  utcDayStartMs,
+  utcDayKey,
+  isSameUtcDay,
+  toUtcIso,
+} from './time.js';
