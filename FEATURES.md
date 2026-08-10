@@ -78,6 +78,15 @@ Rules for this table:
 | maxHoldBars expiry + invalidation close | `@plumb/executor` | internal | `executor.test.ts` › lifecycle |
 | Cycle loop — never overlaps, overrun skipped not queued | `@plumb/executor` | internal | `executor.test.ts` › cycle loop |
 | Eligibility lock — refuses unsigned/failed/forged records | `@plumb/executor` | internal | `executor.test.ts` › eligibility lock |
+| **Publish-before-execute — the executor cannot reach an unpublished signal** | `@plumb/asp` | internal | `asp.test.ts` + `executor/src/publish_gate.test.ts` |
+| Hash-chained append-only published feed; tampering detected | `@plumb/asp` | internal | `asp.test.ts` › the published feed |
+| Claude rationale with schema validation + deterministic template fallback | `@plumb/asp` | internal | `asp.test.ts` › rationale |
+| No model output reaches the signal object (signal frozen first) | `@plumb/asp` | internal | `asp.test.ts` › guardrail 4 |
+| Subscription service — one, never deleted, deletion guard throws | `@plumb/asp` | internal | `asp.test.ts` › subscription |
+| Track record computed from the ledger only (source scan) | `@plumb/asp` | `GET /track-record` | `asp.test.ts` › no hand-written numbers |
+| Public HTTP: /health, manifest, feed, signal detail, track record, chain verify | `@plumb/asp` | HTTP | `asp.test.ts` › the HTTP surface |
+| Four free MCP tools for agent consumers | `@plumb/asp` | MCP | `asp.test.ts` › MCP tools |
+| Rate limiting, body caps, sanitised errors, no secret leakage | `@plumb/asp` | HTTP | `asp.test.ts` › leaks no secret |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
@@ -88,6 +97,8 @@ Rules for this table:
 | Hostile-strategy simulation, full history, 5 scenarios | — | `npm run hostile` | `hostile.test.ts` (fixture-scale twin) |
 | Walk-forward backtest of every strategy config | — | `npm run backtest` | `analysis.test.ts`, `engine.test.ts` |
 | Live-data execution session (simulated venue) | — | `npm run demo-session` | `executor.test.ts` |
+| Publish a real signal and show the subscriber view | — | `npm run feed-sample` | `asp.test.ts` |
+| OI-state + hour-of-day measurement tables | — | `npm run measure` | `evidence.test.ts` |
 | Real Trade Kit demo venue session | — | `npm run demo-venue` | `executor/src/cli.test.ts` |
 | Holdout partition + guard + token-gated audited access | `@plumb/backtest` | internal | `backtest/src/evidence.test.ts` |
 | Funding reconstruction (75th-pct conservative constant, cost-only) | `@plumb/backtest` | internal | `evidence.test.ts` › funding model |
@@ -106,7 +117,10 @@ Rules for this table:
 | 5 | `@plumb/executor` — bracketed placement, idempotency, reconciliation | ✅ shipped |
 | 5B | Real demo venue session | ⚠️ read paths verified; writes blocked on OKX account mode |
 | 4B | Evidence expansion | ⚠️ Parts A–E shipped except `dispersion` |
-| 6–10 | Not yet written | — |
+| 6 | `@plumb/asp` — published feed, subscription, MCP + HTTP | ✅ shipped |
+| 7 | Ops, monitoring, daily review, deployment | ⏳ not started |
+| 8 | 21-day paper validation | ⏳ not started (a 21-day clock; P7 must land first) |
+| 9–10 | Not yet written | — |
 
 ## Data on hand
 
@@ -256,5 +270,4 @@ Recorded so that nothing looks accidentally missing:
 
 - **The Agent Trade Kit CLI adapter is not wired.** `AtkClient` is implemented by `MockAtk`; the
   real CLI-backed client needs a demo API key and lands with P9's live work.
-- `@plumb/asp` — subscription feed + published ledger. Placeholder only.
 - `@plumb/ops` — alerts, daily review, health. Placeholder only.

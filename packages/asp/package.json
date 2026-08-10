@@ -2,7 +2,7 @@
   "name": "@plumb/asp",
   "version": "0.1.0",
   "private": true,
-  "description": "The ASP surface — subscription feed and the published signal ledger.",
+  "description": "The ASP surface: hash-chained published feed, subscription service, MCP + HTTP.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +20,14 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@plumb/core": "^0.1.0"
+    "@plumb/core": "^0.1.0",
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.1.0",
+    "zod": "^4.4.3",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/express": "^5.0.0"
   }
 }

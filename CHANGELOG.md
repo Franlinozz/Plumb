@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-08-10
+
+Phase 6 — `@plumb/asp`. The published feed, the subscription service, and the public surface.
+
+### Added
+- `feed.ts` — append-only, hash-chained published feed. Each entry carries the previous entry's
+  hash, so an edited or removed signal breaks the chain and `verifyChain` says where.
+- `publish_gate.ts` — **guardrail 2 made structural.** `requirePublished` throws for a signal that
+  is not in the feed, and `publishThenExecute` is the only sanctioned path from a signal to an
+  order: rationale → publish → deliver → execute, with the executor receiving the PUBLISHED ENTRY
+  rather than the Signal. If publication fails, execution never happens.
+- `rationale.ts` — the Claude call P2 designed the interface for. Schema-validated, with a
+  deterministic template fallback for an unavailable model, an unparseable response, or a response
+  that introduces a number not present in the signal. The signal is frozen before generation and
+  the rationale is written to the FEED, never back onto the signal.
+- `subscription.ts` — one service, created once, never deleted. There is no delete function;
+  `refuseDeletion` exists to make the refusal explicit and testable. Description follows the
+  current A2A docs' Trade Kit template, with a signal example and the ordered pre-subscription
+  confirmations a subscriber's agent parses.
+- `track_record.ts` — every figure computed from the ledger, with a caveat that scales with the
+  sample size. A source scan proves no performance number is hand-written.
+- `http.ts` — `/health` (no model, no venue, <100ms), `/.well-known/plumb.json`, `/signals/recent`,
+  `/signals/:id`, `/track-record`, `/feed/verify`. Rate-limited, body-capped, sanitised errors.
+- `tools.ts` — four free MCP tools: recent signals, track record, signal detail, risk disclosure.
+- 45 new tests (527 total).
+
+### Verified
+A real signal published end-to-end against live market data with a Claude-written rationale that
+passed the foreign-number check, the executor receiving the published entry, and the chain
+verifying clean.
+
 ## [0.8.0] — 2026-08-10
 
 Phase 4B Parts D–E. **0 of 10 configurations passed the gate on three years of data.** The holdout
@@ -359,7 +390,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/Franlinozz/Plumb/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Franlinozz/Plumb/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Franlinozz/Plumb/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Franlinozz/Plumb/compare/v0.6.1...v0.7.0

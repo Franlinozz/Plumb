@@ -1,22 +1,79 @@
 import { LOCKED } from '@plumb/core';
 
 /**
- * @plumb/asp — the ASP surface: the subscription feed and the published signal ledger.
+ * @plumb/asp — the ASP surface: the published feed, the subscription service, and the public
+ * MCP/HTTP endpoints.
  *
- * Placeholder. The real surface lands in a later phase. Two competition rules shape it and
- * are worth stating here because getting either wrong forfeits eligibility outright:
- *
- *  - **Exactly ONE subscription service**, created once. If several exist, the
- *    earliest-created is the scoring basis — and DELETING IT MID-COMPETITION FORFEITS
- *    ELIGIBILITY. There is no code in this repository that deletes a service.
- *  - **It must stay online and subscribable for the full two weeks.** Downtime is a
- *    scoring risk, so it is an engineering requirement, not an ops nicety.
+ * Guardrail 2 lives here. A signal is written to the published feed BEFORE the executor is
+ * permitted to act on it, and the executor reads from this feed rather than from strategy
+ * internals — which is what makes the correspondence between our public signals and our actual
+ * trades structurally true rather than a claim.
  */
 export const ASP_PACKAGE = Object.freeze({
   name: '@plumb/asp',
-  /** Writes signals to the feed and the ledger BEFORE the executor may act (guardrail 2). */
+  /** Writes signals to the feed BEFORE the executor may act (guardrail 2). */
   responsibility: 'publish',
-  /** Exactly one, created once, never deleted. */
+  /** Exactly one, created once, never deleted. There is no delete function in this package. */
   subscriptionServiceCount: 1,
   instruments: LOCKED.INSTRUMENTS,
+  /** Pinned by a test: every published performance number is computed from the ledger. */
+  trackRecordIsComputed: true,
 });
+
+export {
+  FeedStore,
+  FeedTamperError,
+  GENESIS_HASH,
+  canonicalise,
+  hashEntry,
+  type PublishedSignal,
+  type TradeOutcome,
+  type TradeOutcomeReason,
+} from './feed.js';
+
+export {
+  buildPrompt,
+  containsForeignNumber,
+  generateRationale,
+  templateRationale,
+  type RationaleDeps,
+  type RationaleResult,
+} from './rationale.js';
+
+export {
+  PLUMB_SERVICE,
+  SubscriptionDeletionRefused,
+  activeSubscribers,
+  formatSignalForDelivery,
+  planDelivery,
+  refuseDeletion,
+  type DeliveryPlan,
+  type ServiceDefinition,
+  type Subscriber,
+} from './subscription.js';
+
+export {
+  buildTrackRecord,
+  caveatFor,
+  longestLosingStreak,
+  type TrackRecord,
+} from './track_record.js';
+
+export { createApp, type ServerDeps } from './http.js';
+
+export {
+  TOOL_NAMES,
+  TOOL_SPECS,
+  callTool,
+  type ToolContext,
+  type ToolName,
+  type ToolResult,
+  type ToolSpec,
+} from './tools.js';
+
+export {
+  PublicationRequiredError,
+  publishThenExecute,
+  requirePublished,
+  type PublishAndExecuteDeps,
+} from './publish_gate.js';
