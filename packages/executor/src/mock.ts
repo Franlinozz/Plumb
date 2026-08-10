@@ -164,8 +164,12 @@ export class MockAtk implements AtkClient {
     });
   }
 
-  /** Make the venue disagree with our recorded size. */
-  setPosition(instId: string, pos: number, posSide: 'long' | 'short' = 'long'): void {
+  /**
+   * Make the venue disagree with our recorded size. `posSide` accepts `net` because the live
+   * demo account runs in `net_mode` and reports one signed figure per instrument — the shape
+   * that produced the P8 run-1 halt.
+   */
+  setPosition(instId: string, pos: number, posSide: 'long' | 'short' | 'net' = 'long'): void {
     this.positions.set(instId, { instId, posSide, pos, avgPx: 65_000, upl: 0 });
   }
 

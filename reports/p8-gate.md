@@ -1,6 +1,25 @@
 # Phase 8 — the 21-day paper run and its gate
 
-**Run started 2026-08-10T12:33:41Z. Gate readable 2026-08-31T12:33:41Z.**
+> ## RUN 1 IS VOID — read this before any number below
+>
+> **Run 1** started 2026-08-10T12:33:41Z and **halted 2026-08-10T13:02:47Z, 29 minutes in.** It
+> measured nothing and is not gradeable. Cause: the governor approved a short on an already-open
+> long, which on this `net_mode` account reduced the long rather than opening a second position;
+> reconciliation caught the resulting ledger-vs-venue divergence and halted, exactly as designed.
+> Fixed by veto `instrument_occupied` (see CHANGELOG *Unreleased*, AGENTS.md gotchas 19–21).
+> State archived at `/var/lib/plumb/archive-p8run1-20260810-132719/`.
+>
+> The halt is **evidence for criterion 4, not against it**: an unaccounted position was detected
+> within one cycle and stopped trading without human involvement. What run 1 cannot supply is 21
+> days of it.
+>
+> **The criteria below are unchanged and were still written before any number existed.** They
+> were not touched in response to this failure — only the run clock was reset.
+
+**Run 2 started `<pending — see the operator action in the session notes>`. Gate readable 21 days
+after that stamp.**
+
+**Run 1 (VOID): started 2026-08-10T12:33:41Z, halted 2026-08-10T13:02:47Z.**
 
 The criteria below are written **now, before the run has produced any numbers**, for the same
 reason the P4 eligibility thresholds were: a bar set after seeing the result is not a bar. Nothing

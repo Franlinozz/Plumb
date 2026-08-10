@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The governor permitted an opposing position on an instrument it already held.** Rule 6 only
+  caught the *same* direction ("averaging down"), so a short signal on an open long was approved.
+  The account is `net_mode`: the opposing order did not open a second position, it **reduced the
+  first**. The ledger recorded long 0.34 + short 0.33 while the venue held a single net 0.01, and
+  reconciliation halted the paper run 29 minutes in — correctly. New veto `instrument_occupied`
+  enforces one position per instrument in either direction. A new-position order must never act
+  as a close; exits belong to the venue-side bracket, the only exit that survives this process
+  dying.
+- **`governor.test.ts` case 6c asserted the bug as correct** (`expect(verdict.approved).toBe(true)`
+  for exactly this scenario). That is why 564 tests were green over a live defect. Inverted, and
+  6d added for the neighbouring cases.
+- **The reconciler could not represent two recorded positions on one instrument.** It walked the
+  recorded list and `delete`d the venue entry on first match, so the second position always came
+  back `missing_fill` — the venue had not lost it, we had already consumed it. One netting event
+  was reported as two unrelated faults. Recorded positions are now grouped by instrument, and the
+  net-mode case gets its own `multiple_recorded_positions` issue that names the legs and the net.
+- **The reconciler compared `Math.abs(venue.pos)` and ignored direction entirely**, so a fully
+  *reversed* position of the right size reconciled clean. New `side_mismatch` issue; `net` posSide
+  is resolved from the sign of `pos`.
+
+### Changed
+- P8 paper run 1 is void — it halted 2026-08-10T13:02:47Z, 29 minutes after starting. State
+  archived to `/var/lib/plumb/archive-p8run1-20260810-132719/`. Run 2 re-baselines from clean.
+
 ## [0.11.0] — 2026-08-10
 
 Phases 8 and 10 — the paper run starts, and the operator's runbook.

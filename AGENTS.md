@@ -181,6 +181,26 @@ paid providers; one real call at phase end at most.
     backward clock step across midnight (NTP correction, VM snapshot restore) zeroed
     `realisedPnlToday` and cleared the `dailyLimit` halt — re-arming trading on a day whose loss
     budget was already spent.
+19. **On a `net_mode` account, an opposing order CLOSES; it does not open.** The governor's
+    averaging-down rule only matched the *same* direction, so a short on an open long was
+    approved — and reduced the long instead of opening a second position. Ledger 2 positions,
+    venue 1 net figure, reconciliation halted the paper run 29 minutes in. One position per
+    instrument, either direction (veto `instrument_occupied`). A new-position order must never be
+    allowed to act as a close.
+20. **A test can assert the bug.** `governor.test.ts` 6c said "the OPPOSITE direction on the same
+    instrument is not averaging down" and asserted `approved === true` — a green test sitting
+    directly on top of gotcha 19 for as long as it existed. When a live fault contradicts a
+    passing test, suspect the test first. 564 green tests proved only that the code did what the
+    tests said, not what was safe.
+21. **Reconciler bookkeeping cannot be keyed on `instId` alone.** Deleting the venue entry on
+    first match made every second recorded position on that instrument a phantom `missing_fill`,
+    turning one fault into two and pointing the diagnosis the wrong way. And comparing
+    `Math.abs(venue.pos)` ignored direction, so a fully reversed position of the right size
+    reconciled clean.
+22. **The journal is empty by design; the logs are in `/var/log/plumb/`.** Units use
+    `StandardOutput=append:`, so `journalctl -u plumb-runner` shows two start lines and nothing
+    else. An empty journal is not a dead bot. Compounding it: **systemd prints local CEST, the
+    application logs UTC** — a two-hour offset that made a pre-existing halt look reboot-caused.
 
 ## PLATFORM DOCS (fetch live, never from memory)
 

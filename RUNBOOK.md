@@ -48,8 +48,18 @@ curl -s https://plumb.assayed.xyz/health | jq
 systemctl is-active plumb-asp plumb-runner
 curl -s https://plumb.assayed.xyz/feed/verify | jq
 cat /var/lib/plumb/reviews/$(date -u -d yesterday +%F).md
-journalctl -u plumb-runner --since "24 hours ago" | grep -c CRITICAL
+grep -c '"level":"critical"' /var/log/plumb/runner.log
 ```
+
+> **THE JOURNAL IS EMPTY, AND THAT IS CORRECT.** Both units set
+> `StandardOutput=append:/var/log/plumb/runner.log`, so `journalctl -u plumb-runner` shows only
+> the two systemd start lines and **nothing** about what the bot is doing. Do not read an empty
+> journal as a dead bot — it has misled one reviewer already. Application logs are
+> newline-delimited JSON in `/var/log/plumb/runner.log` (and `asp.log`), rotated daily, 21 kept.
+>
+> Also note the two clocks: **systemd/journal print local time (CEST, UTC+2); every application
+> log line and every timestamp in the databases is UTC.** A reboot logged at 15:04 CEST is
+> 13:04Z in `runner.log`. Line them up before concluding an event was caused by another.
 
 | # | Check | Expected | If not |
 | --- | --- | --- | --- |

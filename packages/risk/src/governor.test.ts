@@ -179,13 +179,28 @@ describe('veto precedence — first failure wins, in this exact order', () => {
     }
   });
 
-  it('6c. the OPPOSITE direction on the same instrument is not averaging down', () => {
+  // THIS TEST USED TO ASSERT `approved === true`, and that is exactly how the P8 run-1 fault
+  // reached the venue: the opposite direction is not *averaging down*, so rule 6 let it past, and
+  // nothing else stopped it. On a `net_mode` account the opposing order reduced the open position
+  // instead of opening a second one — ledger 2 positions, venue 1 net — and reconciliation halted
+  // the run 29 minutes in. The old assertion was the bug, written down and passing.
+  it('6c. the OPPOSITE direction on the same instrument is vetoed — it would net, not open', () => {
     const open = state({
       openPositions: [position({ instId: 'BTC-USDT-SWAP', side: 'short', notionalUsdt: 100 })],
       totalNotional: 100,
     });
-    const verdict = evaluate(signal({ side: 'long' }), open, snapshot(), NOW);
-    expect(verdict.approved).toBe(true);
+    expectVeto(evaluate(signal({ side: 'long' }), open, snapshot(), NOW), 'instrument_occupied');
+  });
+
+  it('6d. an occupied instrument blocks either direction, but leaves other instruments alone', () => {
+    const open = state({
+      openPositions: [position({ instId: 'BTC-USDT-SWAP', side: 'short', notionalUsdt: 100 })],
+      totalNotional: 100,
+    });
+    // Same instrument, same direction → still the more specific averaging-down veto.
+    expectVeto(evaluate(signal({ side: 'short' }), open, snapshot(), NOW), 'averaging_down');
+    // A different instrument is untouched by this rule.
+    expect(evaluate(signal({ instId: 'ETH-USDT-SWAP', side: 'long' }), open, snapshot(), NOW).approved).toBe(true);
   });
 
   it('7. correlated exposure across instruments in the same direction', () => {

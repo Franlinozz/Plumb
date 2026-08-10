@@ -22,6 +22,8 @@ export type ReconcileIssueKind =
   | 'unmatched_fill'
   | 'missing_fill'
   | 'size_drift'
+  | 'side_mismatch'
+  | 'multiple_recorded_positions'
   | 'unknown_position';
 
 export interface ReconcileIssue {
@@ -93,31 +95,86 @@ export async function reconcile(input: ReconcileInput): Promise<ReconcileResult>
     if (Math.abs(position.pos) > 0) byInstrument.set(position.instId, position);
   }
 
+  // Recorded positions are grouped by instrument first. The old code walked `input.recorded`
+  // directly and `delete`d the venue entry on the first match, so a SECOND recorded position on
+  // the same instrument always came back `missing_fill` — the venue had not lost it, we had
+  // already consumed it. That is what turned one real fault into two confusing ones during P8
+  // run 1 (2026-08-10): "we record 0.34, the venue reports 0.01" plus "the venue reports none",
+  // describing a single net-mode netting event.
+  const recordedByInstrument = new Map<string, RecordedPosition[]>();
   for (const recorded of input.recorded) {
-    const venue = byInstrument.get(recorded.instId);
+    const bucket = recordedByInstrument.get(recorded.instId);
+    if (bucket === undefined) recordedByInstrument.set(recorded.instId, [recorded]);
+    else bucket.push(recorded);
+  }
+
+  for (const [instId, group] of recordedByInstrument) {
+    const venue = byInstrument.get(instId);
+    byInstrument.delete(instId);
+
     if (venue === undefined) {
+      for (const recorded of group) {
+        issues.push({
+          kind: 'missing_fill',
+          instId,
+          signalId: recorded.signalId,
+          detail:
+            `we record a ${recorded.side} position of ${recorded.contracts} on ${instId} ` +
+            `(signal ${recorded.signalId}) but the venue reports none`,
+        });
+      }
+      continue;
+    }
+
+    // More than one recorded position on one instrument cannot be checked position-by-position:
+    // in `net_mode` the venue holds a single netted figure and there is no way to attribute it
+    // back to the legs. The governor forbids this (veto `instrument_occupied`); if it happens
+    // anyway, say so plainly instead of inventing a per-leg drift.
+    if (group.length > 1) {
+      const net = group.reduce((sum, p) => sum + (p.side === 'long' ? p.contracts : -p.contracts), 0);
       issues.push({
-        kind: 'missing_fill',
-        instId: recorded.instId,
-        signalId: recorded.signalId,
+        kind: 'multiple_recorded_positions',
+        instId,
+        signalId: group[0]?.signalId,
         detail:
-          `we record a ${recorded.side} position of ${recorded.contracts} on ${recorded.instId} ` +
-          `(signal ${recorded.signalId}) but the venue reports none`,
+          `we record ${group.length} positions on ${instId} ` +
+          `(${group.map((p) => `${p.side} ${p.contracts} via ${p.signalId}`).join(', ')}) ` +
+          `netting to ${net}; the venue reports a single ${venue.posSide} position of ${venue.pos}. ` +
+          `Under net_mode the legs cannot be attributed — reconcile to the venue, which is the truth.`,
       });
       continue;
     }
+
+    const recorded = group[0];
+    if (recorded === undefined) continue;
+
+    // Direction, then size. `Math.abs(venue.pos)` alone let a REVERSED position of the right size
+    // pass silently, which is the most dangerous drift there is.
+    const venueSide =
+      venue.posSide === 'net' ? (venue.pos >= 0 ? 'long' : 'short') : venue.posSide;
+    if (venueSide !== recorded.side) {
+      issues.push({
+        kind: 'side_mismatch',
+        instId,
+        signalId: recorded.signalId,
+        detail:
+          `direction mismatch on ${instId}: we record ${recorded.side} ${recorded.contracts} ` +
+          `(signal ${recorded.signalId}), the venue holds ${venueSide} ${Math.abs(venue.pos)}`,
+      });
+      continue;
+    }
+
     const venueSize = Math.abs(venue.pos);
     if (Math.abs(venueSize - recorded.contracts) > tolerance) {
       issues.push({
         kind: 'size_drift',
-        instId: recorded.instId,
+        instId,
         signalId: recorded.signalId,
         detail:
-          `position size drift on ${recorded.instId}: we record ${recorded.contracts}, ` +
+          `position size drift on ${instId}: we record ${recorded.contracts}, ` +
           `the venue reports ${venueSize} (tolerance ${tolerance})`,
       });
     }
-    byInstrument.delete(recorded.instId);
   }
 
   // ── 3. Anything left at the venue is a position we did not open. ────────────────────────

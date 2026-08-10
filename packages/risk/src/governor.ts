@@ -24,6 +24,7 @@ export type VetoCode =
   | 'max_concurrent'
   | 'max_total_notional'
   | 'averaging_down'
+  | 'instrument_occupied'
   | 'correlated_exposure'
   | 'below_minimum_size'
   | 'leverage_ceiling'
@@ -174,6 +175,27 @@ export function evaluate(
       'averaging_down',
       `a ${signal.side} position on ${signal.instId} is already open — adding to it is prohibited`,
       { openedAt: sameDirection.openedAt, signalId: sameDirection.signalId },
+    );
+  }
+
+  // ─── 6b. ONE POSITION PER INSTRUMENT. ─────────────────────────────────────────────────────
+  // **P8 RUN-1 FINDING (2026-08-10).** Rule 6 only caught the SAME direction, so an OPPOSING
+  // signal on an occupied instrument was approved. The account is `net_mode`: an opposing order
+  // does not open a second leg, it REDUCES the first. We held long 0.34 and short 0.33 in the
+  // ledger while the venue held a single net 0.01 — the reconciler halted 29 minutes into the
+  // 21-day run, correctly.
+  //
+  // A new-position order must never act as a close. Exits belong to the bracket at the venue,
+  // which is the only exit path that survives this process dying. So: one position per
+  // instrument, in either direction. Under `long_short_mode` this is stricter than the venue
+  // requires; that is the intended trade, because the ledger must mean one thing in both modes.
+  const occupied = state.openPositions.find((p) => p.instId === signal.instId);
+  if (occupied !== undefined) {
+    return veto(
+      'instrument_occupied',
+      `a ${occupied.side} position on ${signal.instId} is already open — an opposing ${signal.side} ` +
+        `order would net against it at the venue rather than open a second position`,
+      { openedAt: occupied.openedAt, signalId: occupied.signalId, openSide: occupied.side },
     );
   }
 

@@ -424,6 +424,51 @@ describe('reconciliation', () => {
     store.close();
   });
 
+  // ── The P8 run-1 fault, reproduced exactly. ──────────────────────────────────────────────
+  // Ledger: long 0.34 and short 0.33 on one instrument. Venue (net_mode): a single net 0.01.
+  it('REPORTS net-mode netting as one issue, not a bogus drift plus a bogus missing position', async () => {
+    const { client, store } = await setup();
+    client.setPosition('BTC-USDT-SWAP', 0.01, 'net');
+
+    const result = await reconcile({
+      client,
+      store,
+      recorded: [
+        { instId: 'BTC-USDT-SWAP', side: 'long', contracts: 0.34, signalId: SIGNAL },
+        { instId: 'BTC-USDT-SWAP', side: 'short', contracts: 0.33, signalId: 'SIG-second0000' },
+      ],
+      knownSignalIds: [SIGNAL],
+      now: NOW,
+      sizeTolerance: 0.01,
+    });
+
+    expect(result.mustHalt).toBe(true);
+    expect(result.issues.map((i) => i.kind)).toContain('multiple_recorded_positions');
+    // The old code emitted these two instead, describing a single netting event as two faults.
+    expect(result.issues.some((i) => i.kind === 'missing_fill')).toBe(false);
+    expect(result.issues.some((i) => i.kind === 'size_drift')).toBe(false);
+    store.close();
+  });
+
+  it('CATCHES a reversed position of the right size — abs() alone let this pass', async () => {
+    const { client, store } = await setup();
+    client.setPosition('BTC-USDT-SWAP', -0.61, 'net'); // right magnitude, wrong way round
+
+    const result = await reconcile({ client, store, recorded, knownSignalIds: [SIGNAL], now: NOW });
+    expect(result.mustHalt).toBe(true);
+    expect(result.issues.some((i) => i.kind === 'side_mismatch')).toBe(true);
+    store.close();
+  });
+
+  it('a net_mode long of the agreed size still reconciles clean', async () => {
+    const { client, store } = await setup();
+    client.setPosition('BTC-USDT-SWAP', 0.61, 'net');
+
+    const result = await reconcile({ client, store, recorded, knownSignalIds: [SIGNAL], now: NOW });
+    expect(result.ok).toBe(true);
+    store.close();
+  });
+
   it('tolerates nothing by default — an exchange does not round our size for us', async () => {
     const { client, store } = await setup();
     client.setPosition('BTC-USDT-SWAP', 0.62);
