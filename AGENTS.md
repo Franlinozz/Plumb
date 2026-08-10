@@ -78,7 +78,7 @@ valid**. The three things that kill entrants are disqualification (trades not tr
 signals), downtime (ASP offline or subscription service deleted), and blowup (leverage destroying the
 account before day 14). All three are engineering problems. Build accordingly.
 
-## COMPETITION STATUS — Season 1 NOT ENTERED (operator decision, 2026-08-09)
+## COMPETITION STATUS — Season 1 REGISTERED (2026-08-10)
 
 Verified live from https://www.okx.ai/hackathon on 2026-08-09:
 
@@ -93,10 +93,11 @@ Verified live from https://www.okx.ai/hackathon on 2026-08-09:
 | Subscription service | **Exactly one**, snapshotted at start as the scoring basis; if several exist the earliest-created is used; **deleting it mid-competition loses eligibility** |
 | Other eligibility | ≥1 valid trade during the period; ASP online and subscribable throughout |
 
-The binding constraint was ASP review: it takes ~24h and must COMPLETE before competition
-registration, which left ~12 working hours. **The operator elected not to enter Season 1** and to
-build Plumb properly across all ten phases as a subscription signal product, targeting a later
-event.
+Plumb was created as a new Trading ASP, approved, and irreversibly registered for Season 1 with the
+dedicated CeFi competition UID on 2026-08-10. The registration response returned
+`registered: true`. The UID is intentionally not stored in this repository. Competition trading
+must remain disabled until the dedicated Trade Kit profile, funding, canonical DecisionEvent and
+competition-only execution gates pass.
 
 **Nothing else in this constitution changes.** The LOCKED PARAMETERS stay exactly as they are —
 they are sound risk discipline for a real signal service, not competition-specific tuning — and

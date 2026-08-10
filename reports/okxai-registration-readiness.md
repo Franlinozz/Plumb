@@ -1,6 +1,7 @@
 # OKX.AI registration readiness
 
-Audit time: 2026-08-10T16:05Z  
+Audit time: 2026-08-10T17:27Z
+
 Competition worktree: `/root/plumb-okxai`  
 Branch: `competition/okxai`  
 Protected source SHA: `fbd2fd51aec77891ed2378a475baa56c94585bfb`
@@ -11,7 +12,7 @@ Protected source SHA: `fbd2fd51aec77891ed2378a475baa56c94585bfb`
 | --- | --- | --- |
 | ASP created | GREEN | Plumb ASP `#10746` created at `2026-08-10T15:48:07.476Z`. Existing Assay #8599 remains separate and unchanged. |
 | ASP activated | GREEN | Activation submitted the listing for marketplace review. |
-| Review state | YELLOW | Submitted and under review. Do not poll or resubmit while this state remains pending. |
+| Review state | GREEN | Approved; operator reported approval before registration. |
 | Trading-type eligibility | GREEN | Platform service metadata categorizes Plumb as `TRADING`. |
 | Subscription | GREEN | Exactly one agent-to-agent service registered: `Plumb Perpetual Signals`, service id `cc4531b5-b71d-40e8-96f4-f2ce2a569bd4`, 10 USDT/month. |
 | 3-day trial | GREEN | Registered `freeTrial=72` hours and displayed as 3 days. |
@@ -22,10 +23,10 @@ Protected source SHA: `fbd2fd51aec77891ed2378a475baa56c94585bfb`
 | Competition executor | YELLOW | Existing executor places through Agent Trade Kit CLI, not direct REST. It is demo/P8-oriented and does not yet consume the required immutable `DecisionEvent` or enforce a dedicated competition profile. |
 | Net-mode regression | GREEN | Opposite direction on an occupied instrument is vetoed; the live P8 run logs repeated `instrument_occupied` vetoes. |
 | Signed reconciliation | GREEN | Reversed same-size positions fail reconciliation; baseline tests pass. |
-| Dedicated account configured | YELLOW | The intended Agentic Wallet profile is active and may create Plumb alongside Assay #8599. Competition Trade Kit credentials/profile are still not configured. |
-| Hackathon registration | RED | Not started; requires an approved ASP and the platform's irreversible confirmation. |
-| Funding requirement | RED | Not verified. Do not fund or move assets during registration preparation. |
-| Outstanding manual action | YELLOW | Wait for marketplace approval. Registration cannot begin until approval; its irreversible confirmation still requires the operator. |
+| Dedicated account configured | RED | The CeFi UID is registered, but the local Trade Kit has only the existing `demo` profile. No dedicated competition profile is configured. |
+| Hackathon registration | GREEN | Irreversible CeFi registration returned `registered: true` on 2026-08-10. UID is masked and not stored in the repo. |
+| Funding requirement | RED | The registered CeFi account balance has not been verified. More than 300U-equivalent must be present before the snapshot. |
+| Outstanding manual action | RED | Configure the dedicated competition Trade Kit profile without exposing credentials, then verify account level, net/hedge mode, balance, positions, orders and fees. |
 
 ## Protected P8 state
 
@@ -58,6 +59,7 @@ Protected source SHA: `fbd2fd51aec77891ed2378a475baa56c94585bfb`
 - Review delivery: both active inspection subscriptions returned `delivered: true`.
 - Persistent daemon: `plumb-okxai-a2a.service`, active with zero restarts at deployment verification.
 - Persistent state: `/var/lib/plumb-okxai/asp-delivery.db`, isolated from `/var/lib/plumb/**`.
+- Hackathon registration: accepted with `registered: true`, CeFi accounting basis; identifier intentionally redacted.
 
 ## Architecture gaps against the emergency specification
 
