@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-08-10
+
+Phase 5B COMPLETE. The operator whitelisted the VPS IPv6 address and switched the demo account to
+`acctLv 2`, unblocking every write path.
+
+### Verified against the real demo venue
+- Order placed and filled (`ordId 3819947522874556416`), position opened `net -0.34`.
+- **clOrdId round-trips EXACTLY** — `SIG6NogRjfTDK` sent, `SIG6NogRjfTDK` returned. The idempotency
+  scheme needs no adjustment.
+- **Stop visible at the venue** (`slTriggerPx 66385.2`) — guardrail 3 is now checkable, not asserted.
+- Reconciliation clean: 1 fill matched, 0 issues.
+- Replay ×5 → **0 new positions**. Crash recovery abandoned correctly. An invalid stop price was
+  rejected and **the entry never opened**. Close path works; the venue reports flat.
+
+### Fixed
+- **An attached stop is not in the order's top-level `slTriggerPx`** — it lives in
+  `attachAlgoOrds[0]` with its own `attachAlgoId`. The wrapper read only the top level and so
+  reported "no stop attached" for a protected order, which would have made guardrail 3
+  unverifiable at the venue.
+
+### Found, not yet fixed
+- **`swap close` produces a fill with an EMPTY `clOrdId`**, unattributable by construction, so
+  reconciliation flags our own emergency close. The normal close path must be a REDUCE-ONLY order
+  carrying `toCloseClOrdId`; `swap close` belongs to the emergency path only. Recorded as
+  AGENTS.md gotcha 15 and left for the phase that wires the lifecycle close.
+
 ## [0.7.0] — 2026-08-10
 
 Phase 4B Parts A–C — evidence expansion. **Parts D and E are NOT done; see below.**
@@ -293,7 +319,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/Franlinozz/Plumb/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Franlinozz/Plumb/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Franlinozz/Plumb/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Franlinozz/Plumb/compare/v0.5.0...v0.6.0

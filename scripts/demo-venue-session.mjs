@@ -33,6 +33,10 @@ const arg = (n, d) => {
   return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d;
 };
 const instId = arg('inst', 'BTC-USDT-SWAP');
+// Reconciliation is scoped to THIS session. Fills from earlier sessions are already-reconciled
+// history, and a venue-initiated `swap close` produces a fill with an EMPTY clOrdId which is
+// unattributable by construction (see the P5B findings).
+const sessionStart = Date.now();
 
 const findings = [];
 const note = (label, detail) => {
@@ -181,6 +185,7 @@ const audit = await reconcile({
   knownSignalIds: intents.all().map((i) => i.signalId),
   now: Date.now(),
   sizeTolerance: spec.lotSz,
+  sinceTs: sessionStart,
 });
 note('reconcile', `ok ${audit.ok}, matched ${audit.matchedFills} fills, ${audit.issues.length} issue(s)`);
 for (const issue of audit.issues.slice(0, 5)) console.log(`      ${issue.kind}: ${issue.detail.slice(0, 110)}`);

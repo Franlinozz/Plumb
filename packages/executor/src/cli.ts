@@ -263,7 +263,15 @@ export class CliAtkClient implements AtkClient {
 }
 
 function toOrder(row: Record<string, unknown>): VenueOrder {
-  const slTriggerPx = num(row['slTriggerPx']);
+  // GOTCHA (found against the real demo venue): an ATTACHED stop does NOT appear in the
+  // top-level `slTriggerPx` — that field stays empty. It lives in `attachAlgoOrds[0]` as a linked
+  // algo order with its own `attachAlgoId`. Reading only the top level reports "no stop attached"
+  // for an order that is perfectly well protected, which would make guardrail 3 unverifiable at
+  // the venue — exactly the check that must not be wrong.
+  const attached = Array.isArray(row['attachAlgoOrds'])
+    ? ((row['attachAlgoOrds'] as unknown[])[0] as Record<string, unknown> | undefined)
+    : undefined;
+  const slTriggerPx = num(row['slTriggerPx']) || num(attached?.['slTriggerPx']);
   return {
     ordId: String(row['ordId'] ?? ''),
     clOrdId: String(row['clOrdId'] ?? ''),
@@ -274,5 +282,8 @@ function toOrder(row: Record<string, unknown>): VenueOrder {
     avgPx: num(row['avgPx'] ?? row['px']),
     ts: num(row['cTime'] ?? row['uTime'] ?? row['ts']),
     ...(slTriggerPx > 0 ? { slTriggerPx } : {}),
+    ...(attached?.['attachAlgoId'] === undefined || attached['attachAlgoId'] === ''
+      ? {}
+      : { attachAlgoId: String(attached['attachAlgoId']) }),
   };
 }

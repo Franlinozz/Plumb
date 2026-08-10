@@ -153,6 +153,19 @@ paid providers; one real call at phase end at most.
    implicitly — a timezone bug in a daily loss limit is a real money bug.
 9. Anything slow becomes a job. Marketplace clients time out.
 10. Every external reference must be verified live, not assumed.
+11. **OKX egress may resolve IPv6 while an API whitelist holds IPv4.** Presents as a 401 auth
+    failure; is actually routing. Force `--dns-result-order=ipv4first` AND whitelist both addresses.
+12. **Trade Kit CLI: `--slOrdPx=-1` requires the `=` form** — the space form parses `-1` as a flag.
+    `-1` means market-on-trigger, so without this no bracketed order can be placed at all.
+13. **Account level must be 2+ to trade swaps.** `acctLv 1` (Spot) returns `sCode 51010` on every
+    swap placement regardless of `posSide`. Verify on BOTH demo and live sub-accounts before funding.
+14. **An ATTACHED stop is NOT in the order's top-level `slTriggerPx`** — that field stays empty. It
+    lives in `attachAlgoOrds[0]` with its own `attachAlgoId`. Reading only the top level reports
+    "no stop attached" for a perfectly protected order, making guardrail 3 unverifiable at the venue.
+15. **A venue-initiated `swap close` produces a fill with an EMPTY `clOrdId`** — unattributable by
+    construction, so reconciliation flags it. The normal close path must therefore be a REDUCE-ONLY
+    order carrying `toCloseClOrdId`, not `swap close`; the blunt `swap close` is for the emergency
+    naked-position path only, and reconciliation must be scoped with `sinceTs`.
 
 ## PLATFORM DOCS (fetch live, never from memory)
 

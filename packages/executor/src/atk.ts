@@ -77,6 +77,8 @@ export interface VenueOrder {
   readonly avgPx: number;
   readonly ts: number;
   readonly slTriggerPx?: number;
+  /** The linked algo order carrying an ATTACHED stop, when the venue reports one. */
+  readonly attachAlgoId?: string;
 }
 
 export interface VenuePosition {
