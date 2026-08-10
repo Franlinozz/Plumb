@@ -1,0 +1,9 @@
+[Unit]
+Description=Plumb weekly paper-run report
+
+[Timer]
+OnCalendar=Mon *-*-* 00:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Plumb weekly paper-run report
+RequiresMountsFor=/var/lib/plumb
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/plumb
+EnvironmentFile=/root/.plumb/runner.env
+ExecStart=/root/.nvm/versions/node/v22.22.3/bin/node /opt/plumb/scripts/weekly-report.mjs
+StandardOutput=append:/var/log/plumb/weekly.log
+StandardError=append:/var/log/plumb/weekly.log

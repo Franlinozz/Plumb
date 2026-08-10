@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-08-10
+
+Phases 8 and 10 — the paper run starts, and the operator's runbook.
+
+### Added
+- **The 21-day paper run is live.** Started 2026-08-10T12:33:41Z from a clean baseline; gate
+  readable 2026-08-31. Demo mode, production cycle interval, unattended.
+- `reports/p8-gate.md` — the ten gate criteria, written **before** the run produced any numbers.
+  It states plainly what the run measures (the machinery) and what it cannot (an edge).
+- `scripts/weekly-report.mjs` + timer — derives every figure from the daily ledgers, the feed and
+  the governor state. It reports the criteria; it does not grade them.
+- `scripts/reconcile-report.mjs` — the read-only "what does the venue think" tool, labelling the
+  three kinds of mismatch because they mean different things.
+- `RUNBOOK.md` rewritten in full for an operator at 3am: the no-top-up and no-manual-trade rules
+  first, ten daily checks, seven incident pages with decision trees, the final-48-hours policy
+  decided in advance, and the post-competition plan.
+- `baseline.json` — reconciliation never looks at fills from before the ledger existed.
+
+### Fixed
+- `scripts/flatten.mjs` read `intent.signalId` where the field is `positionSignalId`, so it matched
+  nothing, closed nothing and **reported success**. An unmatched intent is now a reported failure.
+
 ## [0.10.0] — 2026-08-10
 
 Phase 7 — `@plumb/ops`. Supervision, alerting, backups, deployment and seven failure drills.

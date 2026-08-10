@@ -289,6 +289,18 @@ real defects: a runner that could be `active` and inert under a venue outage, a 
 that was never armed because a systemd directive sat in the wrong section, and a backward clock
 step that re-armed an already-spent daily loss budget. All three are fixed and pinned by tests.
 
+## The paper run — Phase 8
+
+Started **2026-08-10T12:33:41Z**, running unattended in demo mode. Gate readable 2026-08-31.
+
+Its ten criteria are in `reports/p8-gate.md`, fixed before the run produced a number. Nine are
+about the machinery — uptime, reconciliation, naked positions, parameter discipline, restart
+recovery — and those need answering whether or not a strategy ever passes the evidence gate.
+
+**This run cannot tell us whether Plumb makes money.** No configuration has passed the P4
+eligibility gate, so it runs on a demo-only override with a permissive configuration. Two
+independent locks stand between here and live money, and this opens only the first.
+
 ## Not yet built
 
 Recorded so that nothing looks accidentally missing:
