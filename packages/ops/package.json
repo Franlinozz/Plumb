@@ -2,7 +2,7 @@
   "name": "@plumb/ops",
   "version": "0.1.0",
   "private": true,
-  "description": "Alerts, the daily written review, health checks and the operator CLI.",
+  "description": "Watchdog, alerting, daily review, backups and drills. Fourteen days unattended is an engineering problem.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -25,6 +25,11 @@
     "@plumb/strategy": "^0.1.0",
     "@plumb/risk": "^0.1.0",
     "@plumb/asp": "^0.1.0",
-    "@plumb/executor": "^0.1.0"
+    "@plumb/executor": "^0.1.0",
+    "@plumb/backtest": "^0.1.0",
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }

@@ -1,0 +1,31 @@
+[Unit]
+RequiresMountsFor=/var/lib/plumb
+StartLimitIntervalSec=600
+StartLimitBurst=4
+Description=Plumb runner — the cycle loop
+Documentation=https://github.com/Franlinozz/Plumb
+After=network-online.target plumb-asp.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/plumb
+EnvironmentFile=/root/.plumb/runner.env
+Environment=NODE_ENV=production
+Environment=PLUMB_MODE=demo
+Environment=PLUMB_CYCLE_MS=120000
+Environment=NODE_OPTIONS=--dns-result-order=ipv4first
+ExecStart=/root/.nvm/versions/node/v22.22.3/bin/node /opt/plumb/scripts/run-cycle-loop.mjs
+
+Restart=always
+RestartSec=15
+# Longer than the ASP: a runner crash loop places orders. 4 restarts in 10 minutes, then stop.
+
+StandardOutput=append:/var/log/plumb/runner.log
+StandardError=append:/var/log/plumb/runner.log
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

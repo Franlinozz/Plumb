@@ -166,6 +166,21 @@ paid providers; one real call at phase end at most.
     construction, so reconciliation flags it. The normal close path must therefore be a REDUCE-ONLY
     order carrying `toCloseClOrdId`, not `swap close`; the blunt `swap close` is for the emergency
     naked-position path only, and reconciliation must be scoped with `sinceTs`.
+16. **The Trade Kit CLI prefers `OKX_API_KEY`/`_SECRET`/`_PASSPHRASE` from the environment over its
+    own `config.toml` profile.** Systemd's `EnvironmentFile=` pointed at the whole secrets file, so
+    the LIVE triplet reached the process that places orders and every demo call came back
+    `401 Invalid Sign` — a guardrail-10 breach disguised as an auth error. Two defences, both
+    required: the unit reads an ALLOWLISTED `runner.env`, and `sanitizeEnv` strips the triplet from
+    every spawned child regardless of how the parent was started.
+17. **Boot-time venue calls must not precede the supervision loop.** `resolvePosSide` and
+    `recoverPendingIntents` ran at module top level, so under a venue outage the process blocked
+    before the interval was armed: `systemctl is-active` said `active` while no watchdog ran, no
+    status was written and no alert fired — silent for ten minutes, then a start-limit death.
+    Bootstrap is now retried inside the cycle and the timer is armed before the first tick.
+18. **The daily roll must only move forward.** Keying purely off "the UTC day key changed" meant a
+    backward clock step across midnight (NTP correction, VM snapshot restore) zeroed
+    `realisedPnlToday` and cleared the `dailyLimit` halt — re-arming trading on a day whose loss
+    budget was already spent.
 
 ## PLATFORM DOCS (fetch live, never from memory)
 
@@ -183,6 +198,22 @@ that touches payments, subscriptions or the trade kit.
 | Payments | https://web3.okx.com/onchainos/dev-docs/payments/app |
 
 ## Deviations
+
+- **P7 · The runner does NOT read `secrets.env`; it reads an allowlisted `runner.env`.** The phase
+  assumed one environment file. Two are required, because the Trade Kit CLI prefers the live
+  `OKX_API_*` triplet from the environment over its own demo profile — so a single wide
+  `EnvironmentFile` put live credentials into the order-placing process. The allowlist denies new
+  secrets by default rather than blocking known-bad ones.
+- **P7 · The reboot drill is partially deferred to the operator.** Boot configuration is verified
+  (`systemd-analyze verify` clean, both units enabled, ordering correct, cold start passes) but no
+  kernel reboot was performed: the agent runs on this host, and the host carries three live listed
+  ASPs. Called out explicitly in `reports/drills.md` rather than quietly marked done.
+- **P7 · The stale-data drill shares the venue-outage drill.** On this host the market feed and the
+  trading venue are the same origin, so the isolated case — data frozen while the venue is
+  reachable — cannot be produced live. Covered by unit tests over `assess()` and recorded as such.
+- **P7 · The network outage was scoped per-unit, not host-wide.** `IPAddressDeny=any` on
+  `plumb-runner.service` alone. A host-wide block would have cut egress for ASSAY, Occestra and
+  Sigil, all listed and taking real sales.
 
 (append-only log — one line of reasoning each)
 

@@ -1,34 +1,75 @@
 import { LOCKED } from '@plumb/core';
-import { ASP_PACKAGE } from '@plumb/asp';
-import { EXECUTOR_PACKAGE } from '@plumb/executor';
-import { MARKET_PACKAGE } from '@plumb/market';
-import { RISK_PACKAGE } from '@plumb/risk';
-import { STRATEGY_PACKAGE } from '@plumb/strategy';
 
 /**
- * @plumb/ops — alerts, the daily written review, health checks and the operator CLI.
+ * @plumb/ops — watchdog, alerting, the daily review, backups and drills.
  *
- * Placeholder. This is the only package that sees the whole pipeline, so it is where the
- * ordering is asserted: **publish before execute**. `@plumb/asp` sits ahead of
- * `@plumb/executor` in `PIPELINE`, and a test pins that.
+ * Fourteen days of unattended uptime is a competition requirement and an engineering problem. It
+ * is solved here rather than on day three of a live run.
  */
-export const PIPELINE = Object.freeze([
-  MARKET_PACKAGE.name,
-  STRATEGY_PACKAGE.name,
-  RISK_PACKAGE.name,
-  ASP_PACKAGE.name,
-  EXECUTOR_PACKAGE.name,
-] as const);
-
 export const OPS_PACKAGE = Object.freeze({
   name: '@plumb/ops',
   responsibility: 'supervise',
-  pipeline: PIPELINE,
+  pipeline: Object.freeze([
+    '@plumb/market',
+    '@plumb/strategy',
+    '@plumb/risk',
+    '@plumb/asp',
+    '@plumb/executor',
+  ] as const),
   dailyLossLimitUsdt: LOCKED.DAILY_LOSS_LIMIT_USDT,
-  /**
-   * All internal accounting is UTC. The competition clock is UTC+8 and every conversion
-   * between them is explicit — an implicit one inside a daily loss limit is a money bug.
-   */
   accountingTimezone: 'UTC',
   competitionTimezone: 'UTC+8',
+  /** Pinned by a test: the watchdog halts, and has no way to clear a halt. */
+  watchdogCanRearm: false,
 });
+
+export const PIPELINE = OPS_PACKAGE.pipeline;
+
+export {
+  Alerter,
+  consoleSink,
+  formatAlert,
+  webhookSink,
+  type Alert,
+  type AlertContext,
+  type AlerterOptions,
+  type AlertSink,
+  type Severity,
+} from './alerts.js';
+
+export {
+  DEFAULT_THRESHOLDS,
+  WATCHDOG_CAN_REARM,
+  assess,
+  runWatchdog,
+  type WatchdogAction,
+  type WatchdogCondition,
+  type WatchdogDeps,
+  type WatchdogObservation,
+  type WatchdogResult,
+  type WatchdogThresholds,
+} from './watchdog.js';
+
+export {
+  buildReviewPrompt,
+  generateReview,
+  templateReview,
+  type DayLedger,
+  type ReviewDeps,
+  type ReviewResult,
+} from './review.js';
+
+export {
+  backup,
+  databaseIsReadable,
+  pruneBackups,
+  restore,
+  verifyRestore,
+  type BackupManifest,
+  type BackupResult,
+  type BackupTarget,
+  type RestoreResult,
+  type RestoreVerification,
+} from './snapshot.js';
+
+export { Heartbeat, type HeartbeatOptions, type HeartbeatState } from './heartbeat.js';

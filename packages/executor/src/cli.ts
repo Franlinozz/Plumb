@@ -25,6 +25,29 @@ import type {
   VenuePosition,
 } from './atk.js';
 
+/**
+ * Credentials the Trade Kit binary must NEVER inherit from our environment.
+ *
+ * **GOTCHA (16).** The CLI prefers `OKX_API_KEY`/`OKX_API_SECRET`/`OKX_API_PASSPHRASE` from the
+ * environment over its own `config.toml` profile. Systemd's `EnvironmentFile=` pointed at the
+ * whole secrets file, so the LIVE triplet reached the process that places orders, and every demo
+ * call signed with live keys and came back `401 Invalid Sign` — an auth error that is really a
+ * guardrail-10 breach wearing a disguise. Deployment hygiene is not enough: strip them here, so
+ * the live keys cannot reach the venue binary however the parent process was started.
+ */
+export const FORBIDDEN_CHILD_ENV = Object.freeze([
+  'OKX_API_KEY',
+  'OKX_API_SECRET',
+  'OKX_API_PASSPHRASE',
+] as const);
+
+/** Remove the live credential triplet from an environment before spawning the venue binary. */
+export function sanitizeEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const copy: NodeJS.ProcessEnv = { ...env };
+  for (const key of FORBIDDEN_CHILD_ENV) delete copy[key];
+  return copy;
+}
+
 const num = (value: unknown): number => {
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -40,7 +63,7 @@ function defaultExec(binPath: string) {
           timeout: timeoutMs,
           maxBuffer: 16 * 1024 * 1024,
           // The IPv6 gotcha above. Without this every authenticated call 401s.
-          env: { ...process.env, NODE_OPTIONS: '--dns-result-order=ipv4first' },
+          env: { ...sanitizeEnv(process.env), NODE_OPTIONS: '--dns-result-order=ipv4first' },
         },
         (error, stdout, stderr) => {
           if (error === null) {

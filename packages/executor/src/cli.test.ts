@@ -2,7 +2,7 @@ import { signEligibility, type EligibilitySummary } from '@plumb/core';
 import { describe, expect, it } from 'vitest';
 
 import { AtkError } from './atk.js';
-import { CliAtkClient } from './cli.js';
+import { CliAtkClient, FORBIDDEN_CHILD_ENV, sanitizeEnv } from './cli.js';
 import {
   DemoOverrideRefused,
   assertEligibleOrDemo,
@@ -200,5 +200,33 @@ describe('the demo-only eligibility override', () => {
         reason: 'r',
       }),
     ).toThrow(/signature/);
+  });
+});
+
+describe('live credentials never reach the venue binary (gotcha 16)', () => {
+  it('strips the live OKX triplet from a spawned environment', () => {
+    const cleaned = sanitizeEnv({
+      OKX_API_KEY: 'live-key',
+      OKX_API_SECRET: 'live-secret',
+      OKX_API_PASSPHRASE: 'live-pass',
+      ANTHROPIC_API_KEY: 'keep-me',
+      PATH: '/usr/bin',
+    });
+    expect(cleaned['OKX_API_KEY']).toBeUndefined();
+    expect(cleaned['OKX_API_SECRET']).toBeUndefined();
+    expect(cleaned['OKX_API_PASSPHRASE']).toBeUndefined();
+    // Only the live triplet goes. Everything else the child needs survives.
+    expect(cleaned['ANTHROPIC_API_KEY']).toBe('keep-me');
+    expect(cleaned['PATH']).toBe('/usr/bin');
+  });
+
+  it('does not mutate the environment it was handed', () => {
+    const original: NodeJS.ProcessEnv = { OKX_API_KEY: 'live-key' };
+    sanitizeEnv(original);
+    expect(original['OKX_API_KEY']).toBe('live-key');
+  });
+
+  it('names exactly the three credential variables the CLI reads', () => {
+    expect([...FORBIDDEN_CHILD_ENV]).toEqual(['OKX_API_KEY', 'OKX_API_SECRET', 'OKX_API_PASSPHRASE']);
   });
 });

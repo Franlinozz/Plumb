@@ -1,0 +1,32 @@
+[Unit]
+StartLimitIntervalSec=300
+StartLimitBurst=5
+Description=Plumb ASP — published feed, subscription surface, MCP/HTTP
+Documentation=https://github.com/Franlinozz/Plumb
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/plumb
+EnvironmentFile=/root/.plumb/runner.env
+Environment=NODE_ENV=production
+Environment=PLUMB_MODE=demo
+Environment=PLUMB_ASP_PORT=8432
+# Egress may resolve IPv6 while an API whitelist holds IPv4 (AGENTS.md gotcha 11).
+Environment=NODE_OPTIONS=--dns-result-order=ipv4first
+ExecStart=/root/.nvm/versions/node/v22.22.3/bin/node /opt/plumb/scripts/serve-asp.mjs
+
+Restart=always
+RestartSec=5
+# A crash loop must not hammer the venue or the API: 5 restarts in 5 minutes, then stop and wait
+# for a human. Silence is a signal too — the heartbeat is what surfaces it.
+
+StandardOutput=append:/var/log/plumb/asp.log
+StandardError=append:/var/log/plumb/asp.log
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

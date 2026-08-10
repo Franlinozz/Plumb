@@ -1,0 +1,13 @@
+plumb.assayed.xyz {
+	encode gzip
+	reverse_proxy 127.0.0.1:8432
+	log {
+		output file /var/log/caddy/plumb.log
+		format json
+	}
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+	}
+}

@@ -181,6 +181,15 @@ export class GovernorStore {
 export function rollDailyIfNeeded(state: GovernorState, nowMs: number): GovernorState {
   const today = utcDayKey(nowMs);
   if (today === state.dailyResetAtUtc) return state;
+  // THE DAY ONLY ROLLS FORWARD.
+  //
+  // **DRILL 5 FINDING.** This used to roll on any day-key change, so a clock correction backwards
+  // across UTC midnight — an NTP step, a VM restored from a snapshot — reset `realisedPnlToday` to
+  // zero and cleared the `dailyLimit` halt, re-arming trading on a day that had already spent its
+  // whole loss budget. Keys are ISO `YYYY-MM-DD`, so they compare lexicographically. Refusing to
+  // roll backwards costs nothing: the worst case is one day of unnecessarily conservative limits,
+  // against a worst case on the other side of trading a budget that was already gone.
+  if (today < state.dailyResetAtUtc) return state;
   return {
     ...state,
     realisedPnlToday: 0,

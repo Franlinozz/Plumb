@@ -263,11 +263,42 @@ against a 5% ceiling with a 5th-percentile equity of 334.32 — below the kill s
 
 Full reports with equity curves in `reports/`.
 
+## Operations — Phase 7
+
+`@plumb/ops` supervises the system that the earlier phases built.
+
+- **`alerts.ts`** — per-severity dedupe windows (INFO 6h, WARN 1h, URGENT 15m, CRITICAL 5m) and an
+  hourly ceiling that **never** gags a CRITICAL. Suppressed counts are carried into the next
+  message, so throttling loses timing, never information.
+- **`watchdog.ts`** — `runner_stalled`, `data_stale`, `venue_unreachable`, `reconcile_mismatch`,
+  `near_kill_switch`. `assess()` is pure and separately testable. `WATCHDOG_CAN_REARM` is `false`:
+  it can halt and can never lift a halt. `venue_unreachable` deliberately does **not** flatten — a
+  close cannot be placed through a venue that cannot be reached.
+- **`review.ts`** — a daily prose review, model-written from a ledger derived entirely from the
+  runner log, the feed and the governor state, with a deterministic template fallback.
+- **`snapshot.ts`** — `VACUUM INTO` (safe on live WAL databases), restore verified by **content
+  hash** rather than size, and pruning that only runs after the new backup has proven restorable.
+- **`heartbeat.ts`** — an outward ping, so a dead box is reported by a third party rather than by
+  an absence. It never throws and never affects trading.
+
+Deployed as two systemd units behind Caddy on `plumb.assayed.xyz`, plus nightly backup and daily
+review timers. Only ports 22, 80 and 443 are open; every service port is bound to loopback.
+
+**Seven failure drills were executed against the real host** — `reports/drills.md`. Three found
+real defects: a runner that could be `active` and inert under a venue outage, a crash-loop limiter
+that was never armed because a systemd directive sat in the wrong section, and a backward clock
+step that re-armed an already-spent daily loss budget. All three are fixed and pinned by tests.
+
 ## Not yet built
 
 Recorded so that nothing looks accidentally missing:
 
 
-- **The Agent Trade Kit CLI adapter is not wired.** `AtkClient` is implemented by `MockAtk`; the
-  real CLI-backed client needs a demo API key and lands with P9's live work.
-- `@plumb/ops` — alerts, daily review, health. Placeholder only.
+- **`dispersion` is not implemented.** Spreading risk across instruments touches the strategy, the
+  risk governor and the executor at once, so it needs its own phase rather than a corner of this one.
+- **Live trading is not armed.** Guardrail 10 holds: the live credentials are not in any running
+  process, and `sanitizeEnv` strips them from every spawned child. Phase 9 arms them.
+- **A true kernel reboot has not been drilled.** Boot configuration is verified and a cold start
+  passes; the reboot itself is an operator action, recorded in `reports/drills.md`.
+- **`oi_divergence` remains structurally unevaluable** — no historical open-interest series exists
+  to backtest against, and `funding_skew` has no real funding data outside the holdout.

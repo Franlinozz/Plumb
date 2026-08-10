@@ -227,3 +227,48 @@ describe('halt flags', () => {
     expect(anyHaltSet(both)).toBe('killSwitch');
   });
 });
+
+describe('the daily roll only ever moves forward (drill 5)', () => {
+  const T0 = Date.UTC(2026, 7, 10, 12, 0, 0);
+  const breached = () => {
+    const base = initialState(T0);
+    return {
+      ...base,
+      realisedPnlToday: -20,
+      haltFlags: { ...base.haltFlags, dailyLimit: true },
+      haltReason: 'daily loss limit',
+      haltedAt: T0,
+    };
+  };
+
+  it('rolls on a genuine new UTC day', () => {
+    const rolled = rollDailyIfNeeded(breached(), T0 + 26 * 3_600_000);
+    expect(rolled.realisedPnlToday).toBe(0);
+    expect(rolled.haltFlags.dailyLimit).toBe(false);
+  });
+
+  it('does not roll backwards across UTC midnight, preserving a spent loss budget', () => {
+    // A backward NTP step. Rolling here would wipe a real 20 USDT loss and re-arm trading.
+    const stepped = rollDailyIfNeeded(breached(), T0 - 20 * 3_600_000);
+    expect(stepped.realisedPnlToday).toBe(-20);
+    expect(stepped.haltFlags.dailyLimit).toBe(true);
+  });
+
+  it('does not roll backwards within the same UTC day', () => {
+    const stepped = rollDailyIfNeeded(breached(), T0 - 3 * 3_600_000);
+    expect(stepped.realisedPnlToday).toBe(-20);
+    expect(stepped.haltFlags.dailyLimit).toBe(true);
+  });
+
+  it('is idempotent inside one day', () => {
+    const a = rollDailyIfNeeded(breached(), T0 + 26 * 3_600_000);
+    const b = rollDailyIfNeeded(a, T0 + 27 * 3_600_000);
+    expect(b).toEqual(a);
+  });
+
+  it('never clears the kill switch on a roll', () => {
+    const base = breached();
+    const killed = { ...base, haltFlags: { ...base.haltFlags, killSwitch: true } };
+    expect(rollDailyIfNeeded(killed, T0 + 26 * 3_600_000).haltFlags.killSwitch).toBe(true);
+  });
+});

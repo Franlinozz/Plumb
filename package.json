@@ -1,6 +1,6 @@
 {
   "name": "plumb",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "description": "Plumb — a risk-first perpetual-futures signal service and Trading ASP on OKX.AI. Every signal, measured before it's sent.",
   "license": "MIT",

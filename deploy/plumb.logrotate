@@ -1,0 +1,10 @@
+/var/log/plumb/*.log {
+    daily
+    rotate 21
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su root root
+}

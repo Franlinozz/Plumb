@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-08-10
+
+Phase 7 — `@plumb/ops`. Supervision, alerting, backups, deployment and seven failure drills.
+
+### Added
+- `alerts.ts` — severity-aware deduplication with an hourly ceiling that never suppresses a
+  CRITICAL. Suppressed counts ride along in the next message: throttling may lose timing, never
+  information.
+- `watchdog.ts` — `runner_stalled`, `data_stale`, `venue_unreachable`, `reconcile_mismatch`,
+  `near_kill_switch`. `assess()` is pure. `WATCHDOG_CAN_REARM` is `false` and a test pins it — the
+  watchdog can halt and can never lift a halt.
+- `review.ts` — the daily review, prose only, with a deterministic template fallback.
+- `snapshot.ts` — `VACUUM INTO` backups safe on live WAL databases; restore verified by content
+  hash rather than size.
+- `heartbeat.ts` — outward liveness ping that never throws.
+- Deployment: two systemd units behind Caddy on `plumb.assayed.xyz` with auto-TLS, nightly backup
+  and daily review timers, logrotate, and ufw limited to 22/80/443.
+- `scripts/daily-review.mjs`, `scripts/backup.mjs`, `scripts/flatten.mjs` — the operator's tools.
+  Every number in the daily review is derived from the log, the feed and the governor state.
+- `reports/drills.md` — seven failure drills executed against the real host.
+
+### Fixed
+- **The runner could be `active` and inert.** `resolvePosSide` and `recoverPendingIntents` ran at
+  module top level, so under a venue outage the process blocked before the interval was armed: no
+  watchdog, no status write, no alert, and systemd reporting `active` throughout. Bootstrap is now
+  retried inside the cycle and the timer is armed before the first tick. (Drill 2)
+- **The crash-loop limiter was never armed.** `StartLimit*` are `[Unit]` directives; in `[Service]`
+  systemd silently ignored them. Both units corrected, `RequiresMountsFor` added. (Drill 6)
+- **A backward clock step re-armed a spent daily loss budget.** The daily roll keyed only on "the
+  UTC day key changed", so an NTP correction across midnight zeroed `realisedPnlToday` and cleared
+  the `dailyLimit` halt. The day now only rolls forward. (Drill 5)
+
+### Security
+- **Live credentials were reaching the process that places orders.** The runner unit's
+  `EnvironmentFile` pointed at the whole secrets file, and the Trade Kit CLI prefers
+  `OKX_API_KEY`/`_SECRET`/`_PASSPHRASE` from the environment over its own config profile — so demo
+  calls were signed with live keys and failed as `401 Invalid Sign`, a guardrail-10 breach wearing
+  an auth error's clothes. Two defences now: the units read an allowlisted `runner.env`, and
+  `sanitizeEnv` strips the triplet from every spawned child however the parent was started.
+
 ## [0.9.0] — 2026-08-10
 
 Phase 6 — `@plumb/asp`. The published feed, the subscription service, and the public surface.

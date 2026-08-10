@@ -1,0 +1,10 @@
+[Unit]
+Description=Plumb daily review
+
+[Timer]
+# 00:20 UTC — after the day has rolled, so it reviews a complete day.
+OnCalendar=*-*-* 00:20:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

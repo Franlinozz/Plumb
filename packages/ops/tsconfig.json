@@ -25,6 +25,9 @@
     },
     {
       "path": "../executor"
+    },
+    {
+      "path": "../backtest"
     }
   ]
 }
