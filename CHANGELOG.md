@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-08-10
+
+Phase 5B — the real Agent Trade Kit demo venue. **Write paths are blocked on an OKX account
+setting; read paths are all verified.**
+
+### Added
+- `cli.ts` — the CLI-backed `AtkClient`, spawning `okx … --demo --json`, with account-mode
+  awareness (`getAccountConfig`, `resolvePosSide`).
+- `demo-override.ts` — a demo-ONLY eligibility bypass that requires `PLUMB_MODE=demo` and a demo
+  venue, with no force flag. The only bypass in the system, and it cannot apply in live mode.
+- `scripts/demo-venue-session.mjs` (`npm run demo-venue`).
+- 14 new tests (449 total).
+
+### Findings against the real venue
+- **IPv6 egress vs IPv4 whitelist** → every call 401'd until `--dns-result-order=ipv4first`.
+- **`--slOrdPx -1` is parsed as a flag** → the `=` form is required, else no bracket can be placed.
+- **The demo account is `acctLv: 1` (Spot mode)** → `sCode 51010` on every swap order, with both
+  `posSide: long` and `posSide: net`. Perpetuals cannot be traded until the account is switched to
+  Single-currency margin or higher in the OKX UI. The CLI cannot change it.
+
+### Verified
+Balance (5,000 USDT), positions, fills, account config, order lookup by clOrdId, boot recovery and
+the eligibility override all work against the real venue. Placement, stop attachment, clOrdId
+round-trip, reconciliation-against-real-fills and the close path remain UNVERIFIED — blocked.
+
 ## [0.6.0] — 2026-08-09
 
 Phase 5 — `@plumb/executor`, the only component that places orders. **Demo mode only.**
@@ -235,7 +260,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/Franlinozz/Plumb/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Franlinozz/Plumb/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Franlinozz/Plumb/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Franlinozz/Plumb/compare/v0.3.0...v0.4.0

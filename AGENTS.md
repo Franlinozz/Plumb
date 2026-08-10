@@ -160,6 +160,28 @@ that touches payments, subscriptions or the trade kit.
   tests.** `tsc -b` resolves `@plumb/*` through the built `dist/*.d.ts` (so build order is enforced
   topologically and cannot compile against a stale dist — the Occestra failure), while vitest maps
   `@plumb/*` straight to `src` so `npm test` needs no prior build.
+- **P5B · THREE REAL VENUE FINDINGS the mock could not have produced.**
+  1. **IPv6 egress vs an IPv4 whitelist.** This VPS resolves OKX over IPv6; the demo key's IP
+     whitelist holds the IPv4 address, so every authenticated call returned
+     `401 … your IP 2a02:c207:… is not included in your API key's IP whitelist` — which reads as an
+     auth failure and is a routing one. Fixed by forcing `NODE_OPTIONS=--dns-result-order=ipv4first`
+     on every CLI spawn.
+  2. **A negative option value is parsed as another flag.** `--slOrdPx -1` fails with
+     "argument is ambiguous"; the `=` form (`--slOrdPx=-1`) is required. -1 is how you say
+     "market order when the stop triggers", so without this NO bracketed order can be placed.
+  3. **🔴 The demo account is `acctLv: 1` (SPOT MODE) — perpetual swaps cannot be traded at all.**
+     Every `swap place` returns `sCode 51010 "You can't complete this request under your current
+     account mode"`, with `posSide: long` AND with `posSide: net`, and `account max-avail-size`
+     fails the same way. The Trade Kit CLI has no command to change it (only `set-position-mode`).
+     **OPERATOR ACTION: switch the DEMO account to Single-currency margin or higher in the OKX UI.**
+     Read paths (balance, positions, fills, config, order lookup) all work today.
+- **P5B · The client is now account-mode aware.** `getAccountConfig()` reports `acctLv`/`posMode`
+  and whether swaps are tradeable at all; `resolvePosSide()` returns `net` for a `net_mode` account,
+  because sending long/short to one is a different rejection with the same error code.
+- **P5B · The demo eligibility override is the only bypass in the system**, and is built so it
+  cannot apply in live mode: it requires `PLUMB_MODE=demo` (passed IN, never read from ambient env)
+  AND a venue reporting `demo === true`, with no force flag and no default. Six tests pin that,
+  including that a live-mode caller gets the unmodified `assertEligible`.
 - **P5 · THE ATK `--demo` SESSION IS BLOCKED ON A DEMO API KEY — not run.** Demo mode requires a
   SEPARATE demo key (okx.com/account/my-api?go-demo-trading=1); the key we hold is a LIVE
   sub-account key and guardrail 10 forbids touching it before P9. `npm run demo-session` therefore

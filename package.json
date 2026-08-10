@@ -27,7 +27,8 @@
     "probe:strategies": "node scripts/probe-strategies.mjs",
     "replay": "node scripts/replay-signals.mjs",
     "hostile": "node scripts/hostile-sim.mjs",
-    "demo-session": "node scripts/demo-session.mjs"
+    "demo-session": "node scripts/demo-session.mjs",
+    "demo-venue": "node scripts/demo-venue-session.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

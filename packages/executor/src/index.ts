@@ -99,3 +99,13 @@ export {
 } from './runner.js';
 
 export { MockAtk, type MockFaults } from './mock.js';
+
+export { CliAtkClient } from './cli.js';
+
+export {
+  DemoOverrideRefused,
+  assertEligibleOrDemo,
+  demoOverrideApplies,
+  type OverrideContext,
+} from './demo-override.js';
+
