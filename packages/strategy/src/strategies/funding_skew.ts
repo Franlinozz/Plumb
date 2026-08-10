@@ -1,5 +1,5 @@
 /**
- * CANDIDATE STRATEGY — funding extreme, faded, and never alone.
+ * CANDIDATE STRATEGY — funding extreme, faded.
  *
  * **No edge is claimed.** Positive funding means longs are paying shorts, i.e. the crowd is long.
  * At a historical extreme that crowding is a liability, so the bias is AGAINST it.
@@ -8,12 +8,14 @@
  *  1. The extreme is **percentile-ranked against this instrument's own funding history**, never an
  *     absolute threshold. "0.01% funding" is unremarkable on one instrument and a record on
  *     another; only the rank carries information.
- *  2. **It never fires alone.** Crowding is a reason to prefer a direction, not a reason to enter.
- *     It requires a same-side draft from one of the other three strategies in the same cycle, and
- *     `requiresConfirmation` puts it in the second evaluation pass so that peers exist to check.
+ *  2. **It prefers a peer.** Crowding is a reason to prefer a direction, not a reason to enter, so
+ *     with other strategies running it requires a same-side draft from one of them, and
+ *     `requiresConfirmation` puts it in the second pass so peers exist to check. P4B added a
+ *     STANDALONE mode — a weaker self-evaluated confirmation — because a strategy that cannot fire
+ *     alone cannot be backtested alone, and therefore cannot be evaluated at all.
  */
 
-import { atr as computeAtr, closes, latest, seriesFor } from '@plumb/market';
+import { adx as computeAdx, atr as computeAtr, closes, latest, seriesFor } from '@plumb/market';
 
 import { makeDraft, type StrategyContext, type StrategyModule } from '../module.js';
 import type { SignalDraft } from '@plumb/core';
@@ -27,8 +29,12 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
   const settings = config.fundingSkew;
   const tf = settings.timeframe;
 
-  // Never alone. No peer, no signal — before any other work.
-  if (peers.length === 0) return [];
+  // P4B: a STANDALONE mode exists, because without one this strategy can never fire in a solo
+  // backtest and therefore can never be evaluated. The confirmation it evaluates for itself is
+  // weaker than a peer's agreement, and the two paths are labelled distinctly in `inputs` so a
+  // report can separate them.
+  const standalone = peers.length === 0;
+  if (standalone && !settings.standalone) return [];
 
   const history = snapshot.funding.history;
   if (history.length < settings.minHistory) return [];
@@ -44,12 +50,24 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
   else if (rank <= 1 - settings.extremePercentile) side = 'long';
   if (side === undefined) return [];
 
-  // Confirmation: a peer on this instrument must independently want the same direction.
-  const confirming = peers.filter((p) => p.instId === snapshot.instId && p.side === side);
-  if (confirming.length === 0) return [];
-
   const candles = seriesFor(snapshot, tf);
   if (candles === undefined || candles.length < 60) return [];
+
+  // Confirmation. With peers: one must independently want the same direction. Standalone: price
+  // must not be trending hard AGAINST the fade, which is the cheapest check that stops this from
+  // selling into a runaway rally purely because funding is expensive.
+  const confirming = peers.filter((p) => p.instId === snapshot.instId && p.side === side);
+  const directional = computeAdx(candles, 14);
+  const adxValue = latest(directional.adx) ?? 0;
+  const plusDi = latest(directional.plusDi) ?? 0;
+  const minusDi = latest(directional.minusDi) ?? 0;
+  const trendAgainst = side === 'long' ? minusDi > plusDi : plusDi > minusDi;
+
+  if (standalone) {
+    if (adxValue >= settings.standaloneMaxAdx && trendAgainst) return [];
+  } else if (confirming.length === 0) {
+    return [];
+  }
   const price = closes(candles);
   const entryPrice = price[price.length - 1];
   const atrValue = latest(computeAtr(candles, 14));
@@ -75,13 +93,17 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
         fundingPercentile: rank,
         fundingHistoryLength: history.length,
         confirmingPeers: confirming.length,
+        standalone: standalone ? 1 : 0,
+        adx: adxValue,
         atr: atrValue,
         close: entryPrice,
         regimeConfidence: regime.confidence,
       },
       conditions: [
         'funding returns toward its median',
-        `confirming strategy (${first?.strategyId ?? 'unknown'}) invalidates`,
+        standalone
+          ? `trend turns against the fade (ADX >= ${settings.standaloneMaxAdx})`
+          : `confirming strategy (${first?.strategyId ?? 'unknown'}) invalidates`,
         'regime changes',
       ],
       config,

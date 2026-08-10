@@ -109,6 +109,29 @@ created once, never deleted" is already asserted in `@plumb/asp`.
 earliest-created service is a résumé scan and would become the scoring basis. That profile is also
 already the active `onchainos` session.
 
+## DATA PARTITION — fixed 2026-08-10, never re-drawn
+
+Recorded here because a holdout that can be re-drawn is not a holdout.
+
+| | |
+| --- | --- |
+| Full history | **2023-08-09 → 2026-08-10** (1,097–1,100 days per instrument) |
+| Per instrument | 15m 105,300 bars · 1H 26,400 · 4H 6,600 — BTC, ETH and SOL identical, zero gaps, zero duplicates |
+| **DEVELOPMENT** | 2023-08-09 → **2026-05-12** (everything except the last 90 days). Iterate here. |
+| **HOLDOUT** | **2026-05-12 → 2026-08-10** (the most recent 90 days). WRITE-PROTECTED. |
+| Real funding | 293 settlements per instrument, **2026-05-04 → 2026-08-10 (97 days only)** |
+| Modelled funding | **~91% of the 3-year window** — charged as a cost in both directions, disclosed per run |
+
+`assertDevelopmentOnly` throws if a backtest window reaches past the development boundary, and
+reading the holdout needs an operator token plus an audit record. **The holdout is touched ONCE, at
+the very end, on the single best development config.** If it fails there, it fails. There is no
+second look and no "one more variant".
+
+Note the awkward consequence of OKX's 97-day funding retention: the real-funding window sits almost
+entirely INSIDE the holdout. Development-set funding is therefore ~100% modelled, and any config
+whose edge depends on funding is being evaluated against a conservative constant rather than the
+real series. That is a limitation of the data, stated rather than worked around.
+
 ## COST DISCIPLINE
 
 `PLUMB_MODE=fake` is default for all dev and tests — deterministic fixtures, zero spend, zero network.

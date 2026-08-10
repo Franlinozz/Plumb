@@ -28,15 +28,20 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
   const settings = config.revertBand;
   const tf = settings.timeframe;
 
-  // Ranging only. Fading a trend is how a mean-reversion book dies.
-  if (regime.label !== 'ranging') return [];
+  // P4B: the original conditions were near mutually exclusive — `ranging` AND ADX-below AND a
+  // band touch AND an RSI extreme fired twice in 180 days. Loosened per the operator's
+  // specification to regime `ranging` OR ADX below threshold, so a quiet tape that the classifier
+  // has not labelled `ranging` can still qualify. Still never fires in a confirmed trend.
+  if (regime.label === 'trending_up' || regime.label === 'trending_down') return [];
 
   const candles = seriesFor(snapshot, tf);
   if (candles === undefined || candles.length < 60) return [];
 
   const directional = computeAdx(candles, 14);
   const adxValue = latest(directional.adx);
-  if (adxValue === undefined || adxValue >= settings.adxMax) return [];
+  if (adxValue === undefined) return [];
+  const quiet = regime.label === 'ranging' || adxValue < settings.adxMax;
+  if (!quiet) return [];
 
   const price = closes(candles);
   const bands = bollinger(price, 20, 2);
@@ -65,9 +70,11 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
   const touchedLower = bar.low <= lower;
   const touchedUpper = bar.high >= upper;
 
+  // P4B: band touch OR RSI extreme, not AND. Requiring both meant waiting for a coincidence
+  // that a quiet tape almost never produces.
   let side: 'long' | 'short' | undefined;
-  if (touchedLower && rsiValue <= settings.rsiOversold) side = 'long';
-  else if (touchedUpper && rsiValue >= settings.rsiOverbought) side = 'short';
+  if (touchedLower || rsiValue <= settings.rsiOversold) side = 'long';
+  else if (touchedUpper || rsiValue >= settings.rsiOverbought) side = 'short';
   if (side === undefined) return [];
 
   // Stop BEYOND the band, not at it: the band is where we expect price to turn, so a stop on it

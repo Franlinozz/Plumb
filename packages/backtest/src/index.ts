@@ -103,3 +103,40 @@ export {
   permissiveStrategy,
 } from './testkit.js';
 
+export {
+  DEFAULT_AUDIT_PATH,
+  HOLDOUT_DAYS,
+  HoldoutViolation,
+  assertDevelopmentOnly,
+  clampToDevelopment,
+  holdoutAuditLog,
+  partition,
+  requestHoldoutAccess,
+  type HoldoutAccessOutcome,
+  type HoldoutAccessRequest,
+  type Partition,
+} from './holdout.js';
+
+export {
+  accrueFunding,
+  buildFundingModel,
+  conservativeRateFrom,
+  describeFundingModel,
+  fundingAt,
+  type FundingAccrual,
+  type FundingModel,
+  type FundingObservation,
+} from './funding_model.js';
+
+export {
+  DEFAULT_REGIME_THRESHOLDS,
+  bullOnlyVerdict,
+  classifyHistory,
+  regimeAt,
+  regimeRuns,
+  regimeShares,
+  type MarketRegime,
+  type RegimePeriod,
+  type RegimeThresholds,
+} from './regimes.js';
+

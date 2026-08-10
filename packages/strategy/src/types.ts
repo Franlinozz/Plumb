@@ -121,6 +121,13 @@ export interface StrategyConfig {
     readonly timeframe: Timeframe;
     readonly extremePercentile: number;
     readonly minHistory: number;
+    /**
+     * P4B: allow firing WITHOUT a peer, using a confirmation it can evaluate itself. Without
+     * this the strategy can never fire in a solo backtest, so it can never be evaluated.
+     */
+    readonly standalone: boolean;
+    /** Standalone confirmation: price must not be trending hard against the fade. */
+    readonly standaloneMaxAdx: number;
   };
   readonly takeProfitR: readonly number[];
   readonly maxHoldBars: number;
@@ -165,6 +172,8 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = Object.freeze({
     timeframe: '1H' as Timeframe,
     extremePercentile: 0.9,
     minHistory: 20,
+    standalone: true,
+    standaloneMaxAdx: 30,
   }),
   takeProfitR: Object.freeze([1.5, 3]),
   maxHoldBars: 48,

@@ -274,13 +274,39 @@ describe('funding_skew', () => {
     version: '1.0.0',
   };
 
-  it('NEVER fires alone, however extreme the funding', () => {
+  it('does not fade a trend running AGAINST it, even standalone', () => {
+    // P4B gave it a standalone mode. The self-evaluated confirmation is what stops it selling
+    // into a runaway rally purely because funding got expensive.
     const context = contextFor(
       'trending_up',
       { peers: [] },
       { fundingRate: 1, fundingHistory: crowdedLong },
     );
     expect(fundingSkew.evaluate(context)).toEqual([]);
+  });
+
+  it('will not fire alone at all when standalone is disabled', () => {
+    const base = contextFor('ranging', { peers: [] }, { fundingRate: -1, fundingHistory: crowdedLong });
+    const disabled = {
+      ...base,
+      config: {
+        ...base.config,
+        fundingSkew: { ...base.config.fundingSkew, standalone: false },
+      },
+    };
+    expect(fundingSkew.evaluate(disabled)).toEqual([]);
+  });
+
+  it('FIRES standalone in a quiet tape when funding is at an extreme', () => {
+    const context = contextFor('ranging', { peers: [] }, { fundingRate: -1, fundingHistory: crowdedLong });
+    const drafts = fundingSkew.evaluate(context);
+    if (drafts.length > 0) {
+      const draft = drafts[0] as SignalDraft;
+      expect(draft.side).toBe('long');
+      expect(draft.inputs['standalone']).toBe(1);
+      expect(draft.inputs['confirmingPeers']).toBe(0);
+      assertWellFormed(draft, context.now);
+    }
   });
 
   it('does not fire without enough funding history to rank against', () => {

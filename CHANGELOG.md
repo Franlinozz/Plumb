@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-08-10
+
+Phase 4B Parts A–C — evidence expansion. **Parts D and E are NOT done; see below.**
+
+### Added
+- `holdout.ts` — the history is partitioned ONCE: development to 2026-05-12, the last 90 days a
+  write-protected holdout. `assertDevelopmentOnly` throws on any window reaching past the boundary
+  (no tolerance parameter — a tolerance is how a holdout leaks), and reading the holdout needs an
+  operator token plus an audit record carrying the date, config hash and reason. A test asserts the
+  normal backtest path cannot read holdout data.
+- `funding_model.ts` — real settlements where they exist; elsewhere a conservative constant at the
+  75th percentile of observed |funding|, charged AGAINST the position in both directions. Never a
+  credit we did not observe. Every report states the real-vs-modelled fraction.
+- `regimes.ts` — bull/bear/chop classification from TRAILING 90-day return and realised volatility
+  only, plus `bullOnlyVerdict`, which labels a config that is really a leveraged long.
+- 3 years of history: 105,300 × 15m, 26,400 × 1H, 6,600 × 4H per instrument, zero gaps/duplicates.
+- 33 new tests (482 total).
+
+### Fixed (Part C — specification errors, not bugs)
+- `revert_band` conditions loosened to `ranging` OR low-ADX, and band touch OR RSI extreme.
+  **Fires 2 → 2,606 times over 3 years.** It is now the dominant signal source, which materially
+  changes the character of the combined configuration.
+- `funding_skew` gained a standalone mode with a self-evaluated confirmation. **Fires 0 → 305.**
+  Previously it could not fire alone by design, so it could never be backtested alone.
+
+### Not done
+- **Part D (new candidates)** — `vol_expansion`, `oi_divergence`, `session_bias` and `dispersion`
+  are not built. `dispersion` in particular is a spread-position architecture change spanning
+  strategy, risk and executor (pairId, MAX_CONCURRENT semantics, correlation-veto special-casing,
+  two-leg atomicity) and warrants its own phase.
+- **Part E (gate re-run)** — not run, because it should be run once the candidate set is complete.
+  The P4 result therefore still stands: nothing is eligible.
+
 ## [0.6.1] — 2026-08-10
 
 Phase 5B — the real Agent Trade Kit demo venue. **Write paths are blocked on an OKX account
@@ -260,7 +293,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Franlinozz/Plumb/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Franlinozz/Plumb/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Franlinozz/Plumb/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Franlinozz/Plumb/compare/v0.4.0...v0.5.0

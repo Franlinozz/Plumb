@@ -88,6 +88,11 @@ Rules for this table:
 | Hostile-strategy simulation, full history, 5 scenarios | — | `npm run hostile` | `hostile.test.ts` (fixture-scale twin) |
 | Walk-forward backtest of every strategy config | — | `npm run backtest` | `analysis.test.ts`, `engine.test.ts` |
 | Live-data execution session (simulated venue) | — | `npm run demo-session` | `executor.test.ts` |
+| Real Trade Kit demo venue session | — | `npm run demo-venue` | `executor/src/cli.test.ts` |
+| Holdout partition + guard + token-gated audited access | `@plumb/backtest` | internal | `backtest/src/evidence.test.ts` |
+| Funding reconstruction (75th-pct conservative constant, cost-only) | `@plumb/backtest` | internal | `evidence.test.ts` › funding model |
+| Historical regime segmentation (bull/bear/chop, trailing-only) | `@plumb/backtest` | internal | `evidence.test.ts` › regimes |
+| Bull-only verdict for a config that is really a leveraged long | `@plumb/backtest` | internal | `evidence.test.ts` › regimes |
 
 ## Phase status
 
@@ -98,7 +103,9 @@ Rules for this table:
 | 2 | `@plumb/strategy` — pure signal engine, regime, gate, portfolio | ✅ shipped |
 | 3 | `@plumb/risk` — governor, sizing, drawdown ladder, kill switch | ✅ shipped |
 | 4 | `@plumb/backtest` — walk-forward harness, cost model, eligibility gate | ✅ shipped |
-| 5 | `@plumb/executor` — bracketed placement, idempotency, reconciliation | ✅ shipped (ATK demo session blocked on a demo API key) |
+| 5 | `@plumb/executor` — bracketed placement, idempotency, reconciliation | ✅ shipped |
+| 5B | Real demo venue session | ⚠️ read paths verified; writes blocked on OKX account mode |
+| 4B | Evidence expansion | ⚠️ Parts A–C shipped; Parts D–E not done |
 | 6–10 | Not yet written | — |
 
 ## Data on hand
@@ -155,7 +162,29 @@ From the locked 400 starting capital the ladder keeps the account 35+ USDT clear
 Vetoes are dominated by `no_new_positions` (13,128 in the baseline) — the drawdown ladder does most
 of the work, and the kill switch is the backstop behind it.
 
-## Eligibility gate results — NONE PASSED
+## Data on hand after P4B
+
+| Instrument | 15m | 1H | 4H | Span | Real funding |
+| --- | --- | --- | --- | --- | --- |
+| BTC-USDT-SWAP | 105,300 | 26,400 | 6,600 | 2023-08-09 → 2026-08-10 | 293 settlements (97d) |
+| ETH-USDT-SWAP | 105,300 | 26,400 | 6,600 | 2023-08-09 → 2026-08-10 | 293 settlements (97d) |
+| SOL-USDT-SWAP | 105,300 | 26,400 | 6,600 | 2023-08-09 → 2026-08-10 | 293 settlements (97d) |
+
+Zero gaps, zero duplicates. **Development set ends 2026-05-12; the last 90 days are a locked
+holdout.** ~91% of the 3-year window has no real funding and uses the conservative model.
+
+## Fixed candidates (P4B Part C), measured over 3 years
+
+`npm run replay --tf 1H` over 78,303 cycles:
+
+| Strategy | Before (180d) | After (3y) | Rate | Note |
+| --- | --- | --- | --- | --- |
+| `revert_band` | 2 | **2,606** | 3.33% | now the dominant signal source — changes the combined config's character |
+| `funding_skew` | 0 | **305** | 0.39% | standalone mode; was structurally unable to fire alone |
+| `trend_ema` | 16 | 94 | 0.12% | unchanged logic |
+| `breakout_range` | 46 | 132 | 0.17% | unchanged logic |
+
+## Eligibility gate results — NONE PASSED (measured on 180 days, P4)
 
 `npm run backtest` over 5,100 bars/instrument on 1H with full pessimistic costs, walk-forward
 60d IS / 20d OOS rolling 20d. **Reported exactly as measured; no parameter was tuned to make

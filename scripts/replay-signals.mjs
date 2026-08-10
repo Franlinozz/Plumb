@@ -41,6 +41,10 @@ let emitted = 0;
 const bump = (map, key) => map.set(key, (map.get(key) ?? 0) + 1);
 const started = Date.now();
 
+// P4B: funding history is now stored, so funding_skew can finally be evaluated.
+const fundingByInst = {};
+for (const instId of tradableUniverse()) fundingByInst[instId] = store.getFundingRates(instId);
+
 for (const instId of tradableUniverse()) {
   const candles = store.getCandles(instId, tf);
   if (candles.length < lookback + 10) {
@@ -54,7 +58,19 @@ for (const instId of tradableUniverse()) {
     // the recursive indicators warm up differently and the replay stops being evidence (P1).
     const window = candles.slice(end - lookback, end);
     const bar = window[window.length - 1];
-    const snapshot = snapshotOf(window, { instId, timeframe: tf, now: bar.ts + 1 });
+    const rates = fundingByInst[instId] ?? [];
+    const past = [];
+    for (const r of rates) {
+      if (r.fundingTime > bar.ts) break;
+      past.push(r.fundingRate);
+    }
+    const snapshot = snapshotOf(window, {
+      instId,
+      timeframe: tf,
+      now: bar.ts + 1,
+      fundingRate: past.length > 0 ? past[past.length - 1] : 0,
+      fundingHistory: past.slice(-100),
+    });
 
     const result = runCycleSeeded(snapshot, bar.ts + 1, { state: EMPTY_STATE, seed: end });
     cycles += 1;
