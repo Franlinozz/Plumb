@@ -234,6 +234,10 @@ that touches payments, subscriptions or the trade kit.
 - **P7 · The network outage was scoped per-unit, not host-wide.** `IPAddressDeny=any` on
   `plumb-runner.service` alone. A host-wide block would have cut egress for ASSAY, Occestra and
   Sigil, all listed and taking real sales.
+- **OKX.AI delivery · runtime help overrides the pasted reference script.** The installed current
+  identity CLI requires `heartbeat --chain-index 196`, not the older reference script's agent-id
+  form. The isolated delivery daemon uses the installed interface and cross-checks the official
+  active fan-out with provider status before sending anything.
 
 (append-only log — one line of reasoning each)
 

@@ -30,7 +30,8 @@
     "demo-session": "node scripts/demo-session.mjs",
     "demo-venue": "node scripts/demo-venue-session.mjs",
     "measure": "node scripts/measure-tables.mjs",
-    "feed-sample": "node scripts/feed-sample.mjs"
+    "feed-sample": "node scripts/feed-sample.mjs",
+    "asp:autopilot": "node scripts/asp-autopilot.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
