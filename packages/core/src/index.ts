@@ -22,6 +22,8 @@ export {
   utcDayKey,
   isSameUtcDay,
   toUtcIso,
+  utcDayOfWeek,
+  utcHourOf,
 } from './time.js';
 
 export { REGIME_LABELS, type RegimeLabel } from './regime-labels.js';

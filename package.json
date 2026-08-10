@@ -1,6 +1,6 @@
 {
   "name": "plumb",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Plumb — a risk-first perpetual-futures signal service and Trading ASP on OKX.AI. Every signal, measured before it's sent.",
   "license": "MIT",
@@ -28,7 +28,8 @@
     "replay": "node scripts/replay-signals.mjs",
     "hostile": "node scripts/hostile-sim.mjs",
     "demo-session": "node scripts/demo-session.mjs",
-    "demo-venue": "node scripts/demo-venue-session.mjs"
+    "demo-venue": "node scripts/demo-venue-session.mjs",
+    "measure": "node scripts/measure-tables.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

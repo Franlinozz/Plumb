@@ -80,3 +80,20 @@ export function isSameUtcDay(a: number, b: number): boolean {
 export function toUtcIso(ms: number): string {
   return new Date(ms).toISOString();
 }
+
+/**
+ * The UTC hour (0–23) an instant falls in.
+ *
+ * A pure conversion, not a clock read — it lives here so that packages under a strict
+ * no-`new Date()` purity scan (`@plumb/strategy`) can ask the question without constructing a
+ * Date themselves. Keeping the scan strict is worth more than the convenience of inlining it.
+ */
+export function utcHourOf(ms: number): number {
+  return new Date(ms).getUTCHours();
+}
+
+/** The UTC day-of-week (0 = Sunday). Same reasoning as {@link utcHourOf}. */
+export function utcDayOfWeek(ms: number): number {
+  return new Date(ms).getUTCDay();
+}
+

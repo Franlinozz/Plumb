@@ -1,8 +1,8 @@
-# Plumb backtest — funding_skew
+# Plumb backtest — oi_divergence
 
 > **NOT ELIGIBLE for live trading.** Failed on: profit factor (OOS), sample size, outlier independence.
 
-Generated 2026-08-10 07:15 UTC · data 2023-10-05 01:00 → 2026-05-02 01:00 · signature `cdbfc5f45fcec150…`
+Generated 2026-08-10 07:15 UTC · data 2023-10-05 01:00 → 2026-05-02 01:00 · signature `ea5ae0af7d3bb36f…`
 
 ## Max drawdown (out of sample)
 
@@ -183,6 +183,6 @@ Where a choice existed, the assumption that makes the result look WORSE was take
 
 ## Run notes
 
-- Configuration: funding_skew. Strategies enabled: funding_skew.
+- Configuration: oi_divergence. Strategies enabled: oi_divergence.
 - 47 walk-forward windows over 24240 bars of 1H data (development set only).
 

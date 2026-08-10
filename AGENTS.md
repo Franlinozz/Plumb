@@ -243,6 +243,35 @@ that touches payments, subscriptions or the trade kit.
   and recording after loses a real position on a crash, which is the failure that cannot be
   repaired; recording first can only ever leave an orphan intent, which boot-time recovery resolves
   against the venue.
+- **P4B/E · THE POOLED OOS CURVE IS A CONCATENATION, NOT AN ACCOUNT.** `runWalkForward` stitches
+  ~47 independent 20-day OOS windows, each of which `runBacktest` starts fresh at 400 USDT with its
+  own kill switch. The combined curve then sums the deltas, so cumulative equity can run far below
+  335 — hence pooled max drawdowns of 35–250% and P(ruin) of 72–100%. **A continuously-traded
+  account would have hit the kill switch and stopped.** The meaningful floor check is the
+  PER-WINDOW `minEquity`, which is what the gate's `drawdown floor` criterion actually uses. Pooled
+  drawdown and pooled P(ruin) overstate what a real account would experience and should be read as
+  a severity ranking, not as a forecast.
+- **P4B/D · `oi_divergence` is STRUCTURALLY UNEVALUABLE: no historical open-interest series exists.**
+  P1 fetched OI live but never persisted it, and OKX's rubik OI-history endpoint is capped at ~1,440
+  recent points — nowhere near three years. The measurement table therefore used VOLUME as an
+  order-flow proxy, which answers a different question (how much traded, not whether positions were
+  opened or closed). The strategy fired 0 times because `snapshot.openInterest.history` is empty in
+  replay. **Storing an OI series is a prerequisite before this candidate means anything.**
+- **P4B/D · `funding_skew` fires 0 times on the DEVELOPMENT set** even after the standalone fix,
+  because the only real funding history OKX retains (from 2026-05-04) lies almost entirely inside
+  the holdout, which ends the development set 8 days later. It fires 305 times over the full
+  3 years precisely because that window is mostly holdout. **A funding strategy cannot be developed
+  against this data.**
+- **P4B/D · `session_bias` confirmed the arithmetic it was built to test.** The hour-of-day table
+  found exactly one hour surviving regime segmentation on all three instruments — 08:00 UTC, a
+  funding-settlement hour, +3.16/+3.33/+4.65bp. That is a REAL measured effect and it is smaller
+  than the 10bp round-trip taker fee. Backtested: 1,495 trades, profit factor 0.754, −1,232.89 USDT.
+  **A real edge below transaction costs is not an edge.** Retired.
+- **P4B/D · `dispersion` was NOT BUILT.** The spread architecture (pairId, MAX_CONCURRENT counting a
+  spread as one, the correlation veto special-cased for a hedge leg without becoming a hole in the
+  governor, two-leg atomicity, a stop on the spread, the risk budget split across the pair) is a
+  change spanning strategy, risk and executor with a test owed for each invariant. Shipping a
+  version that can half-open would be strictly worse than not shipping it.
 - **P4 · ALL FIVE CONFIGURATIONS FAILED THE ELIGIBILITY GATE.** Reported as-is; no parameter was
   tuned to make something pass, because tuning until something passes IS overfitting.
   `breakout_range` was the only positive out-of-sample config (+14.41 USDT, PF 1.19, and it did not

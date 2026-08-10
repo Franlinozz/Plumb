@@ -73,7 +73,15 @@ describe('every strategy, unconditionally', () => {
 
   it('carries a stable id and version for backtest attribution', () => {
     const ids = ALL_STRATEGIES.map((m) => m.id);
-    expect(ids).toEqual(['trend_ema', 'revert_band', 'breakout_range', 'funding_skew']);
+    expect(ids).toEqual([
+      'trend_ema',
+      'revert_band',
+      'breakout_range',
+      'vol_expansion',
+      'oi_divergence',
+      'session_bias',
+      'funding_skew',
+    ]);
     for (const module of ALL_STRATEGIES) expect(module.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 

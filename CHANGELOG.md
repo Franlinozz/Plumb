@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-08-10
+
+Phase 4B Parts D–E. **0 of 10 configurations passed the gate on three years of data.** The holdout
+was not read. No threshold was changed and no parameter was tuned.
+
+### Added
+- `vol_expansion` — compression by percentile, then the first decisive break out of it, stop INSIDE
+  the compressed range. The bet is that expansion occurs, not on which way.
+- `oi_divergence` — the four order-flow states, trading only the two least ambiguous.
+- `session_bias` — built ONLY because the measurement justified it (see below).
+- `scripts/measure-tables.mjs` (`npm run measure`) — the OI-state and hour-of-day tables, computed
+  on the development set before any rule was written.
+- `utcHourOf` / `utcDayOfWeek` in `@plumb/core`, so `@plumb/strategy` can ask what hour a bar falls
+  in without constructing a `Date` and breaking its own purity scan.
+- Gate reporting extended with trades-per-14-day-window, regime segmentation and the
+  modelled-vs-real funding split.
+
+### Results — nothing eligible
+`vol_expansion` was the only positive configuration (+42 USDT, PF 1.195) and fails anyway:
+**profitable only in bull regimes** (+96.48 bull vs −54.31 across 99 trades outside), P(ruin) 72%,
+and removing its single best trade turns +42 into −159.
+
+`session_bias` confirmed the arithmetic it was built to test: the one hour surviving regime
+segmentation (08:00 UTC, +3–5bp on all three instruments) is smaller than the 10bp round-trip taker
+fee. 1,495 trades, profit factor 0.754. Retired.
+
+`oi_divergence` and `funding_skew` fired ZERO times on the development set — the first because no
+historical open-interest series exists, the second because OKX's 97-day real-funding window lies
+almost entirely inside the holdout. Neither is evaluable against this data.
+
+### Not done
+- **`dispersion` was not built.** The spread architecture spans strategy, risk and executor and
+  owes a test per invariant; a version that can half-open is worse than none.
+
+### Measurement caveat, recorded in AGENTS.md
+The pooled OOS curve is a concatenation of ~47 independent 20-day windows, each starting fresh at
+400 USDT with its own kill switch — so pooled drawdown and P(ruin) overstate what a continuously
+traded account would see. The gate's floor criterion uses PER-WINDOW minimum equity, which is the
+meaningful number.
+
 ## [0.7.1] — 2026-08-10
 
 Phase 5B COMPLETE. The operator whitelisted the VPS IPv6 address and switched the demo account to
@@ -319,7 +359,8 @@ anywhere in this release**; every OKX endpoint called here is public.
   every `PLUMB_*` and provider variable, `.gitignore`.
 - Vitest across all workspaces; one placeholder test per workspace.
 
-[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Franlinozz/Plumb/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Franlinozz/Plumb/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Franlinozz/Plumb/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Franlinozz/Plumb/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Franlinozz/Plumb/compare/v0.6.0...v0.6.1

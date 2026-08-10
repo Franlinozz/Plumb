@@ -105,7 +105,7 @@ Rules for this table:
 | 4 | `@plumb/backtest` — walk-forward harness, cost model, eligibility gate | ✅ shipped |
 | 5 | `@plumb/executor` — bracketed placement, idempotency, reconciliation | ✅ shipped |
 | 5B | Real demo venue session | ⚠️ read paths verified; writes blocked on OKX account mode |
-| 4B | Evidence expansion | ⚠️ Parts A–C shipped; Parts D–E not done |
+| 4B | Evidence expansion | ⚠️ Parts A–E shipped except `dispersion` |
 | 6–10 | Not yet written | — |
 
 ## Data on hand
@@ -184,7 +184,51 @@ holdout.** ~91% of the 3-year window has no real funding and uses the conservati
 | `trend_ema` | 16 | 94 | 0.12% | unchanged logic |
 | `breakout_range` | 46 | 132 | 0.17% | unchanged logic |
 
-## Eligibility gate results — NONE PASSED (measured on 180 days, P4)
+## Eligibility gate — P4B Part E: 0 of 10 configurations passed
+
+Development set only (2023-08-06 → 2026-05-12, ~24,000 1H bars/instrument). **The holdout was not
+read.** No threshold was changed and no parameter was tuned.
+
+| Config | OOS trades | Win% | PF | Net USDT | MaxDD% | P(ruin) | Without best trade | Trades/14d (median) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `trend_ema` | 238 | 36.6 | 0.689 | −198 | 70.5 | 86.2% | −252 | 1 |
+| `revert_band` | 1,458 | 28.5 | 0.929 | −868 | 235.5 | 97.9% | −1,037 | 7 |
+| `breakout_range` | 468 | 31.2 | 0.758 | −180 | 55.2 | 90.0% | −242 | 2 |
+| `vol_expansion` | 533 | 40.5 | **1.195** | **+42** | 34.1 | 72.1% | −159 | 2 |
+| `oi_divergence` | 0 | — | — | 0 | — | — | — | 0 |
+| `session_bias` | 1,495 | 23.5 | 0.754 | −1,233 | 252.7 | 100% | −1,312 | 8 |
+| `funding_skew` | 0 | — | — | 0 | — | — | — | 0 |
+| `all_combined` | 2,298 | 30.8 | 0.886 | −926 | 157.0 | 98.6% | −1,377 | 14 |
+| `trend_and_breakout` | 981 | 37.7 | 0.941 | −272 | 85.2 | 91.8% | −373 | 4 |
+| `mean_reversion_pair` | 1,458 | 28.5 | 0.929 | −868 | 235.5 | 97.9% | −1,037 | 7 |
+
+`vol_expansion` is the only positive configuration, and it fails anyway: **profitable only in bull
+regimes** (+96.48 in bull, −54.31 across 99 trades outside it — a leveraged long, not an edge),
+P(ruin) 72%, and removing its single best trade turns +42 into −159.
+
+**100% of development-set funding is modelled**, because OKX's 97-day real-funding window lies
+almost entirely inside the holdout. `vol_expansion`'s entire profit therefore sits in the modelled
+period — flagged red by the report.
+
+### Regime segmentation (net USDT / trades)
+
+| Config | bull | bear | chop |
+| --- | --- | --- | --- |
+| `trend_ema` | −245.44 / 40 | +39.20 / 21 | +8.16 / 19 |
+| `revert_band` | −441.81 / 254 | −388.05 / 155 | −38.44 / 124 |
+| `vol_expansion` | **+96.48 / 86** | −14.62 / 56 | −39.70 / 43 |
+| `session_bias` | −391.65 / 269 | −406.35 / 181 | −434.89 / 160 |
+| `all_combined` | −520.37 / 435 | −310.26 / 280 | −95.41 / 262 |
+
+### Hour-of-day (session_bias measurement, development set)
+
+One hour survived regime segmentation on all three instruments: **08:00 UTC, positive** —
+BTC +3.16bp, ETH +3.33bp, SOL +4.65bp. A funding-settlement hour, so structurally plausible rather
+than dredged. Hour 22 had larger raw means (+5.4/+7.1/+7.8bp) but did not survive segmentation.
+**The surviving edge is ~3–5bp against a 10bp round-trip taker fee**, and the backtest confirmed it:
+profit factor 0.754. A real effect smaller than the cost of capturing it is not an edge.
+
+## Earlier gate results — NONE PASSED (measured on 180 days, P4)
 
 `npm run backtest` over 5,100 bars/instrument on 1H with full pessimistic costs, walk-forward
 60d IS / 20d OOS rolling 20d. **Reported exactly as measured; no parameter was tuned to make

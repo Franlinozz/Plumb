@@ -129,6 +129,29 @@ export interface StrategyConfig {
     /** Standalone confirmation: price must not be trending hard against the fade. */
     readonly standaloneMaxAdx: number;
   };
+  readonly volExpansion: {
+    readonly timeframe: Timeframe;
+    /** Trailing window the compression percentile is measured against. */
+    readonly compressionLookback: number;
+    /** Bandwidth/vol at or below this percentile counts as compressed. */
+    readonly compressionPercentile: number;
+    /** Bars forming the range the break is measured against. */
+    readonly rangeBars: number;
+    readonly minBreakAtr: number;
+  };
+  readonly oiDivergence: {
+    readonly timeframe: Timeframe;
+    readonly lookbackBars: number;
+    readonly minHistory: number;
+    /** Changes smaller than this in either series are treated as noise. */
+    readonly deadbandPct: number;
+    readonly minMoveAtr: number;
+    readonly atrMultiple: number;
+  };
+  readonly sessionBias: {
+    readonly timeframe: Timeframe;
+    readonly atrMultiple: number;
+  };
   readonly takeProfitR: readonly number[];
   readonly maxHoldBars: number;
   /** A signal is stale after this many bars of its own timeframe. */
@@ -141,6 +164,9 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = Object.freeze({
     revert_band: true,
     breakout_range: true,
     funding_skew: true,
+    vol_expansion: true,
+    oi_divergence: true,
+    session_bias: true,
   }),
   lookbackBars: 300,
   regime: Object.freeze({
@@ -175,6 +201,22 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = Object.freeze({
     standalone: true,
     standaloneMaxAdx: 30,
   }),
+  volExpansion: Object.freeze({
+    timeframe: '1H' as Timeframe,
+    compressionLookback: 100,
+    compressionPercentile: 0.25,
+    rangeBars: 20,
+    minBreakAtr: 0.5,
+  }),
+  oiDivergence: Object.freeze({
+    timeframe: '1H' as Timeframe,
+    lookbackBars: 6,
+    minHistory: 24,
+    deadbandPct: 0.001,
+    minMoveAtr: 0.75,
+    atrMultiple: 2,
+  }),
+  sessionBias: Object.freeze({ timeframe: '1H' as Timeframe, atrMultiple: 1.5 }),
   takeProfitR: Object.freeze([1.5, 3]),
   maxHoldBars: 48,
   expiryBars: 2,

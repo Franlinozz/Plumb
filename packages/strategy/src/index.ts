@@ -66,13 +66,23 @@ export {
   ALL_STRATEGIES,
   STRATEGY_IDS,
   breakoutRange,
+  classifyOiState,
   fundingSkew,
+  oiDivergence,
   revertBand,
+  sessionBias,
   trendEma,
+  volExpansion,
+  SURVIVING_HOURS,
+  TRADED_STATES,
   BREAKOUT_RANGE_ID,
   FUNDING_SKEW_ID,
+  OI_DIVERGENCE_ID,
   REVERT_BAND_ID,
+  SESSION_BIAS_ID,
   TREND_EMA_ID,
+  VOL_EXPANSION_ID,
+  type OiState,
 } from './strategies/index.js';
 
 export {

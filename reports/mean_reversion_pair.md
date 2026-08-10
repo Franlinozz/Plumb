@@ -1,8 +1,8 @@
-# Plumb backtest — revert_band
+# Plumb backtest — mean_reversion_pair
 
 > **NOT ELIGIBLE for live trading.** Failed on: P(ruin), profit factor (OOS), outlier independence.
 
-Generated 2026-08-10 07:15 UTC · data 2023-10-05 01:00 → 2026-05-02 01:00 · signature `2b03a1db2ed8e203…`
+Generated 2026-08-10 07:15 UTC · data 2023-10-05 01:00 → 2026-05-02 01:00 · signature `68c29f232f93e0c0…`
 
 ## Max drawdown (out of sample)
 
@@ -202,6 +202,6 @@ Where a choice existed, the assumption that makes the result look WORSE was take
 
 ## Run notes
 
-- Configuration: revert_band. Strategies enabled: revert_band.
+- Configuration: mean_reversion_pair. Strategies enabled: revert_band, funding_skew.
 - 47 walk-forward windows over 24240 bars of 1H data (development set only).
 
