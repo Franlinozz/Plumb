@@ -37,6 +37,7 @@ export function formatDecisionEventForDelivery(event: DecisionEvent, gate: Execu
   if (!gate.reconciliationHealthy || !decisionPositionsReconciled(event)) {
     throw new ExecutableSignalRejected('signed reconciliation is unhealthy');
   }
+  if (event.createdAt > gate.now) throw new ExecutableSignalRejected('DecisionEvent is future-dated');
   if (gate.now >= event.validUntil) throw new ExecutableSignalRejected('DecisionEvent is stale');
   if (gate.marketDataAt > gate.now || gate.now - gate.marketDataAt > gate.maxMarketAgeMs) {
     throw new ExecutableSignalRejected('market data is stale or future-dated');

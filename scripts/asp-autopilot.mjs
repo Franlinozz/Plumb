@@ -16,6 +16,8 @@ import Database from 'better-sqlite3';
 
 const DEFAULT_NOTICE =
   '[Copy-Trading Notice] Plumb Perpetual Signals: No new position is recommended for this period. Stay on the sidelines and manage position size carefully.';
+const NO_TRADE_NOTICE =
+  '[Copy-Trading Notice] Plumb: No approved DecisionEvent is active. No trade is recommended; safety, cost, or evidence gates remain closed.';
 const WELCOME_KEY = 'subscription-welcome-v1';
 
 function parseArgs(argv) {
@@ -25,6 +27,7 @@ function parseArgs(argv) {
     state: process.env.PLUMB_A2A_STATE ?? '/var/lib/plumb-okxai/asp-delivery.db',
     intervalMs: Number(process.env.PLUMB_A2A_INTERVAL_MS ?? 60_000),
     heartbeatMs: Number(process.env.PLUMB_A2A_HEARTBEAT_MS ?? 45_000),
+    noTradeMs: Number(process.env.PLUMB_A2A_NO_TRADE_MS ?? 14_400_000),
     agentId: process.env.PLUMB_ASP_AGENT_ID ?? '',
     chainIndex: process.env.PLUMB_ASP_CHAIN_INDEX ?? '196',
     markDelivered: [],
@@ -45,7 +48,9 @@ function parseArgs(argv) {
   if (!/^\d+$/.test(out.chainIndex)) throw new Error('chain index must be numeric');
   if (!Number.isFinite(out.intervalMs) || out.intervalMs < 10_000) throw new Error('interval must be at least 10000ms');
   if (!Number.isFinite(out.heartbeatMs) || out.heartbeatMs < 10_000) throw new Error('heartbeat must be at least 10000ms');
+  if (!Number.isFinite(out.noTradeMs) || out.noTradeMs < 3_600_000) throw new Error('no-trade interval must be at least one hour');
   if (DEFAULT_NOTICE.length > 200) throw new Error('fallback notice exceeds 200 characters');
+  if (NO_TRADE_NOTICE.length > 200) throw new Error('no-trade notice exceeds 200 characters');
   return out;
 }
 
@@ -145,27 +150,27 @@ function ensureSession(db, jobId, buyerAgentId, agentId, dryRun) {
   log('info', 'session_created', { jobId, buyerAgentId });
 }
 
-function deliverWelcome(db, jobId, agentId, dryRun) {
-  const existing = db.prepare('SELECT status FROM deliveries WHERE job_id=? AND delivery_key=?').get(jobId, WELCOME_KEY);
+function deliverText(db, jobId, agentId, deliveryKey, text, dryRun) {
+  const existing = db.prepare('SELECT status FROM deliveries WHERE job_id=? AND delivery_key=?').get(jobId, deliveryKey);
   if (existing) {
-    log('info', 'delivery_suppressed', { jobId, deliveryKey: WELCOME_KEY, status: existing.status });
+    log('info', 'delivery_suppressed', { jobId, deliveryKey, status: existing.status });
     return;
   }
   if (dryRun) {
-    log('info', 'delivery_dry_run', { jobId, deliveryKey: WELCOME_KEY, body: DEFAULT_NOTICE });
+    log('info', 'delivery_dry_run', { jobId, deliveryKey, body: text });
     return;
   }
   const now = new Date().toISOString();
   db.prepare(
     "INSERT INTO deliveries(job_id,delivery_key,status,created_at,updated_at) VALUES(?,?,'pending',?,?)",
-  ).run(jobId, WELCOME_KEY, now, now);
+  ).run(jobId, deliveryKey, now, now);
   try {
     const payload = runJson('onchainos', [
       'agent',
       'deliver',
       jobId,
       '--deliverable-text',
-      DEFAULT_NOTICE,
+      text,
       '--agent-id',
       agentId,
     ]);
@@ -173,18 +178,18 @@ function deliverWelcome(db, jobId, agentId, dryRun) {
     db.prepare("UPDATE deliveries SET status='delivered',updated_at=?,error=NULL WHERE job_id=? AND delivery_key=?").run(
       new Date().toISOString(),
       jobId,
-      WELCOME_KEY,
+      deliveryKey,
     );
-    log('info', 'delivery_succeeded', { jobId, deliveryKey: WELCOME_KEY });
+    log('info', 'delivery_succeeded', { jobId, deliveryKey });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     db.prepare("UPDATE deliveries SET status='uncertain',updated_at=?,error=? WHERE job_id=? AND delivery_key=?").run(
       new Date().toISOString(),
       message.slice(0, 240),
       jobId,
-      WELCOME_KEY,
+      deliveryKey,
     );
-    log('error', 'delivery_uncertain', { jobId, deliveryKey: WELCOME_KEY, error: message.slice(0, 240) });
+    log('error', 'delivery_uncertain', { jobId, deliveryKey, error: message.slice(0, 240) });
   }
 }
 
@@ -209,7 +214,9 @@ function scan(db, options) {
       continue;
     }
     ensureSession(db, jobId, buyerAgentId, options.agentId, options.dryRun);
-    deliverWelcome(db, jobId, options.agentId, options.dryRun);
+    deliverText(db, jobId, options.agentId, WELCOME_KEY, DEFAULT_NOTICE, options.dryRun);
+    const noTradeKey = `no-trade:${Math.floor(Date.now() / options.noTradeMs)}`;
+    deliverText(db, jobId, options.agentId, noTradeKey, NO_TRADE_NOTICE, options.dryRun);
   }
 }
 

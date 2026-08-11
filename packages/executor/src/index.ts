@@ -109,3 +109,20 @@ export {
   type OverrideContext,
 } from './demo-override.js';
 
+export {
+  AgentTradeKitCompetitionExecutor,
+  CompetitionExecutionRejected,
+  type CompetitionExecutionInput,
+  type CompetitionExecutionResult,
+  type CompetitionExecutorDeps,
+  type CompetitionFeeRates,
+  type CompetitionInstrumentMetadata,
+  type CompetitionPublicationProof,
+  type CompetitionRiskState,
+  type CompetitionVenue,
+} from './competition.js';
+
+export {
+  CompetitionLedgerStore,
+  type CompetitionLedgerPosition,
+} from './competition-ledger.js';

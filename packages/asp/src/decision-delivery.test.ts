@@ -69,6 +69,11 @@ describe('DecisionEvent A2A delivery gate', () => {
     expect(() => formatDecisionEventForDelivery(reversed, gate())).toThrow(/signed reconciliation/);
   });
 
+  it('rejects a future-dated DecisionEvent', () => {
+    expect(() => formatDecisionEventForDelivery({ ...event(), createdAt: NOW + 1 }, gate()))
+      .toThrow(/future-dated/u);
+  });
+
   it('rejects malformed and over-200-character signals instead of rewriting them', () => {
     expect(() => validateV11PerpetualSignal('BUY BTC now')).toThrow(/V1.1/);
     expect(() => validateV11PerpetualSignal('x'.repeat(201))).toThrow(/200/);

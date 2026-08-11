@@ -28,7 +28,7 @@ export interface MockFaults {
 }
 
 export class MockAtk implements AtkClient {
-  readonly demo = true;
+  readonly demo: boolean = true;
   readonly placed: PlaceOrderRequest[] = [];
   readonly closes: string[] = [];
 

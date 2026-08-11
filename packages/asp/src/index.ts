@@ -84,3 +84,9 @@ export {
   validateV11PerpetualSignal,
   type ExecutableSignalGate,
 } from './decision-delivery.js';
+
+export {
+  DecisionPublicationStore,
+  type DecisionPublication,
+  type PublicationStatus,
+} from './decision-publication-store.js';

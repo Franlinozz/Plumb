@@ -17,10 +17,10 @@ Protected source SHA: `fbd2fd51aec77891ed2378a475baa56c94585bfb`
 | Subscription | GREEN | Exactly one agent-to-agent service registered: `Plumb Perpetual Signals`, service id `cc4531b5-b71d-40e8-96f4-f2ce2a569bd4`, 10 USDT/month. |
 | 3-day trial | GREEN | Registered `freeTrial=72` hours and displayed as 3 days. |
 | ASP heartbeat | GREEN | Official X Layer heartbeat succeeds; `plumb-okxai-a2a.service` sends it every 45 seconds. Existing public `/health` remains healthy. |
-| A2A delivery | YELLOW | Two active marketplace subscriptions received confirmed non-executable onboarding notices. Sessions, active-only filtering, heartbeat, durable idempotency, restart uncertainty handling, structured logs and dry-run are deployed. Executable delivery remains fail-closed until a genuine approved DecisionEvent exists. |
+| A2A delivery | YELLOW | Two active marketplace subscriptions receive idempotent four-hour no-trade notices; the first scheduled round was acknowledged for both. Sessions, active-only filtering, heartbeat, durable restart handling, structured logs and dry-run are deployed. Executable delivery remains fail-closed until a genuine approved DecisionEvent exists. |
 | Agent Trade Kit installed | GREEN | Local P8 runtime and global CLI/MCP are all current npm release `1.4.2`. |
 | Agent Trade Kit demo writes | GREEN | Existing repo evidence records demo placement, attached-stop, fill, idempotency and reconciliation tests. No new write was made during this audit. |
-| Competition executor | RED | The unsafe compliance-only order script is now a fail-closed tombstone. A canonical immutable `DecisionEvent` and delivery gate exist, but no dedicated live competition adapter consumes them yet. No competition order has been sent. |
+| Competition executor | YELLOW | Dedicated Agent Trade Kit adapter now consumes the exact published DecisionEvent and enforces profile/account/risk/net-mode/post-write gates. No genuine eligible event exists and no live order has been sent. |
 | Net-mode regression | YELLOW | Signed reconciliation is covered and P8 vetoes an occupied instrument. The dedicated competition close-to-zero-before-reversal state machine is not implemented, so live execution remains disabled. |
 | Signed reconciliation | GREEN | Reversed same-size positions fail reconciliation; baseline tests pass. |
 | Dedicated account configured | GREEN | `competition` profile written to `/root/.okx/config.toml` (2026-08-10T19:53Z), `demo = false`. **`default_profile` deliberately left as `demo`** — see the warning below. |
@@ -70,7 +70,9 @@ finished competition executor was therefore never on the pre-snapshot critical p
 
 - `npm run build`: PASS.
 - `npm run typecheck`: PASS.
-- `npm test`: PASS, 590/590 tests across 40 files.
+- `npm test`: PASS, 607/607 tests across 43 files. One full-suite run saw a 102 ms health response
+  against the unchanged <100 ms assertion; the isolated rerun passed at 56 ms and the next full
+  run passed without weakening the threshold.
 - Marketplace avatar: exact 440×440 RGB PNG, square corners, no alpha mask, 221,849 bytes; uploaded and attached to Plumb #10746.
 - Competition work is isolated from the live tree in `/root/plumb-okxai`.
 
@@ -90,8 +92,8 @@ finished competition executor was therefore never on the pre-snapshot critical p
 ## Architecture gaps against the emergency specification
 
 1. A canonical immutable `DecisionEvent` and deterministic <=200-character V1.1 formatter now exist and fail closed on approval, halt, freshness, signed reconciliation, metadata, sizing, cost, duplicate and account-certainty failures.
-2. The minimum official subscription/session/heartbeat runtime is deployed, but executable on-demand delivery is intentionally disabled until it durably acknowledges that exact DecisionEvent.
-3. The competition adapter does not yet verify every pre/post-write business condition or implement the explicit close-to-zero-before-reversal state machine. Live writes remain disabled.
+2. The minimum official subscription/session/heartbeat runtime is deployed. The on-demand executable publisher now persists exact-event, per-subscriber acknowledgements, but has not been invoked because no genuine event is approved.
+3. The dedicated competition adapter implements pre/post-write and close-to-zero reversal gates. Live writes remain disabled pending a genuine event, a reliable live-profile read-only preflight, and decision-specific operator confirmation.
 4. Persistent public market/OI recording is now deployed. Historical depth will accumulate from this point; it cannot be reconstructed retroactively from this recorder.
 5. P8 run 2 has a lifecycle wiring defect: `manage()` implements `maxHoldBars`, but `run-cycle-loop.mjs` never calls it. The live run is protected and was not changed or restarted; see `reports/p8-lifecycle-audit.md`.
 6. Several requested regression scenarios are covered in substance, but the full named 25-test competition matrix does not yet exist.

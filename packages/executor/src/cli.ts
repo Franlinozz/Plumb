@@ -24,6 +24,7 @@ import type {
   VenueOrder,
   VenuePosition,
 } from './atk.js';
+import type { CompetitionFeeRates, CompetitionInstrumentMetadata } from './competition.js';
 
 /**
  * Credentials the Trade Kit binary must NEVER inherit from our environment.
@@ -84,6 +85,9 @@ function defaultExec(binPath: string) {
 
 export class CliAtkClient implements AtkClient {
   readonly demo: boolean;
+  /** Runtime brand used by the competition adapter to reject direct-REST implementations. */
+  readonly transport = 'agent-trade-kit' as const;
+  readonly profileName: string;
   /** Overrides `posSide` on every order. Set from `resolvePosSide` for a net-mode account. */
   posSideOverride: 'long' | 'short' | 'net' | undefined;
   private readonly exec: (args: readonly string[], timeoutMs: number) => Promise<string>;
@@ -104,6 +108,7 @@ export class CliAtkClient implements AtkClient {
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.random = options.random ?? Math.random;
     this.profile = options.profile;
+    this.profileName = options.profile ?? '';
   }
 
   private async run(args: readonly string[]): Promise<unknown> {
@@ -290,6 +295,56 @@ export class CliAtkClient implements AtkClient {
   async resolvePosSide(requested: 'long' | 'short'): Promise<'long' | 'short' | 'net'> {
     const config = await this.getAccountConfig();
     return config.posMode === 'net_mode' ? 'net' : requested;
+  }
+
+  /** Current instrument metadata, queried immediately before a competition write. */
+  async getInstrumentMetadata(instId: import('@plumb/core').Instrument): Promise<CompetitionInstrumentMetadata> {
+    const rows = await this.rows(['market', 'instruments', '--instType', 'SWAP', '--instId', instId]);
+    const row = rows.find((candidate) => String(candidate['instId'] ?? '') === instId) ?? rows[0] ?? {};
+    const metadata = {
+      ctVal: num(row['ctVal']),
+      ctMult: num(row['ctMult'] ?? 1),
+      minSz: num(row['minSz']),
+      lotSz: num(row['lotSz']),
+      state: String(row['state'] ?? ''),
+    };
+    if (metadata.ctVal <= 0 || metadata.ctMult <= 0 || metadata.minSz <= 0 || metadata.lotSz <= 0) {
+      throw new AtkError('malformed', `instrument metadata is incomplete for ${instId}`);
+    }
+    return metadata;
+  }
+
+  /** Fee rates are returned as signed rates by some OKX account modes; costs use magnitudes. */
+  async getFeeRates(instId: import('@plumb/core').Instrument): Promise<CompetitionFeeRates> {
+    const rows = await this.rows(['account', 'fees', '--instType', 'SWAP', '--instId', instId]);
+    const row = rows[0] ?? {};
+    const maker = Math.abs(num(row['maker'] ?? row['makerU']));
+    const taker = Math.abs(num(row['taker'] ?? row['takerU']));
+    if (maker === 0 && taker === 0) throw new AtkError('malformed', `fee rates are missing for ${instId}`);
+    return { maker, taker };
+  }
+
+  async getLastPrice(instId: import('@plumb/core').Instrument): Promise<number> {
+    const rows = await this.rows(['market', 'ticker', instId]);
+    const last = num(rows[0]?.['last']);
+    if (last <= 0) throw new AtkError('malformed', `ticker returned no usable last price for ${instId}`);
+    return last;
+  }
+
+  async getLeverage(instId: import('@plumb/core').Instrument): Promise<number> {
+    const rows = await this.rows(['swap', 'get-leverage', '--instId', instId, '--mgnMode', 'cross']);
+    const leverage = num(rows[0]?.['lever']);
+    if (leverage <= 0) throw new AtkError('malformed', `leverage is missing for ${instId}`);
+    return leverage;
+  }
+
+  async getMaxAvailableSize(instId: import('@plumb/core').Instrument): Promise<{ readonly buy: number; readonly sell: number }> {
+    const rows = await this.rows(['account', 'max-avail-size', '--instId', instId, '--tdMode', 'cross']);
+    const row = rows[0] ?? {};
+    const buy = num(row['availBuy']);
+    const sell = num(row['availSell']);
+    if (buy < 0 || sell < 0) throw new AtkError('malformed', `maximum available size is invalid for ${instId}`);
+    return { buy, sell };
   }
 }
 
