@@ -43,11 +43,15 @@ describe('CLI argument construction', () => {
       ordType: 'market',
       sz: 0.1,
       clOrdId: 'SIGabc',
+      tpTriggerPx: 68_000,
       slTriggerPx: 64_000,
     });
     const args = calls[0] as string[];
     expect(args).toContain('--slOrdPx=-1');
+    expect(args).toContain('--tpOrdPx=-1');
     expect(args).not.toContain('--slOrdPx');
+    expect(args).not.toContain('--tpOrdPx');
+    expect(args[args.indexOf('--tpTriggerPx') + 1]).toBe('68000');
     expect(args[args.indexOf('--slTriggerPx') + 1]).toBe('64000');
   });
 
@@ -119,6 +123,9 @@ describe('CLI argument construction', () => {
     await expect(client.getLastPrice('BTC-USDT-SWAP')).resolves.toBe(65_000);
     await expect(client.getLeverage('BTC-USDT-SWAP')).resolves.toBe(2);
     await expect(client.getMaxAvailableSize('BTC-USDT-SWAP')).resolves.toEqual({ buy: 4.2, sell: 3.8 });
+    const feeCall = calls.find((call) => call[0] === 'account' && call[1] === 'fees');
+    expect(feeCall).toEqual(expect.arrayContaining(['--instType', 'SWAP']));
+    expect(feeCall).not.toContain('--instId');
     expect(calls.map((call) => call.slice(0, 2))).toEqual([
       ['market', 'instruments'], ['account', 'fees'], ['market', 'ticker'],
       ['swap', 'get-leverage'], ['account', 'max-avail-size'],

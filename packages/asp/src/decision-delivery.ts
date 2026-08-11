@@ -1,5 +1,6 @@
 import {
   decisionPositionsReconciled,
+  MIN_EXPECTED_EDGE_COST_MULTIPLE,
   type DecisionEvent,
 } from '@plumb/core';
 
@@ -44,7 +45,9 @@ export function formatDecisionEventForDelivery(event: DecisionEvent, gate: Execu
   }
   if (!gate.instrumentMetadataPresent) throw new ExecutableSignalRejected('instrument metadata is missing');
   if (!gate.sizingValid) throw new ExecutableSignalRejected('position sizing is invalid');
-  if (event.expectedEdgeBps <= event.expectedCostBps) throw new ExecutableSignalRejected('cost gate failed');
+  if (event.expectedEdgeBps < event.expectedCostBps * MIN_EXPECTED_EDGE_COST_MULTIPLE) {
+    throw new ExecutableSignalRejected('cost gate failed');
+  }
   if (gate.duplicateDecision) throw new ExecutableSignalRejected('duplicate decisionId');
   if (!gate.accountCertain) throw new ExecutableSignalRejected('account state is uncertain');
 

@@ -5,6 +5,9 @@ import { INSTRUMENTS } from './locked.js';
 const finite = z.number().finite();
 const positive = finite.positive();
 
+/** Competition candidates must clear friction by a meaningful margin, not a rounding error. */
+export const MIN_EXPECTED_EDGE_COST_MULTIPLE = 3;
+
 /**
  * The immutable hand-off shared by the competition signal publisher and executor.
  * Neither consumer may infer direction, size, risk or prices independently.
@@ -64,8 +67,10 @@ export class DecisionEventRejected extends Error {
 export function finalizeDecisionEvent(candidate: unknown): DecisionEvent {
   const event = DecisionEventSchema.parse(candidate);
   if (event.governorApproved !== true) throw new DecisionEventRejected('governorApproved is not true');
-  if (event.expectedEdgeBps <= event.expectedCostBps) {
-    throw new DecisionEventRejected('expected edge does not exceed estimated trading friction');
+  if (event.expectedEdgeBps < event.expectedCostBps * MIN_EXPECTED_EDGE_COST_MULTIPLE) {
+    throw new DecisionEventRejected(
+      `expected edge is below ${MIN_EXPECTED_EDGE_COST_MULTIPLE}x estimated trading friction`,
+    );
   }
   return Object.freeze({ ...event });
 }

@@ -17,7 +17,7 @@ const event = finalizeDecisionEvent({
   decisionId: 'DEC-COMPETE0001', strategyVersion: 'momentum-v1', createdAt: NOW - 1_000,
   validUntil: NOW + 60_000, instrument: 'BTC-USDT-SWAP', direction: 'long',
   entryLow: 65_000, entryHigh: 66_000, stopPrice: 64_025, takeProfit: 68_000,
-  positionPct: 50, leverage: 2, riskUsd: 3, expectedCostBps: 12, expectedEdgeBps: 30,
+  positionPct: 50, leverage: 2, riskUsd: 3, expectedCostBps: 12, expectedEdgeBps: 40,
   governorApproved: true, venuePositionBefore: 0, ledgerPositionBefore: 0,
   reconciliationVersion: 'signed-v1',
 });
@@ -68,7 +68,9 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     const result = await executor(venue).execute(input());
     expect(result).toMatchObject({ decisionId: event.decisionId, contracts: 0.3, reversed: false,
       venueSignedPositionAfter: 0.3 });
-    expect(venue.placed[0]).toMatchObject({ clOrdId: 'DECCOMPETE0001', slTriggerPx: 64_025 });
+    expect(venue.placed[0]).toMatchObject({
+      clOrdId: 'DECCOMPETE0001', slTriggerPx: 64_025, tpTriggerPx: 68_000,
+    });
   });
 
   it('closes to signed zero before reversing in net_mode', async () => {
@@ -79,7 +81,9 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     const result = await executor(venue, proof(reversal)).execute(input(reversal));
     expect(result.reversed).toBe(true);
     expect(venue.placed[0]).toMatchObject({ side: 'buy', sz: 0.1, reduceOnly: true });
-    expect(venue.placed[1]).toMatchObject({ side: 'buy', sz: 0.3, slTriggerPx: 64_025 });
+    expect(venue.placed[1]).toMatchObject({
+      side: 'buy', sz: 0.3, slTriggerPx: 64_025, tpTriggerPx: 68_000,
+    });
   });
 
   it.each([
@@ -113,8 +117,44 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       const { slTriggerPx: _stop, attachAlgoId: _algo, ...withoutStop } = order;
       return withoutStop;
     };
-    await expect(executor(venue).execute(input())).rejects.toThrow(/protective stop absent/u);
+    await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
     expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true });
+  });
+
+  it('emergency-reduces and fails when the DecisionEvent take-profit is absent', async () => {
+    const venue = new CompetitionMock();
+    const original = venue.getOrder.bind(venue);
+    venue.getOrder = async (...args): Promise<VenueOrder | undefined> => {
+      const order = await original(...args);
+      if (order === undefined) return undefined;
+      const { tpTriggerPx: _target, ...withoutTarget } = order;
+      return withoutTarget;
+    };
+    await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
+    expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true });
+  });
+
+  it('emergency-reduces the actual partial fill, never the larger requested size', async () => {
+    class PartialWithoutTargetVenue extends CompetitionMock {
+      override async placeOrder(request: PlaceOrderRequest): Promise<OrderRef> {
+        const result = await super.placeOrder(request);
+        if (request.reduceOnly !== true) {
+          this.setPosition(request.instId, (request.side === 'buy' ? 1 : -1) * request.sz / 2, 'net');
+        }
+        return result;
+      }
+
+      override async getOrder(...args: Parameters<CompetitionMock['getOrder']>): Promise<VenueOrder | undefined> {
+        const order = await super.getOrder(...args);
+        if (order === undefined) return undefined;
+        const { tpTriggerPx: _target, ...withoutTarget } = order;
+        return withoutTarget;
+      }
+    }
+    const venue = new PartialWithoutTargetVenue();
+    await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
+    expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true, sz: 0.15 });
+    expect(await venue.getPositions(event.instrument)).toMatchObject([{ pos: 0 }]);
   });
 
   it('fails closed when the venue position reveals a partial fill', async () => {

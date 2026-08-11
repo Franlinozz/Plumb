@@ -1,39 +1,44 @@
 # Competition executor
 
-Audit time: 2026-08-10T17:27Z UTC
+Audit time: 2026-08-11T13:20Z UTC
 
-## Status: YELLOW — implemented and testable, but no live write is authorized
+## Status: YELLOW — implementation ready; strategy approval and live confirmation absent
 
-`AgentTradeKitCompetitionExecutor` now consumes the same canonical immutable `DecisionEvent` as
+Read-only competition preflight passed 8/8 checks: dedicated profile authentication and registered
+UID binding, account level 2, `net_mode`, read+trade without withdrawal, 409.90 USDT in Trading,
+empty Funding account, and no open positions. BTC, ETH and SOL cross leverage settings are 3x.
+
+`AgentTradeKitCompetitionExecutor` consumes the exact canonical immutable `DecisionEvent` used by
 the on-demand A2A publisher. The default command is preview-only. A write additionally requires
-the dedicated Agent Trade Kit profile, exact publication acknowledgement for every active
-subscriber, and a decision-specific live-money confirmation.
+the dedicated Agent Trade Kit profile, exact acknowledgement by every active subscriber, and a
+decision-specific live-money confirmation.
 
 Implemented gates:
 
 - exact account UID, account level, `net_mode`, venue positions and pending orders;
-- current metadata, fees, ticker, leverage, max size, equity and available margin;
+- current metadata, SWAP-wide Lv1 fees, ticker, leverage, max size, equity and available margin;
 - signed venue/ledger/Event reconciliation, including wrong-direction failure;
 - close/reduce to verified signed zero before reversal;
 - Agent Trade Kit runtime brand and `competition` profile enforcement; direct REST rejected;
 - durable intent, publication and signed-position ledgers with restart-fail-closed behaviour;
-- order, fill, attached-stop and signed-position verification after writes;
-- emergency reduce-only handling when a protective stop is absent;
+- order, fill, native attached-stop, native attached-take-profit and signed-position verification;
+- emergency reduce-only handling of the exact observed signed quantity when either attached exit
+  is absent (including partial fills, without over-closing into a reversal);
+- canonical expected edge >= 3x estimated full friction;
 - 1% per-trade risk, 2% concurrent stop risk, 3% daily loss, 24 USDT drawdown stop,
   30 USDT loss budget, and 3x leverage ceiling.
+
+Compatibility correction completed during this audit: Agent Trade Kit 1.4.2/OKX rejects a SWAP
+fee request carrying `--instId`; the adapter now uses the documented SWAP-wide request verified
+against the live read-only competition profile. No order was placed.
 
 Remaining blockers before the first live trade:
 
 - no strategy configuration has passed the evidence gate, so no genuine approved DecisionEvent
-  currently exists;
-- the CLI metadata/fee/leverage preflight must complete reliably against the live profile (one
-  read-only metadata probe hung and was terminated; no write command ran);
-- the first real event needs an end-to-end dry-run publication preview and operator review;
+  exists;
+- a real event needs an end-to-end dry-run publication and order preview;
 - the operator must provide the exact decision-specific live-money confirmation immediately
   before execution.
 
-The former compliance-only live-order script has been replaced with a fail-closed tombstone. It
-cannot choose a direction or invoke an order method. This prevents an unrelated minimum-size trade
-from being mistaken for a competition-valid signal-derived trade.
-
-P8 must not be repointed, restarted or reused as the competition executor.
+The compliance-only order script remains a fail-closed tombstone. P8 is not repointed, restarted,
+or reused as the competition executor.

@@ -55,6 +55,10 @@ export interface PlaceOrderRequest {
   /** Idempotency key — the signal id, sanitised. See `clord.ts`. */
   readonly clOrdId: string;
   readonly reduceOnly?: boolean;
+  /** Attached take-profit trigger. */
+  readonly tpTriggerPx?: number;
+  /** `-1` means "market order when triggered". */
+  readonly tpOrdPx?: number;
   /** Attached stop-loss, so the bracket is atomic where the venue allows it. */
   readonly slTriggerPx?: number;
   /** `-1` means "market order when triggered". */
@@ -76,6 +80,7 @@ export interface VenueOrder {
   readonly sz: number;
   readonly avgPx: number;
   readonly ts: number;
+  readonly tpTriggerPx?: number;
   readonly slTriggerPx?: number;
   /** The linked algo order carrying an ATTACHED stop, when the venue reports one. */
   readonly attachAlgoId?: string;

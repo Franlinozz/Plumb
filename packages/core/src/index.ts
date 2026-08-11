@@ -58,6 +58,7 @@ export {
 export {
   DecisionEventSchema,
   DecisionEventRejected,
+  MIN_EXPECTED_EDGE_COST_MULTIPLE,
   decisionPositionsReconciled,
   finalizeDecisionEvent,
   type DecisionEvent,

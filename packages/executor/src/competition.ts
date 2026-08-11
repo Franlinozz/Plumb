@@ -184,7 +184,7 @@ export class AgentTradeKitCompetitionExecutor {
 
     const result = await placeBracket(
       { signalId: event.decisionId, instId: event.instrument, side: event.direction, sz: contracts,
-        stopPrice: event.stopPrice, atomic: true, tdMode: 'cross' },
+        stopPrice: event.stopPrice, takeProfitPrice: event.takeProfit, atomic: true, tdMode: 'cross' },
       { client: this.deps.venue, store: this.deps.intents, now: input.now },
     );
     if (!result.placed || result.order === undefined) {
@@ -192,9 +192,11 @@ export class AgentTradeKitCompetitionExecutor {
     }
     const order = await this.deps.venue.getOrder(event.instrument, { ordId: result.order.ordId });
     if (order === undefined) throw new CompetitionExecutionRejected('entry order cannot be verified after write');
-    if (order.slTriggerPx === undefined && order.attachAlgoId === undefined) {
-      await this.emergencyReduce(event, contracts);
-      throw new CompetitionExecutionRejected('protective stop absent after entry; emergency reduce submitted');
+    const stopObserved = order.slTriggerPx !== undefined || order.attachAlgoId !== undefined;
+    const takeProfitObserved = order.tpTriggerPx !== undefined;
+    if (!stopObserved || !takeProfitObserved) {
+      await this.emergencyReduce(event);
+      throw new CompetitionExecutionRejected('attached stop or take-profit absent after entry; emergency reduce submitted');
     }
 
     const after = await this.waitForSignedPosition(event.instrument, intendedSign * contracts, metadata.lotSz / 2);
@@ -241,10 +243,12 @@ export class AgentTradeKitCompetitionExecutor {
     });
   }
 
-  private async emergencyReduce(event: DecisionEvent, contracts: number): Promise<void> {
+  private async emergencyReduce(event: DecisionEvent): Promise<void> {
+    const actual = signed(await this.deps.venue.getPositions(event.instrument), event.instrument);
+    if (Math.abs(actual) <= 1e-9) return;
     const close = await this.deps.venue.placeOrder({
-      instId: event.instrument, side: event.direction === 'long' ? 'sell' : 'buy', posSide: event.direction,
-      ordType: 'market', sz: contracts, tdMode: 'cross',
+      instId: event.instrument, side: actual > 0 ? 'sell' : 'buy',
+      posSide: actual > 0 ? 'long' : 'short', ordType: 'market', sz: Math.abs(actual), tdMode: 'cross',
       clOrdId: toCloseClOrdId(`E${event.decisionId}`), reduceOnly: true,
     }).catch((error: unknown) => {
       throw new AtkError('rejected', `protective stop absent and emergency reduce failed: ${String(error)}`);

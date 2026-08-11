@@ -39,8 +39,10 @@ describe('canonical DecisionEvent', () => {
     expect(() => finalizeDecisionEvent({ ...base(), governorApproved: false })).toThrow(DecisionEventRejected);
   });
 
-  it('fails the cost gate when edge does not exceed friction', () => {
+  it('fails the cost gate unless edge is at least three times friction', () => {
     expect(() => finalizeDecisionEvent({ ...base(), expectedEdgeBps: 10 })).toThrow(/friction/);
+    expect(() => finalizeDecisionEvent({ ...base(), expectedEdgeBps: 29.99 })).toThrow(/3x/);
+    expect(() => finalizeDecisionEvent({ ...base(), expectedEdgeBps: 30 })).not.toThrow();
   });
 
   it('rejects stale-at-creation and malformed price geometry', () => {

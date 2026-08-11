@@ -70,6 +70,7 @@ export class MockAtk implements AtkClient {
       sz: request.sz,
       avgPx: request.px ?? 65_000,
       ts: this.clock,
+      ...(request.tpTriggerPx === undefined ? {} : { tpTriggerPx: request.tpTriggerPx }),
       ...(request.slTriggerPx === undefined ? {} : { slTriggerPx: request.slTriggerPx }),
     };
     this.orders.set(request.clOrdId, order);

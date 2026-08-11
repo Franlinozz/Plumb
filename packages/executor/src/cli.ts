@@ -160,6 +160,10 @@ export class CliAtkClient implements AtkClient {
     ];
     if (request.px !== undefined) args.push('--px', String(request.px));
     if (request.reduceOnly === true) args.push('--reduceOnly');
+    if (request.tpTriggerPx !== undefined) {
+      args.push('--tpTriggerPx', String(request.tpTriggerPx));
+      args.push(`--tpOrdPx=${String(request.tpOrdPx ?? -1)}`);
+    }
     if (request.slTriggerPx !== undefined) {
       args.push('--slTriggerPx', String(request.slTriggerPx));
       // GOTCHA (found against the real demo venue): a NEGATIVE option value is parsed as another
@@ -316,7 +320,11 @@ export class CliAtkClient implements AtkClient {
 
   /** Fee rates are returned as signed rates by some OKX account modes; costs use magnitudes. */
   async getFeeRates(instId: import('@plumb/core').Instrument): Promise<CompetitionFeeRates> {
-    const rows = await this.rows(['account', 'fees', '--instType', 'SWAP', '--instId', instId]);
+    // Current Agent Trade Kit 1.4.2/OKX rejects `instType=SWAP` combined with a USDT-SWAP
+    // `instId` as "instId and instType don't match". Swap fees are returned for the account's
+    // SWAP fee group, so query the documented type-wide form and retain `instId` only for a
+    // useful fail-closed error message below.
+    const rows = await this.rows(['account', 'fees', '--instType', 'SWAP']);
     const row = rows[0] ?? {};
     const maker = Math.abs(num(row['maker'] ?? row['makerU']));
     const taker = Math.abs(num(row['taker'] ?? row['takerU']));
@@ -358,6 +366,7 @@ function toOrder(row: Record<string, unknown>): VenueOrder {
     ? ((row['attachAlgoOrds'] as unknown[])[0] as Record<string, unknown> | undefined)
     : undefined;
   const slTriggerPx = num(row['slTriggerPx']) || num(attached?.['slTriggerPx']);
+  const tpTriggerPx = num(row['tpTriggerPx']) || num(attached?.['tpTriggerPx']);
   return {
     ordId: String(row['ordId'] ?? ''),
     clOrdId: String(row['clOrdId'] ?? ''),
@@ -368,6 +377,7 @@ function toOrder(row: Record<string, unknown>): VenueOrder {
     avgPx: num(row['avgPx'] ?? row['px']),
     ts: num(row['cTime'] ?? row['uTime'] ?? row['ts']),
     ...(slTriggerPx > 0 ? { slTriggerPx } : {}),
+    ...(tpTriggerPx > 0 ? { tpTriggerPx } : {}),
     ...(attached?.['attachAlgoId'] === undefined || attached['attachAlgoId'] === ''
       ? {}
       : { attachAlgoId: String(attached['attachAlgoId']) }),

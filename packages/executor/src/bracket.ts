@@ -26,6 +26,7 @@ export interface BracketRequest {
   /** Contracts. */
   readonly sz: number;
   readonly stopPrice: number;
+  readonly takeProfitPrice?: number;
   /** Attach the stop to the entry order. False forces the two-step fallback path. */
   readonly atomic?: boolean;
   readonly tdMode?: 'cross' | 'isolated';
@@ -131,6 +132,9 @@ export async function placeBracket(
         sz: request.sz,
         tdMode: request.tdMode ?? 'cross',
         clOrdId,
+        ...(request.takeProfitPrice === undefined
+          ? {}
+          : { tpTriggerPx: request.takeProfitPrice, tpOrdPx: -1 }),
         slTriggerPx: request.stopPrice,
         slOrdPx: -1, // market on trigger
       });
