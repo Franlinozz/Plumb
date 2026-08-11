@@ -266,12 +266,20 @@ export class CliAtkClient implements AtkClient {
     readonly acctLv: string;
     readonly posMode: string;
     readonly canTradeSwaps: boolean;
+    /**
+     * The account this key actually controls. Reported so a caller can refuse to write to the
+     * wrong account — with several OKX accounts and sub-accounts in play, "the key authenticates"
+     * and "the key is the one we meant" are different questions, and only the second one matters
+     * before an order.
+     */
+    readonly uid: string;
   }> {
     const rows = await this.rows(['account', 'config']);
     const row = rows[0] ?? {};
     const acctLv = String(row['acctLv'] ?? '');
     return {
       acctLv,
+      uid: String(row['uid'] ?? ''),
       posMode: String(row['posMode'] ?? ''),
       // Level 1 is Spot mode. Anything from 2 (single-currency margin) upward can hold a swap.
       canTradeSwaps: acctLv !== '' && acctLv !== '1',

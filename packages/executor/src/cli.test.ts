@@ -86,7 +86,13 @@ describe('CLI argument construction', () => {
       acctLv: '1',
       posMode: 'net_mode',
       canTradeSwaps: false,
+      uid: '',
     });
+
+    // The uid is surfaced so a caller can refuse to write to the wrong account. Absent rather
+    // than guessed when the venue does not report it.
+    const identified = recording({ config: [{ acctLv: '2', posMode: 'net_mode', uid: '872498673497072884' }] });
+    expect((await identified.client.getAccountConfig()).uid).toBe('872498673497072884');
 
     const margin = recording({ config: [{ acctLv: '2', posMode: 'long_short_mode' }] });
     const config = await margin.client.getAccountConfig();
