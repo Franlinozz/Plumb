@@ -1,6 +1,6 @@
 # OKX.AI registration readiness
 
-Audit time: 2026-08-10T17:27Z
+Audit time: 2026-08-11T09:24Z (continuation audit)
 
 Competition worktree: `/root/plumb-okxai`  
 Branch: `competition/okxai`  
@@ -12,23 +12,25 @@ Protected source SHA: `fbd2fd51aec77891ed2378a475baa56c94585bfb`
 | --- | --- | --- |
 | ASP created | GREEN | Plumb ASP `#10746` created at `2026-08-10T15:48:07.476Z`. Existing Assay #8599 remains separate and unchanged. |
 | ASP activated | GREEN | Activation submitted the listing for marketplace review. |
-| Review state | GREEN | Approved; operator reported approval before registration. |
+| Review state | GREEN | Marketplace now returns `Listed — eligible for task recommendations`; listing is active and online. |
 | Trading-type eligibility | GREEN | Platform service metadata categorizes Plumb as `TRADING`. |
 | Subscription | GREEN | Exactly one agent-to-agent service registered: `Plumb Perpetual Signals`, service id `cc4531b5-b71d-40e8-96f4-f2ce2a569bd4`, 10 USDT/month. |
 | 3-day trial | GREEN | Registered `freeTrial=72` hours and displayed as 3 days. |
 | ASP heartbeat | GREEN | Official X Layer heartbeat succeeds; `plumb-okxai-a2a.service` sends it every 45 seconds. Existing public `/health` remains healthy. |
-| A2A delivery | GREEN | Two active marketplace review subscriptions received confirmed non-executable notices. Sessions, active-only filtering, heartbeat, durable idempotency, restart uncertainty handling, structured logs and dry-run are deployed. |
+| A2A delivery | YELLOW | Two active marketplace subscriptions received confirmed non-executable onboarding notices. Sessions, active-only filtering, heartbeat, durable idempotency, restart uncertainty handling, structured logs and dry-run are deployed. Executable delivery remains fail-closed until a genuine approved DecisionEvent exists. |
 | Agent Trade Kit installed | GREEN | Local P8 runtime and global CLI/MCP are all current npm release `1.4.2`. |
 | Agent Trade Kit demo writes | GREEN | Existing repo evidence records demo placement, attached-stop, fill, idempotency and reconciliation tests. No new write was made during this audit. |
-| Competition executor | YELLOW | Existing executor places through Agent Trade Kit CLI, not direct REST. It is demo/P8-oriented and does not yet consume the required immutable `DecisionEvent` or enforce a dedicated competition profile. |
-| Net-mode regression | GREEN | Opposite direction on an occupied instrument is vetoed; the live P8 run logs repeated `instrument_occupied` vetoes. |
+| Competition executor | RED | The unsafe compliance-only order script is now a fail-closed tombstone. A canonical immutable `DecisionEvent` and delivery gate exist, but no dedicated live competition adapter consumes them yet. No competition order has been sent. |
+| Net-mode regression | YELLOW | Signed reconciliation is covered and P8 vetoes an occupied instrument. The dedicated competition close-to-zero-before-reversal state machine is not implemented, so live execution remains disabled. |
 | Signed reconciliation | GREEN | Reversed same-size positions fail reconciliation; baseline tests pass. |
 | Dedicated account configured | GREEN | `competition` profile written to `/root/.okx/config.toml` (2026-08-10T19:53Z), `demo = false`. **`default_profile` deliberately left as `demo`** — see the warning below. |
 | Hackathon registration | GREEN | Irreversible CeFi registration returned `registered: true` on 2026-08-10. UID is masked and not stored in the repo. |
 | Funding requirement | GREEN | Verified live: **409.9 USDT** (`eqUsd` 409.445) in the **trading** account, funding account 0.00, account flat. Clears the 300 minimum. |
-| Outstanding manual action | GREEN | Done. Verified: `acctLv 2`, `posMode net_mode`, `perm read_only,trade` (no withdrawal), `uid 872498673497072884` matching registration, `mainUid 400998524726203844`, IP allowlist includes both `62.171.182.75` and `2a02:c207:2329:7534::1`. |
+| Outstanding manual action | GREEN | Done. Verified: `acctLv 2`, `posMode net_mode`, read/trade permissions without withdrawal, and the competition UID matched registration. Identifiers and allowlist addresses are intentionally omitted here. |
 | USDT-perp tradability | GREEN | `account max-avail-size --instId BTC-USDT-SWAP --tdMode cross` → availBuy/availSell **409.9**. The account reports `settleCcy USDC` / `settleCcyList [USDC, USDG]`, which does **not** block USDT perpetuals — checked because only USDT perps count. |
 | Snapshot readiness | GREEN | `scripts/competition-preflight.mjs`: **8 checks, 0 FAIL, 0 WARN.** |
+| Market/OI recording | GREEN | Credential-free BTC/ETH/SOL OI, funding, mark, index, ticker/spread, OHLCV and metadata persist every five minutes in isolated SQLite storage. |
+| Valid competition trade | RED | None sent. A fabricated compliance-only order would violate Plumb's listing and signal-correspondence promise; the old script is deliberately unable to execute. |
 
 > **DO NOT RUN `okx config init`.** The wizard reassigns `default_profile` to whatever profile it
 > creates. The P8 runner passes `--demo` explicitly on every call, so it would not silently trade
@@ -68,7 +70,7 @@ finished competition executor was therefore never on the pre-snapshot critical p
 
 - `npm run build`: PASS.
 - `npm run typecheck`: PASS.
-- `npm test`: PASS, 568/568 tests.
+- `npm test`: PASS, 590/590 tests across 40 files.
 - Marketplace avatar: exact 440×440 RGB PNG, square corners, no alpha mask, 221,849 bytes; uploaded and attached to Plumb #10746.
 - Competition work is isolated from the live tree in `/root/plumb-okxai`.
 
@@ -87,9 +89,9 @@ finished competition executor was therefore never on the pre-snapshot critical p
 
 ## Architecture gaps against the emergency specification
 
-1. The current `Signal` plus governor verdict/feed entry is not the requested canonical immutable `DecisionEvent`.
-2. The minimum official subscription/session/heartbeat runtime is deployed, but executable on-demand delivery is intentionally disabled until it consumes a canonical approved `DecisionEvent`.
-3. The legacy formatter still includes URLs and long prose. The deployed review runtime does not use it; it emits only a validated non-executable notice under 200 characters. Replace the legacy formatter before executable delivery is enabled.
-4. The competition adapter does not yet fail closed on every required state, verify all business response codes, or implement the explicit close-to-zero-before-reversal state machine.
-5. Persistent open-interest recording is not running; only live reads and limited historical fetching exist.
-6. Several requested regression scenarios are covered in substance, but the full named 25-test competition matrix does not exist.
+1. A canonical immutable `DecisionEvent` and deterministic <=200-character V1.1 formatter now exist and fail closed on approval, halt, freshness, signed reconciliation, metadata, sizing, cost, duplicate and account-certainty failures.
+2. The minimum official subscription/session/heartbeat runtime is deployed, but executable on-demand delivery is intentionally disabled until it durably acknowledges that exact DecisionEvent.
+3. The competition adapter does not yet verify every pre/post-write business condition or implement the explicit close-to-zero-before-reversal state machine. Live writes remain disabled.
+4. Persistent public market/OI recording is now deployed. Historical depth will accumulate from this point; it cannot be reconstructed retroactively from this recorder.
+5. P8 run 2 has a lifecycle wiring defect: `manage()` implements `maxHoldBars`, but `run-cycle-loop.mjs` never calls it. The live run is protected and was not changed or restarted; see `reports/p8-lifecycle-audit.md`.
+6. Several requested regression scenarios are covered in substance, but the full named 25-test competition matrix does not yet exist.

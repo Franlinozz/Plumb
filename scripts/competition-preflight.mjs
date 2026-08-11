@@ -6,7 +6,7 @@
  * that must be true before the competition snapshot at 2026-08-11T04:00Z:
  *
  *   1. Does the key authenticate at all?
- *   2. Is it bound to the REGISTERED uid (872498673497072884)? Funding the wrong account is the
+ *   2. Is it bound to the registered uid supplied securely at runtime? Funding the wrong account is the
  *      one mistake here that costs real money and cannot be fixed by 04:00.
  *   3. Account level >= 2, or swaps cannot be traded at all (gotcha 13, sCode 51010).
  *   4. Is the >= 300 USDT in the TRADING account? A deposit lands in FUNDING, which does not
@@ -20,9 +20,14 @@
 import { execFileSync } from 'node:child_process';
 
 const PROFILE = process.env.PLUMB_COMP_PROFILE ?? 'competition';
-const REGISTERED_UID = '872498673497072884';
+const REGISTERED_UID = process.env.PLUMB_COMPETITION_UID?.trim() ?? '';
 const MIN_USDT = 300;
 const TARGET_USDT = 400;
+
+if (!/^\d+$/.test(REGISTERED_UID)) {
+  console.error('PLUMB_COMPETITION_UID is required and must be supplied outside the repository');
+  process.exit(2);
+}
 
 function okx(args) {
   try {

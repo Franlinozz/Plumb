@@ -55,3 +55,10 @@ export {
   type EligibilitySummary,
 } from './eligibility.js';
 
+export {
+  DecisionEventSchema,
+  DecisionEventRejected,
+  decisionPositionsReconciled,
+  finalizeDecisionEvent,
+  type DecisionEvent,
+} from './decision-event.js';

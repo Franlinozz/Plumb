@@ -142,3 +142,8 @@ export {
   type InstrumentSpec,
 } from './instruments.js';
 
+export {
+  MarketObservationStore,
+  type MarketObservation,
+  type ObservationKind,
+} from './observation-store.js';

@@ -1,0 +1,11 @@
+[Unit]
+Description=Record Plumb competition market observations every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

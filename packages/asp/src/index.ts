@@ -77,3 +77,10 @@ export {
   requirePublished,
   type PublishAndExecuteDeps,
 } from './publish_gate.js';
+
+export {
+  ExecutableSignalRejected,
+  formatDecisionEventForDelivery,
+  validateV11PerpetualSignal,
+  type ExecutableSignalGate,
+} from './decision-delivery.js';

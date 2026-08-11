@@ -1,0 +1,76 @@
+import { z } from 'zod';
+
+import { INSTRUMENTS } from './locked.js';
+
+const finite = z.number().finite();
+const positive = finite.positive();
+
+/**
+ * The immutable hand-off shared by the competition signal publisher and executor.
+ * Neither consumer may infer direction, size, risk or prices independently.
+ */
+export const DecisionEventSchema = z
+  .object({
+    decisionId: z.string().regex(/^DEC-[A-Za-z0-9_-]{10,48}$/),
+    strategyVersion: z.string().min(1).max(80),
+    createdAt: finite,
+    validUntil: finite,
+    instrument: z.enum(INSTRUMENTS),
+    direction: z.enum(['long', 'short']),
+    entryLow: positive,
+    entryHigh: positive,
+    stopPrice: positive,
+    takeProfit: positive,
+    positionPct: positive.max(100),
+    leverage: positive.max(3),
+    riskUsd: positive,
+    expectedCostBps: finite.nonnegative(),
+    expectedEdgeBps: positive,
+    governorApproved: z.boolean(),
+    venuePositionBefore: finite,
+    ledgerPositionBefore: finite,
+    reconciliationVersion: z.string().min(1).max(80),
+  })
+  .strict()
+  .superRefine((event, ctx) => {
+    if (event.validUntil <= event.createdAt) {
+      ctx.addIssue({ code: 'custom', path: ['validUntil'], message: 'must be later than createdAt' });
+    }
+    if (event.entryHigh < event.entryLow) {
+      ctx.addIssue({ code: 'custom', path: ['entryHigh'], message: 'must be at least entryLow' });
+    }
+    const stopCorrect =
+      event.direction === 'long' ? event.stopPrice < event.entryLow : event.stopPrice > event.entryHigh;
+    if (!stopCorrect) {
+      ctx.addIssue({ code: 'custom', path: ['stopPrice'], message: 'must be on the losing side of entry' });
+    }
+    const targetCorrect =
+      event.direction === 'long' ? event.takeProfit > event.entryHigh : event.takeProfit < event.entryLow;
+    if (!targetCorrect) {
+      ctx.addIssue({ code: 'custom', path: ['takeProfit'], message: 'must be on the profitable side of entry' });
+    }
+  });
+
+export type DecisionEvent = Readonly<z.infer<typeof DecisionEventSchema>>;
+
+export class DecisionEventRejected extends Error {
+  constructor(readonly reason: string) {
+    super(`DecisionEvent rejected: ${reason}`);
+    this.name = 'DecisionEventRejected';
+  }
+}
+
+/** Parse, enforce the final approval/cost gate, then freeze the exact shared object. */
+export function finalizeDecisionEvent(candidate: unknown): DecisionEvent {
+  const event = DecisionEventSchema.parse(candidate);
+  if (event.governorApproved !== true) throw new DecisionEventRejected('governorApproved is not true');
+  if (event.expectedEdgeBps <= event.expectedCostBps) {
+    throw new DecisionEventRejected('expected edge does not exceed estimated trading friction');
+  }
+  return Object.freeze({ ...event });
+}
+
+/** Signed reconciliation: equal magnitude in the wrong direction is a hard mismatch. */
+export function decisionPositionsReconciled(event: DecisionEvent, tolerance = 1e-9): boolean {
+  return Math.abs(event.venuePositionBefore - event.ledgerPositionBefore) <= tolerance;
+}
