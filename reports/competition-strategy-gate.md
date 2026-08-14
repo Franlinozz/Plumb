@@ -85,3 +85,30 @@ All conditions are mandatory:
 
 Persistent OKX-specific OI, funding, mark, index, OHLCV, spread/book and metadata recording is now
 running through the timer/oneshot recorder; this corrects the stale statement in the prior report.
+
+## Scheduled reassessment — 2026-08-14 16:32 UTC
+
+**Verdict: NO TRADE.** No signal was published and no order was submitted.
+
+The account preflight remained fully green (8 checks, 0 failures, 0 warnings), the account was
+flat, all five halt flags were false, the ASP heartbeat was succeeding, and both ACTIVE
+subscriptions had the current no-trade notice. Infrastructure readiness therefore did not cause
+the rejection.
+
+Closed-candle evidence rejected an entry:
+
+| Instrument | Closed 4H regime | Closed 1H confirmation | OI (24h) | Funding context | Verdict |
+|---|---|---|---:|---|---|
+| BTC-USDT-SWAP | Bearish alignment, ADX 28.03 | No downside breakout; 15:00 UTC candle rebounded 62,590.1 to 62,966.1 on 2.33x 20h volume | +9.72% | +0.0100%, 100th percentile of 100 settlements | WAIT — squeeze/crowding risk |
+| ETH-USDT-SWAP | ADX 18.30, below gate | No breakout; strong rebound | +5.17% | +0.0091%, 95th percentile | REJECT |
+| SOL-USDT-SWAP | ADX 17.55, below gate | No breakout; rebound | -1.33% | -0.0001%, 23rd percentile | REJECT |
+
+For BTC, the closed-bar range/ATR rule required a 1H close below approximately **62,385** for a
+short or above approximately **63,743** for a long. The actual 15:00 UTC close was **62,966.1**.
+An intrabar move through either level would still not qualify. The development evidence gate also
+remains RED: no signed eligible strategy configuration exists, independently sufficient to reject
+live execution.
+
+The August CPI, PPI and retail-sales releases had passed, but their mixed readings did not override
+the price/OI/funding gates. The next scheduled U.S. macro embargo remains the FOMC minutes on
+2026-08-19 at 14:00 ET.
