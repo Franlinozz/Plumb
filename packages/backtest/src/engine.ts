@@ -54,6 +54,13 @@ export class LookaheadError extends Error {
   }
 }
 
+export class SeriesAlignmentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SeriesAlignmentError';
+  }
+}
+
 /**
  * The causality assertion.
  *
@@ -185,6 +192,25 @@ export function runBacktest(options: BacktestOptions): BacktestResult {
     map[key] = (map[key] ?? 0) + 1;
   };
 
+  /** Last candle the requested replay window is allowed to observe, inclusive. */
+  const lastAllowedIndex = (candles: readonly Candle[]): number => {
+    if (options.toTs === undefined) return candles.length - 1;
+    let low = 0;
+    let high = candles.length - 1;
+    let answer = -1;
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      const ts = candles[middle]?.ts ?? Number.POSITIVE_INFINITY;
+      if (ts <= options.toTs) {
+        answer = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+    return answer;
+  };
+
   const closePosition = (
     position: LivePosition,
     exitPrice: number,
@@ -258,6 +284,18 @@ export function runBacktest(options: BacktestOptions): BacktestResult {
     const now = anchor.ts;
     if (options.fromTs !== undefined && now < options.fromTs) continue;
     if (options.toTs !== undefined && now > options.toTs) break;
+
+    // The replay advances all instruments with one shared bar index. Refuse incomplete or shifted
+    // series instead of quietly evaluating one instrument against another instrument's timestamp.
+    for (const instId of instruments) {
+      const aligned = series.get(instId)?.[bar];
+      if (aligned === undefined || aligned.ts !== now) {
+        throw new SeriesAlignmentError(
+          `${instId} is not aligned at bar ${bar}: expected ${new Date(now).toISOString()}, got ` +
+            `${aligned === undefined ? 'missing' : new Date(aligned.ts).toISOString()}`,
+        );
+      }
+    }
 
     fromTs = Math.min(fromTs, now);
     toTs = Math.max(toTs, now);
@@ -334,6 +372,8 @@ export function runBacktest(options: BacktestOptions): BacktestResult {
       const candle = all?.[bar];
       const nextBar = all?.[bar + 1];
       if (all === undefined || candle === undefined || nextBar === undefined) continue;
+      if (options.fromTs !== undefined && candle.ts < options.fromTs) continue;
+      if (options.toTs !== undefined && (candle.ts > options.toTs || nextBar.ts > options.toTs)) continue;
 
       // CAUSALITY: the window ends at THIS bar, inclusive. Nothing after it exists yet.
       const window = all.slice(bar - lookback + 1, bar + 1);
@@ -417,14 +457,18 @@ export function runBacktest(options: BacktestOptions): BacktestResult {
     }
   }
 
-  // Close anything still open at the end, at the last close. An open position is not a result.
+  // Close anything still open at the requested window's last observable close. Using the full
+  // series tail here would let every walk-forward fold see prices and funding after its own toTs.
+  // An open position is not a result, but neither is a position closed with future data.
   for (const position of [...open.values()]) {
     const all = series.get(position.instId);
-    const last = all?.[bars - 1];
-    if (last === undefined) continue;
+    if (all === undefined) continue;
+    const lastBar = lastAllowedIndex(all);
+    const last = all[lastBar];
+    if (last === undefined || last.ts < position.openedAt) continue;
     const barRangePct = last.close > 0 ? (last.high - last.low) / last.close : 0;
     const slip = slippageBps({ notionalUsdt: position.notionalUsdt, barRangePct, costs });
-    closePosition(position, exitFillPrice(position.side, last.close, slip), 'flatten', last.ts, bars - 1);
+    closePosition(position, exitFillPrice(position.side, last.close, slip), 'flatten', last.ts, lastBar);
   }
   syncBook();
 

@@ -2,7 +2,7 @@
 
 > **NOT ELIGIBLE for live trading.** Failed on: profit factor (OOS), sample size, outlier independence.
 
-Generated 2026-08-10 07:15 UTC · data 2023-10-05 01:00 → 2026-05-02 01:00 · signature `cdbfc5f45fcec150…`
+Generated 2026-08-17 16:51 UTC · data 2023-10-05 01:00 → 2026-05-02 01:00 · signature `609b3c6f056fc698…`
 
 ## Max drawdown (out of sample)
 

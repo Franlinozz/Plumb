@@ -1,0 +1,2072 @@
+{
+  "generatedAt": "2026-08-17T18:44:17.504Z",
+  "scope": "development-only",
+  "developmentTo": 1778544000000,
+  "holdoutFrom": 1778544000000,
+  "holdoutRead": false,
+  "decisionCandidate": "aligned-default",
+  "defaultEligible": true,
+  "stability": {
+    "stableCount": 7,
+    "required": 5,
+    "allInstrumentsPositive": true,
+    "temporalPositive": true,
+    "top3Independent": true,
+    "passed": true
+  },
+  "holdoutPermitted": true,
+  "results": [
+    {
+      "label": "aligned-default",
+      "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.25,
+          "rangeBars": 20,
+          "minBreakAtr": 0.5
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "aligned-default",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 384.54",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "0.12%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 496.05 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "1.999",
+            "required": "> 1",
+            "detail": "net 215.50 USDT over 121 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "121 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 189.59 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 12% of profit; result survives without it (min equity then 395.15)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 32.31606297349492,
+          "maxDrawdownPct": 7.2871549400684925,
+          "minEquity": 395.154197345262,
+          "longestDrawdownBars": 5725,
+          "longestDrawdownDays": 238.04166666666666,
+          "startingEquity": 400,
+          "finalEquity": 615.495309918614,
+          "totalReturnUsdt": 215.495309918614,
+          "totalReturnPct": 53.8738274796535,
+          "cagrPct": 18.215841159110013,
+          "days": 940,
+          "sharpe": 1.705578781965847,
+          "sortino": 4.6630067476883195,
+          "calmar": 2.4997192057698725,
+          "tradeCount": 121,
+          "winRate": 50.413223140495866,
+          "averageWinUsdt": 7.068370573504327,
+          "averageLossUsdt": -3.594588251085834,
+          "profitFactor": 1.9991654809305732,
+          "expectancyUsdt": 1.780952974534,
+          "largestLossUsdt": -5.762671774052033,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 5,
+          "averageHoldBars": 35.68595041322314,
+          "totalFeesUsdt": 22.248450528984403,
+          "fundingPaidUsdt": 10.078054761724704,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 559,
+          "pctTimeBelowStartingCapital": 0.10616180828946786,
+          "governorVetoes": {
+            "max_concurrent": 14,
+            "max_total_notional": 1,
+            "correlated_exposure": 1,
+            "instrument_occupied": 1
+          },
+          "gateRejections": {
+            "regime_low_confidence": 140,
+            "stop_too_wide": 27
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 138,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 121,
+          "seed": 20260817,
+          "p5Equity": 496.0486571516592,
+          "p25Equity": 563.6847479444228,
+          "medianEquity": 612.0396727262678,
+          "p75Equity": 662.2695094892728,
+          "p95Equity": 738.2499672820948,
+          "meanEquity": 613.7421882228132,
+          "worstEquity": 331.5353315395043,
+          "probabilityOfRuin": 0.0012,
+          "probabilityBelowStart": 0.0021,
+          "p5MaxDrawdownPct": 3.3651809375514556,
+          "medianMaxDrawdownPct": 5.87563242524599,
+          "worstMaxDrawdownPct": 22.24483072684677
+        },
+        "evaluatedAt": 1786992428894,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "1b2d9a945fbd61254c7f096904f3ade7e4891a9f0332f916a55ad54fc85f99d2"
+      },
+      "diagnostics": {
+        "profitableWindows": 27,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.574468085106383,
+        "firstHalfNetPnlUsdt": 168.06229393620197,
+        "secondHalfNetPnlUsdt": 47.43301598241203,
+        "withoutTop3NetPnlUsdt": 149.89540841323648,
+        "top3NetPnlUsdt": 65.59990150537752,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 42,
+            "netPnlUsdt": 32.38600519658848,
+            "profitFactor": 1.4331000624673154
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 39,
+            "netPnlUsdt": 108.46325415657375,
+            "profitFactor": 2.6109063163856723
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 40,
+            "netPnlUsdt": 74.64605056545176,
+            "profitFactor": 2.0146603119969875
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 44,
+        "netPnlUsdt": 38.523705613571686,
+        "profitFactor": 1.3807334081005869,
+        "withoutBestNetPnlUsdt": 18.53584095836707,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 11,
+            "netPnlUsdt": -0.11756229117815442,
+            "profitFactor": 0.99564346889301,
+            "withoutBestNetPnlUsdt": -13.510206429530335
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 14,
+            "netPnlUsdt": 45.51678670778143,
+            "profitFactor": 2.596620116676939,
+            "withoutBestNetPnlUsdt": 25.528922052576814
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 19,
+            "netPnlUsdt": -6.875518803031608,
+            "profitFactor": 0.8495160277692283,
+            "withoutBestNetPnlUsdt": -17.29534828200743
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 11,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 73.33088441215652,
+          "conservativeExpectedEdgeBps": 36.66544220607826,
+          "analyticalLowerConfidenceBoundBps": -157.83405140047466,
+          "lowerConfidenceBoundBps": -157.83405140047466,
+          "calculatedAt": 1786992257504,
+          "signature": "37ca6b9d3a5f28986bf9ca77723aa74a4c9d89eabecec664e5f564a1b22490cf"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 14,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 220.64295807504718,
+          "conservativeExpectedEdgeBps": 110.32147903752359,
+          "analyticalLowerConfidenceBoundBps": -59.209738779391984,
+          "lowerConfidenceBoundBps": -59.209738779391984,
+          "calculatedAt": 1786992257504,
+          "signature": "5d64bb5f9fcdb52ea4eb1d2570ae5dd6fcfb1d96d4e3166d7a113dd212968568"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 19,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": -7.697912144986049,
+          "conservativeExpectedEdgeBps": 0,
+          "analyticalLowerConfidenceBoundBps": -209.5925235393291,
+          "lowerConfidenceBoundBps": -209.5925235393291,
+          "calculatedAt": 1786992257504,
+          "signature": "e5d5d582cf02737c9f5e1690a1932597e2b08e4a65316c0c04d7a4765c0596e0"
+        }
+      }
+    },
+    {
+      "label": "compression-0.20",
+      "configHash": "083acf1ce4b04ef90a5634c81d9b047f9c025ca3411753eca0edaabeff310b51",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.2,
+          "rangeBars": 20,
+          "minBreakAtr": 0.5
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "compression-0.20",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 389.99",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "0.02%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 505.98 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "2.403",
+            "required": "> 1",
+            "detail": "net 213.78 USDT over 96 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "96 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 187.88 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 12% of profit; result survives without it (min equity then 400.00)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 22.584542971918495,
+          "maxDrawdownPct": 4.033349418475702,
+          "minEquity": 400,
+          "longestDrawdownBars": 3932,
+          "longestDrawdownDays": 163.5,
+          "startingEquity": 400,
+          "finalEquity": 613.784459622606,
+          "totalReturnUsdt": 213.78445962260605,
+          "totalReturnPct": 53.44611490565151,
+          "cagrPct": 18.088139199724253,
+          "days": 940,
+          "sharpe": 1.819202365844036,
+          "sortino": 5.342906816718252,
+          "calmar": 4.484644726506286,
+          "tradeCount": 96,
+          "winRate": 54.166666666666664,
+          "averageWinUsdt": 7.040775349338288,
+          "averageLossUsdt": -3.46217860324966,
+          "profitFactor": 2.4033758149088826,
+          "expectancyUsdt": 2.2269214544021456,
+          "largestLossUsdt": -5.762671774052033,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 5,
+          "averageHoldBars": 37,
+          "totalFeesUsdt": 18.11328663181174,
+          "fundingPaidUsdt": 8.458234038626129,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 461,
+          "pctTimeBelowStartingCapital": 0,
+          "governorVetoes": {
+            "max_concurrent": 9,
+            "max_total_notional": 1,
+            "correlated_exposure": 1
+          },
+          "gateRejections": {
+            "regime_low_confidence": 114,
+            "stop_too_wide": 20
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 107,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 96,
+          "seed": 20260817,
+          "p5Equity": 505.9837519352917,
+          "p25Equity": 566.3891451849845,
+          "medianEquity": 611.5034414446365,
+          "p75Equity": 659.1371501789725,
+          "p95Equity": 727.7463956678989,
+          "meanEquity": 613.5472372804478,
+          "worstEquity": 333.49694179770546,
+          "probabilityOfRuin": 0.0002,
+          "probabilityBelowStart": 0.0004,
+          "p5MaxDrawdownPct": 2.6844289109215334,
+          "medianMaxDrawdownPct": 4.709162518795634,
+          "worstMaxDrawdownPct": 18.349012696511647
+        },
+        "evaluatedAt": 1786991049309,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "49605cc50c2c4669a20a9cb9a7850ef035c0e5c14af9d89707ec65eaf1aabb08"
+      },
+      "diagnostics": {
+        "profitableWindows": 28,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.5957446808510638,
+        "firstHalfNetPnlUsdt": 139.95724866586542,
+        "secondHalfNetPnlUsdt": 73.82721095674052,
+        "withoutTop3NetPnlUsdt": 148.18455811722845,
+        "top3NetPnlUsdt": 65.59990150537752,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 32,
+            "netPnlUsdt": 48.09797667417804,
+            "profitFactor": 1.9982793568314083
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 34,
+            "netPnlUsdt": 72.01793182902132,
+            "profitFactor": 2.137079864591511
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 30,
+            "netPnlUsdt": 93.66855111940662,
+            "profitFactor": 3.2947225000335694
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 35,
+        "netPnlUsdt": 62.35079883776416,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 11,
+            "netPnlUsdt": 17.519042692914283
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 11,
+            "netPnlUsdt": 28.75869934349017
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 13,
+            "netPnlUsdt": 16.073056801359698
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "083acf1ce4b04ef90a5634c81d9b047f9c025ca3411753eca0edaabeff310b51",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 11,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 132.67570450962316,
+          "analyticalLowerConfidenceBoundBps": -84.40479675857722,
+          "lowerConfidenceBoundBps": -84.40479675857722,
+          "calculatedAt": 1786990711057,
+          "signature": "c6ed1644673f17e4aa6b1ddd5feee64f3afa649f8a094b73ececf1a7f16c162e"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "083acf1ce4b04ef90a5634c81d9b047f9c025ca3411753eca0edaabeff310b51",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 11,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 201.2657758824559,
+          "analyticalLowerConfidenceBoundBps": -119.3310916491331,
+          "lowerConfidenceBoundBps": -119.3310916491331,
+          "calculatedAt": 1786990711057,
+          "signature": "ff9d76400db6a324e8a219722de7aa0c5f3c359f3be00308c537c0621d27fdb2"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "083acf1ce4b04ef90a5634c81d9b047f9c025ca3411753eca0edaabeff310b51",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 13,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": 155.4698778350143,
+          "analyticalLowerConfidenceBoundBps": -89.7533596199861,
+          "lowerConfidenceBoundBps": -89.7533596199861,
+          "calculatedAt": 1786990711057,
+          "signature": "b3f0122553a5cec6a7a02ed439b1bf54332ca9b06c662cafad59f763a647d7df"
+        }
+      }
+    },
+    {
+      "label": "compression-0.30",
+      "configHash": "e00eef004b083f628506cfc28cd534ec35f779b7dacdc958b4081aa27a31963b",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.3,
+          "rangeBars": 20,
+          "minBreakAtr": 0.5
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "compression-0.30",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 384.54",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "1.41%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 431.06 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "1.560",
+            "required": "> 1",
+            "detail": "net 160.31 USDT over 147 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "147 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 134.40 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 16% of profit; result survives without it (min equity then 395.15)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 39.30399718832007,
+          "maxDrawdownPct": 6.974563420198157,
+          "minEquity": 395.154197345262,
+          "longestDrawdownBars": 7049,
+          "longestDrawdownDays": 293.0833333333333,
+          "startingEquity": 400,
+          "finalEquity": 560.3051909806535,
+          "totalReturnUsdt": 160.3051909806535,
+          "totalReturnPct": 40.07629774516337,
+          "cagrPct": 13.981163013019525,
+          "days": 940,
+          "sharpe": 1.2579070034786968,
+          "sortino": 2.987412086874785,
+          "calmar": 2.004593287162668,
+          "tradeCount": 147,
+          "winRate": 46.25850340136054,
+          "averageWinUsdt": 6.566521072598707,
+          "averageLossUsdt": -3.623015720962768,
+          "profitFactor": 1.5600802726098224,
+          "expectancyUsdt": 1.0905115032697503,
+          "largestLossUsdt": -5.762671774052033,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 6,
+          "averageHoldBars": 35.02040816326531,
+          "totalFeesUsdt": 26.73234305547173,
+          "fundingPaidUsdt": 11.987041555122278,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 667,
+          "pctTimeBelowStartingCapital": 3.1627372052903966,
+          "governorVetoes": {
+            "max_concurrent": 15,
+            "max_total_notional": 1,
+            "correlated_exposure": 2,
+            "instrument_occupied": 1
+          },
+          "gateRejections": {
+            "regime_low_confidence": 163,
+            "stop_too_wide": 32
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 166,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 147,
+          "seed": 20260817,
+          "p5Equity": 431.06303043876136,
+          "p25Equity": 505.8321463874797,
+          "medianEquity": 557.5856846010519,
+          "p75Equity": 612.6692828642797,
+          "p95Equity": 691.0862822055435,
+          "meanEquity": 558.8425601421746,
+          "worstEquity": 329.9943871090681,
+          "probabilityOfRuin": 0.0141,
+          "probabilityBelowStart": 0.0269,
+          "p5MaxDrawdownPct": 4.4746647514310425,
+          "medianMaxDrawdownPct": 8.162160545327437,
+          "worstMaxDrawdownPct": 28.615888433600293
+        },
+        "evaluatedAt": 1786991218637,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "82a727f0e63a23300f3bd5dafec8676f5cd030f4a0a79090fb8396062e1454e5"
+      },
+      "diagnostics": {
+        "profitableWindows": 24,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.5106382978723404,
+        "firstHalfNetPnlUsdt": 138.36214274438026,
+        "secondHalfNetPnlUsdt": 21.943048236273103,
+        "withoutTop3NetPnlUsdt": 94.70528947527578,
+        "top3NetPnlUsdt": 65.59990150537752,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 54,
+            "netPnlUsdt": 17.9791902009466,
+            "profitFactor": 1.1785055716234172
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 48,
+            "netPnlUsdt": 71.23039303189735,
+            "profitFactor": 1.721196405844108
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 45,
+            "netPnlUsdt": 71.09560774780944,
+            "profitFactor": 1.819728770619461
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 57,
+        "netPnlUsdt": 41.0794712415108,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 20,
+            "netPnlUsdt": 1.9837579596801778
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 16,
+            "netPnlUsdt": 36.425204994521636
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 21,
+            "netPnlUsdt": 2.6705082873089863
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "e00eef004b083f628506cfc28cd534ec35f779b7dacdc958b4081aa27a31963b",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 20,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 65.99551060151859,
+          "analyticalLowerConfidenceBoundBps": -68.87017701359716,
+          "lowerConfidenceBoundBps": -68.87017701359716,
+          "calculatedAt": 1786990711057,
+          "signature": "b065b2e499e650263a3bfded2288542b8e5c8b16f91435ef5da814abdc5e6028"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "e00eef004b083f628506cfc28cd534ec35f779b7dacdc958b4081aa27a31963b",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 16,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 156.3205391680462,
+          "analyticalLowerConfidenceBoundBps": -103.44163753131869,
+          "lowerConfidenceBoundBps": -103.44163753131869,
+          "calculatedAt": 1786990711057,
+          "signature": "97d10bfb3642b5a65754a99961b9e28bab475d6319e024cf1d71cd7747551a4e"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "e00eef004b083f628506cfc28cd534ec35f779b7dacdc958b4081aa27a31963b",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 21,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": 37.224044401300326,
+          "analyticalLowerConfidenceBoundBps": -159.28405836213375,
+          "lowerConfidenceBoundBps": -159.28405836213375,
+          "calculatedAt": 1786990711057,
+          "signature": "1445f420e2bbe01f8c5b6a3b180bdc4997c272fbfc9e89280c2a86837a22d9d6"
+        }
+      }
+    },
+    {
+      "label": "range-16",
+      "configHash": "c365f5ff79c2f09ce6de682b799295923f8343340dc991a403841d84912bfe13",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.25,
+          "rangeBars": 16,
+          "minBreakAtr": 0.5
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "range-16",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 375.33",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "1.70%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 430.42 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "1.562",
+            "required": "> 1",
+            "detail": "net 166.17 USDT over 140 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "140 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 140.27 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 16% of profit; result survives without it (min equity then 393.53)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 42.52603923504506,
+          "maxDrawdownPct": 9.75246037355304,
+          "minEquity": 393.52842913652825,
+          "longestDrawdownBars": 4188,
+          "longestDrawdownDays": 174.125,
+          "startingEquity": 400,
+          "finalEquity": 566.1739617418582,
+          "totalReturnUsdt": 166.1739617418582,
+          "totalReturnPct": 41.54349043546455,
+          "cagrPct": 14.443261849438404,
+          "days": 940,
+          "sharpe": 1.261655995592943,
+          "sortino": 2.9818232737265147,
+          "calmar": 1.4809864686665115,
+          "tradeCount": 140,
+          "winRate": 45.714285714285715,
+          "averageWinUsdt": 7.2190009831182,
+          "averageLossUsdt": -3.892659226022455,
+          "profitFactor": 1.5616981527657579,
+          "expectancyUsdt": 1.1869568695847006,
+          "largestLossUsdt": -5.996895839925448,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 8,
+          "averageHoldBars": 32.34285714285714,
+          "totalFeesUsdt": 27.318113736090712,
+          "fundingPaidUsdt": 11.104698549842672,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 589,
+          "pctTimeBelowStartingCapital": 3.17600743132658,
+          "governorVetoes": {
+            "max_concurrent": 13,
+            "max_total_notional": 1,
+            "correlated_exposure": 3
+          },
+          "gateRejections": {
+            "regime_low_confidence": 159,
+            "stop_too_wide": 18
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 157,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 140,
+          "seed": 20260817,
+          "p5Equity": 430.4168417685034,
+          "p25Equity": 511.2423334932291,
+          "medianEquity": 565.2839616363201,
+          "p75Equity": 619.2140446893179,
+          "p95Equity": 700.0393275343536,
+          "meanEquity": 564.4829731791255,
+          "worstEquity": 330.0171989479815,
+          "probabilityOfRuin": 0.017,
+          "probabilityBelowStart": 0.0264,
+          "p5MaxDrawdownPct": 4.654185755430271,
+          "medianMaxDrawdownPct": 8.331106055223236,
+          "worstMaxDrawdownPct": 26.420842335811145
+        },
+        "evaluatedAt": 1786991385915,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "a4647e1b895323a34462a235ef9d3bbcd1c8ed0f82d13e278bd66129418b27f7"
+      },
+      "diagnostics": {
+        "profitableWindows": 26,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.5531914893617021,
+        "firstHalfNetPnlUsdt": 131.7555848692237,
+        "secondHalfNetPnlUsdt": 34.41837687263441,
+        "withoutTop3NetPnlUsdt": 99.53083749972424,
+        "top3NetPnlUsdt": 66.64312424213384,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 47,
+            "netPnlUsdt": 17.79830448735372,
+            "profitFactor": 1.1829895170831617
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 46,
+            "netPnlUsdt": 79.776568107025,
+            "profitFactor": 1.773135324840959
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 47,
+            "netPnlUsdt": 68.59908914747942,
+            "profitFactor": 1.7191263683582092
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 59,
+        "netPnlUsdt": 21.09306580063911,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 20,
+            "netPnlUsdt": -5.893255000077996
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 18,
+            "netPnlUsdt": 35.96301078539218
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 21,
+            "netPnlUsdt": -8.976689984675069
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "c365f5ff79c2f09ce6de682b799295923f8343340dc991a403841d84912bfe13",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 20,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 49.52475052195557,
+          "analyticalLowerConfidenceBoundBps": -90.04824844572146,
+          "lowerConfidenceBoundBps": -90.04824844572146,
+          "calculatedAt": 1786990711057,
+          "signature": "9d63d48b48aef37d5f8c0efa4fcca466d50252dd6e4969956d8a20abcc3dcbbf"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "c365f5ff79c2f09ce6de682b799295923f8343340dc991a403841d84912bfe13",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 18,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 134.625469641854,
+          "analyticalLowerConfidenceBoundBps": -85.37985101338947,
+          "lowerConfidenceBoundBps": -85.37985101338947,
+          "calculatedAt": 1786990711057,
+          "signature": "911d94af24cdeee4007b927d87231a73f0aa3267d1840f00fc5e41e11e5669e9"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "c365f5ff79c2f09ce6de682b799295923f8343340dc991a403841d84912bfe13",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 21,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": -9.452266210240623,
+          "analyticalLowerConfidenceBoundBps": -206.9194972865265,
+          "lowerConfidenceBoundBps": -206.9194972865265,
+          "calculatedAt": 1786990711057,
+          "signature": "547b9c1a446c5615e0017983a59e739247bb7f1ab650eed82500fc7c84b60dec"
+        }
+      }
+    },
+    {
+      "label": "range-24",
+      "configHash": "5ca1c5e2872e8a06e8fcb1b28c5cc8844e28045016c1ae5b3033c351fb921527",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.25,
+          "rangeBars": 24,
+          "minBreakAtr": 0.5
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "range-24",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 387.68",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "0.04%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 491.91 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "2.084",
+            "required": "> 1",
+            "detail": "net 197.44 USDT over 115 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "115 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 171.53 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 13% of profit; result survives without it (min equity then 395.27)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 26.293583993204834,
+          "maxDrawdownPct": 5.990313987564142,
+          "minEquity": 395.26589450419937,
+          "longestDrawdownBars": 5940,
+          "longestDrawdownDays": 246.95833333333334,
+          "startingEquity": 400,
+          "finalEquity": 597.4382967026468,
+          "totalReturnUsdt": 197.43829670264677,
+          "totalReturnPct": 49.35957417566169,
+          "cagrPct": 16.856891397599007,
+          "days": 940,
+          "sharpe": 1.7457688080961458,
+          "sortino": 4.723511305159672,
+          "calmar": 2.814024679272876,
+          "tradeCount": 115,
+          "winRate": 51.30434782608696,
+          "averageWinUsdt": 6.43245852193157,
+          "averageLossUsdt": -3.2513706444877797,
+          "profitFactor": 2.0843684879997926,
+          "expectancyUsdt": 1.71685475393606,
+          "largestLossUsdt": -5.614220753056662,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 5,
+          "averageHoldBars": 37.495652173913044,
+          "totalFeesUsdt": 19.55511603375704,
+          "fundingPaidUsdt": 9.199364307265682,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 555,
+          "pctTimeBelowStartingCapital": 0.10616180828946786,
+          "governorVetoes": {
+            "max_concurrent": 12,
+            "max_total_notional": 1,
+            "correlated_exposure": 1,
+            "instrument_occupied": 1
+          },
+          "gateRejections": {
+            "regime_low_confidence": 114,
+            "stop_too_wide": 35
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 130,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 115,
+          "seed": 20260817,
+          "p5Equity": 491.9103953085175,
+          "p25Equity": 551.4031281462828,
+          "medianEquity": 595.7780014478712,
+          "p75Equity": 642.2094338855657,
+          "p95Equity": 711.9965575264955,
+          "meanEquity": 597.9163332805467,
+          "worstEquity": 332.6906644571654,
+          "probabilityOfRuin": 0.0004,
+          "probabilityBelowStart": 0.0014,
+          "p5MaxDrawdownPct": 2.9662602139866747,
+          "medianMaxDrawdownPct": 5.146267725727197,
+          "worstMaxDrawdownPct": 21.01463474318041
+        },
+        "evaluatedAt": 1786991563055,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "edd30a9563f301878eca0f09dbfe0d5c61767059ba0e78a26c395f69cbe43262"
+      },
+      "diagnostics": {
+        "profitableWindows": 28,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.5957446808510638,
+        "firstHalfNetPnlUsdt": 150.75295081685312,
+        "secondHalfNetPnlUsdt": 46.68534588579382,
+        "withoutTop3NetPnlUsdt": 134.75659165223377,
+        "top3NetPnlUsdt": 62.681705050413115,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 40,
+            "netPnlUsdt": 36.23865245935375,
+            "profitFactor": 1.591545598695985
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 37,
+            "netPnlUsdt": 100.62937028039866,
+            "profitFactor": 2.806277532345888
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 38,
+            "netPnlUsdt": 60.570273962894504,
+            "profitFactor": 1.9303491978123375
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 46,
+        "netPnlUsdt": 48.90112815888515,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 16,
+            "netPnlUsdt": 5.904317512792698
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 13,
+            "netPnlUsdt": 45.54235297829238
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 17,
+            "netPnlUsdt": -2.5455423321999344
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "5ca1c5e2872e8a06e8fcb1b28c5cc8844e28045016c1ae5b3033c351fb921527",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 16,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 63.20603565407823,
+          "analyticalLowerConfidenceBoundBps": -99.73205427512858,
+          "lowerConfidenceBoundBps": -99.73205427512858,
+          "calculatedAt": 1786990711057,
+          "signature": "e5f85137e409b66b6f28413bbbf5c7b1b8ae59bb9ba139a78710eaf9669ae641"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "5ca1c5e2872e8a06e8fcb1b28c5cc8844e28045016c1ae5b3033c351fb921527",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 13,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 245.44150275340746,
+          "analyticalLowerConfidenceBoundBps": -54.83388587844428,
+          "lowerConfidenceBoundBps": -54.83388587844428,
+          "calculatedAt": 1786990711057,
+          "signature": "c93001d7f3cbb6748c761cba7c41599db52151246af7c979ba23a93fe6fe4392"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "5ca1c5e2872e8a06e8fcb1b28c5cc8844e28045016c1ae5b3033c351fb921527",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 17,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": 23.556939633645907,
+          "analyticalLowerConfidenceBoundBps": -190.8390921923119,
+          "lowerConfidenceBoundBps": -190.8390921923119,
+          "calculatedAt": 1786990711057,
+          "signature": "321cc9e7377c77a36307949ce029f035b559547dd65cff145c8ed540d76ba17a"
+        }
+      }
+    },
+    {
+      "label": "break-0.40",
+      "configHash": "e1457bd4f2f72d24c07bef41ddb98eebe8c4bf7544f56153808dafc47867ecc0",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.25,
+          "rangeBars": 20,
+          "minBreakAtr": 0.4
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "break-0.40",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 380.31",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "2.10%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 412.88 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "1.504",
+            "required": "> 1",
+            "detail": "net 150.82 USDT over 144 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "144 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 124.91 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 17% of profit; result survives without it (min equity then 377.06)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 52.25178436625157,
+          "maxDrawdownPct": 12.171033050558682,
+          "minEquity": 377.06086435630755,
+          "longestDrawdownBars": 6389,
+          "longestDrawdownDays": 265.625,
+          "startingEquity": 400,
+          "finalEquity": 550.8166795029689,
+          "totalReturnUsdt": 150.8166795029689,
+          "totalReturnPct": 37.704169875742224,
+          "cagrPct": 13.22774547944685,
+          "days": 940,
+          "sharpe": 1.156599466594951,
+          "sortino": 2.7060488668550824,
+          "calmar": 1.0868219176218294,
+          "tradeCount": 144,
+          "winRate": 45.13888888888889,
+          "averageWinUsdt": 6.9215270054716145,
+          "averageLossUsdt": -3.78585539054033,
+          "profitFactor": 1.5042643459686331,
+          "expectancyUsdt": 1.047338052103951,
+          "largestLossUsdt": -5.762671774052033,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 6,
+          "averageHoldBars": 33.145833333333336,
+          "totalFeesUsdt": 26.951444115747734,
+          "fundingPaidUsdt": 11.497106051519248,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 624,
+          "pctTimeBelowStartingCapital": 6.188348741540231,
+          "governorVetoes": {
+            "max_concurrent": 17,
+            "max_total_notional": 1,
+            "correlated_exposure": 2,
+            "instrument_occupied": 2
+          },
+          "gateRejections": {
+            "regime_low_confidence": 163,
+            "stop_too_wide": 30
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 166,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 144,
+          "seed": 20260817,
+          "p5Equity": 412.8754875960326,
+          "p25Equity": 495.1508986545555,
+          "medianEquity": 549.8856030617657,
+          "p75Equity": 602.220256213462,
+          "p95Equity": 680.3996542427493,
+          "meanEquity": 548.6676692802013,
+          "worstEquity": 329.63641557179756,
+          "probabilityOfRuin": 0.021,
+          "probabilityBelowStart": 0.0382,
+          "p5MaxDrawdownPct": 4.826007279073603,
+          "medianMaxDrawdownPct": 8.759301216495832,
+          "worstMaxDrawdownPct": 29.979858708020714
+        },
+        "evaluatedAt": 1786991731439,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "07fbd35b7dfb843ec53a728add37205f1cbd85c014f44640c9a88d6460a3be14"
+      },
+      "diagnostics": {
+        "profitableWindows": 25,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.5319148936170213,
+        "firstHalfNetPnlUsdt": 118.41404551094773,
+        "secondHalfNetPnlUsdt": 32.40263399202121,
+        "withoutTop3NetPnlUsdt": 85.21677799759144,
+        "top3NetPnlUsdt": 65.59990150537752,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 48,
+            "netPnlUsdt": 37.99277280322298,
+            "profitFactor": 1.40908109244193
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 47,
+            "netPnlUsdt": 53.51414654528536,
+            "profitFactor": 1.5068775609759268
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 49,
+            "netPnlUsdt": 59.30976015446065,
+            "profitFactor": 1.5893666535941906
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 60,
+        "netPnlUsdt": 21.588863026709436,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 20,
+            "netPnlUsdt": 16.24104506851988
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 18,
+            "netPnlUsdt": 8.672208405630919
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 22,
+            "netPnlUsdt": -3.3243904474413704
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "e1457bd4f2f72d24c07bef41ddb98eebe8c4bf7544f56153808dafc47867ecc0",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 20,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 73.12758950603711,
+          "analyticalLowerConfidenceBoundBps": -72.7569365885864,
+          "lowerConfidenceBoundBps": -72.7569365885864,
+          "calculatedAt": 1786990711057,
+          "signature": "1022a3238ffcb7c7bd7e61695cf32058dbe241d806141de566c59c1b8aa10cd7"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "e1457bd4f2f72d24c07bef41ddb98eebe8c4bf7544f56153808dafc47867ecc0",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 18,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 55.88273594091092,
+          "analyticalLowerConfidenceBoundBps": -156.58477903300255,
+          "lowerConfidenceBoundBps": -156.58477903300255,
+          "calculatedAt": 1786990711057,
+          "signature": "ad1dae2302b99576c9ed39060e5635cc2532174ef2769fe000bcac5f119b9e65"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "e1457bd4f2f72d24c07bef41ddb98eebe8c4bf7544f56153808dafc47867ecc0",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 22,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": 16.01539407666008,
+          "analyticalLowerConfidenceBoundBps": -169.91233348524378,
+          "lowerConfidenceBoundBps": -169.91233348524378,
+          "calculatedAt": 1786990711057,
+          "signature": "d5575223883da2a84c0e38b9852ede6ebb85d9a4460046b951eb66406efb2ac5"
+        }
+      }
+    },
+    {
+      "label": "break-0.60",
+      "configHash": "8d74b8bf6146ac2025174d9c2a515bece288ac993ceede5e5c8620df0a52a300",
+      "config": {
+        "enabled": {
+          "trend_ema": false,
+          "revert_band": false,
+          "breakout_range": false,
+          "vol_expansion": true,
+          "oi_divergence": false,
+          "session_bias": false,
+          "funding_skew": false
+        },
+        "lookbackBars": 300,
+        "regime": {
+          "trendAdxMin": 25,
+          "rangeAdxMax": 20,
+          "compressedPercentile": 0.2,
+          "expandedPercentile": 0.85,
+          "expansionAtrRatio": 1.5,
+          "percentileWindow": 100
+        },
+        "stops": {
+          "minDistancePct": 0.001,
+          "maxDistancePct": 0.05
+        },
+        "gate": {
+          "minRegimeConfidence": 0.35,
+          "cooldownMs": 14400000
+        },
+        "portfolio": {
+          "maxCorrelatedPerCycle": 1
+        },
+        "trendEma": {
+          "timeframe": "1H",
+          "adxMin": 25,
+          "atrMultiple": 2
+        },
+        "revertBand": {
+          "timeframe": "1H",
+          "adxMax": 20,
+          "rsiOverbought": 70,
+          "rsiOversold": 30,
+          "atrMultiple": 1.5
+        },
+        "breakoutRange": {
+          "timeframe": "1H",
+          "rangeBars": 20,
+          "minBreakAtr": 0.5,
+          "atrMultiple": 1.5
+        },
+        "fundingSkew": {
+          "timeframe": "1H",
+          "extremePercentile": 0.9,
+          "minHistory": 20,
+          "standalone": true,
+          "standaloneMaxAdx": 30
+        },
+        "volExpansion": {
+          "timeframe": "1H",
+          "requireTrendAlignment": true,
+          "compressionLookback": 100,
+          "compressionPercentile": 0.25,
+          "rangeBars": 20,
+          "minBreakAtr": 0.6
+        },
+        "oiDivergence": {
+          "timeframe": "1H",
+          "lookbackBars": 6,
+          "minHistory": 24,
+          "deadbandPct": 0.001,
+          "minMoveAtr": 0.75,
+          "atrMultiple": 2
+        },
+        "sessionBias": {
+          "timeframe": "1H",
+          "atrMultiple": 1.5
+        },
+        "takeProfitR": [
+          1.5,
+          3
+        ],
+        "maxHoldBars": 48,
+        "expiryBars": 2
+      },
+      "eligibility": {
+        "label": "break-0.60",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 384.54",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "0.09%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 495.02 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "2.094",
+            "required": "> 1",
+            "detail": "net 212.99 USDT over 112 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "112 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 187.08 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 25.91 is 12% of profit; result survives without it (min equity then 395.15)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 28.186855814941623,
+          "maxDrawdownPct": 4.780097863420195,
+          "minEquity": 395.154197345262,
+          "longestDrawdownBars": 5940,
+          "longestDrawdownDays": 246.95833333333334,
+          "startingEquity": 400,
+          "finalEquity": 612.9892040846574,
+          "totalReturnUsdt": 212.98920408465744,
+          "totalReturnPct": 53.24730102116436,
+          "cagrPct": 18.028705291239877,
+          "days": 940,
+          "sharpe": 1.7678963702476995,
+          "sortino": 4.964142653970746,
+          "calmar": 3.7716184493219154,
+          "tradeCount": 112,
+          "winRate": 50.89285714285714,
+          "averageWinUsdt": 7.152822483944222,
+          "averageLossUsdt": -3.540394136366605,
+          "profitFactor": 2.0938135230705313,
+          "expectancyUsdt": 1.9016893221844406,
+          "largestLossUsdt": -5.762671774052033,
+          "largestWinUsdt": 25.905467623323432,
+          "longestLosingStreak": 5,
+          "averageHoldBars": 36.267857142857146,
+          "totalFeesUsdt": 20.501634719672676,
+          "fundingPaidUsdt": 9.47252252523971,
+          "fundingReceivedUsdt": 0,
+          "fundingFallbackSettlements": 527,
+          "pctTimeBelowStartingCapital": 0.10616180828946786,
+          "governorVetoes": {
+            "max_concurrent": 9,
+            "max_total_notional": 1,
+            "correlated_exposure": 1
+          },
+          "gateRejections": {
+            "regime_low_confidence": 108,
+            "stop_too_wide": 25
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 123,
+          "cycles": 22607
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 112,
+          "seed": 20260817,
+          "p5Equity": 495.01652883195214,
+          "p25Equity": 563.0573615986381,
+          "medianEquity": 611.2718550516737,
+          "p75Equity": 661.6014945535137,
+          "p95Equity": 734.5717144332151,
+          "meanEquity": 613.0052779816284,
+          "worstEquity": 331.80573726823366,
+          "probabilityOfRuin": 0.0009,
+          "probabilityBelowStart": 0.0015,
+          "p5MaxDrawdownPct": 3.1497834863590297,
+          "medianMaxDrawdownPct": 5.478733143097822,
+          "worstMaxDrawdownPct": 21.503500988946666
+        },
+        "evaluatedAt": 1786991900321,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "767a256d72a683dfa8040c494351e813cf39e9388e6656fb80a2ca541d06cfec"
+      },
+      "diagnostics": {
+        "profitableWindows": 28,
+        "totalWindows": 47,
+        "profitableWindowPct": 0.5957446808510638,
+        "firstHalfNetPnlUsdt": 185.25970147858112,
+        "secondHalfNetPnlUsdt": 27.729502606076306,
+        "withoutTop3NetPnlUsdt": 148.78527522588672,
+        "top3NetPnlUsdt": 64.20392885877062,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "trades": 41,
+            "netPnlUsdt": 27.502987442483146,
+            "profitFactor": 1.367686134311785
+          },
+          "ETH-USDT-SWAP": {
+            "trades": 34,
+            "netPnlUsdt": 111.92447789062511,
+            "profitFactor": 3.114730066710389
+          },
+          "SOL-USDT-SWAP": {
+            "trades": 37,
+            "netPnlUsdt": 73.5617387515492,
+            "profitFactor": 2.0980122429024375
+          }
+        }
+      },
+      "fourHourConfirmation": {
+        "tradeCount": 45,
+        "netPnlUsdt": 46.60719234931494,
+        "byInstrument": {
+          "BTC-USDT-SWAP": {
+            "tradeCount": 15,
+            "netPnlUsdt": -2.2770305997125972
+          },
+          "ETH-USDT-SWAP": {
+            "tradeCount": 12,
+            "netPnlUsdt": 49.77828285662063
+          },
+          "SOL-USDT-SWAP": {
+            "tradeCount": 18,
+            "netPnlUsdt": -0.8940599075930853
+          }
+        }
+      },
+      "calibrations": {
+        "BTC-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "8d74b8bf6146ac2025174d9c2a515bece288ac993ceede5e5c8620df0a52a300",
+          "instrument": "BTC-USDT-SWAP",
+          "sampleSize": 15,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260817,
+          "grossMeanBps": 55.0656301365794,
+          "analyticalLowerConfidenceBoundBps": -117.45980887138127,
+          "lowerConfidenceBoundBps": -117.45980887138127,
+          "calculatedAt": 1786990711057,
+          "signature": "9c5aba563c8e47a29b935a228b684d146250fd32460adc1a6ef8080dc370ffe4"
+        },
+        "ETH-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "8d74b8bf6146ac2025174d9c2a515bece288ac993ceede5e5c8620df0a52a300",
+          "instrument": "ETH-USDT-SWAP",
+          "sampleSize": 12,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260818,
+          "grossMeanBps": 259.56144490776575,
+          "analyticalLowerConfidenceBoundBps": -62.2292156663724,
+          "lowerConfidenceBoundBps": -62.2292156663724,
+          "calculatedAt": 1786990711057,
+          "signature": "4fb991634f00fdbcfde23e42e54a8b18cff4a167cfabb7a999f3c4a11280d72c"
+        },
+        "SOL-USDT-SWAP": {
+          "strategyId": "vol_expansion",
+          "strategyVersion": "1.1.0",
+          "configHash": "8d74b8bf6146ac2025174d9c2a515bece288ac993ceede5e5c8620df0a52a300",
+          "instrument": "SOL-USDT-SWAP",
+          "sampleSize": 18,
+          "method": "circular-block-bootstrap-gross-return",
+          "blockSize": 5,
+          "iterations": 10000,
+          "seed": 20260819,
+          "grossMeanBps": 11.689034818407785,
+          "analyticalLowerConfidenceBoundBps": -192.07751810562698,
+          "lowerConfidenceBoundBps": -192.07751810562698,
+          "calculatedAt": 1786990711057,
+          "signature": "ef4bb246e28981ac37b8c7eee013a6ab54429699529fa3ecd0481ceb0aee7401"
+        }
+      }
+    }
+  ]
+}

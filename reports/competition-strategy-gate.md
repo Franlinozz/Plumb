@@ -1,25 +1,42 @@
 # Competition strategy gate
 
-Audit time: 2026-08-11T13:20Z UTC
+Audit updated: 2026-08-17 UTC
 
-## Status: RED — wait; no approved live DecisionEvent
+## Status: YELLOW — development PASS; protected holdout remains sealed
 
-The account and delivery infrastructure are ready, but the evidence gate is not. External market
-commentary cannot turn a rejected configuration into an approved strategy.
+The corrected walk-forward engine and the predeclared trend-aligned volatility-breakout candidate
+pass the development and stability gates. This is not yet permission to trade: the single-use
+90-day holdout has not been opened, and no approved live DecisionEvent exists. External market
+commentary cannot substitute for that final evidence step.
 
 ## Development evidence (holdout remains sealed)
 
 | Candidate | OOS trades | PF | Net USDT | P(ruin) | Verdict |
 |---|---:|---:|---:|---:|---|
-| `vol_expansion` | 185 | 1.046 | +42.16 | 72.08% | REJECT — ruin and outlier dependence |
-| `trend_and_breakout` |  — | 0.823 | -272.27 | 91.76% | REJECT |
-| `trend_ema` | — | 0.661 | -198.09 | 86.23% | REJECT |
-| `breakout_range` | — | 0.712 | -179.53 | 89.99% | REJECT |
+| `vol_expansion` (unaligned baseline) | 183 | 1.390 | +166.77 | 6.20% | REJECT — ruin above locked 5% ceiling |
+| `vol_expansion@1.1.0` (`aligned-default`) | 121 | 1.999 | +215.50 | 0.12% | DEVELOPMENT PASS |
+| `trend_and_breakout` | 334 | 1.110 | +86.45 | 33.90% | REJECT |
+| `trend_ema` | 79 | 0.660 | -71.60 | 66.30% | REJECT |
+| `breakout_range` | 158 | 0.870 | -57.37 | 65.80% | REJECT |
 | `oi_divergence` | 0 | — | 0 | — | REJECT — no historical sample |
 
-`vol_expansion` loses 159.34 USDT after removing its single best trade. Its positive
-`trending_up` subgroup is therefore a research lead, not permission to trade. No protected
-holdout row was read during this audit.
+The earlier RED measurements were invalidated by a walk-forward boundary defect: bounded folds
+could close positions using the full dataset tail and could fill a next-bar entry beyond the fold.
+The corrected engine forbids both and enforces aligned instrument timestamps. The frozen aligned
+candidate is positive in both chronological halves, on all three instruments, and after removing
+its three best trades; all six one-parameter neighbours also remain positive with PF above 1.
+Exact evidence and hashes are in `competition-candidate-development.{json,md}`. No protected
+holdout row was read during this audit; its criteria are frozen in
+`competition-holdout-protocol.md`.
+
+The extra first-trade filter is intentionally narrower than the underlying candidate. Requiring a
+fully closed 4H ADX ≥25 and directionally aligned EMA20/EMA50 leaves 44 development trades overall:
++38.52 USDT, PF 1.38, and +18.54 USDT without the best trade. Only ETH survives instrument-level
+scrutiny (14 trades, +45.52 USDT, PF 2.60, +25.53 USDT without its best); BTC and SOL are therefore
+hard-rejected by the DecisionEvent factory. ETH historical gross expectancy is cut in half to
+110.32 bps before comparison with fresh live friction at the mandatory 3× multiple. The 95%
+statistical lower bound remains negative because the exact subset is small; this uncertainty is
+recorded rather than presented as certainty.
 
 ## Live OKX snapshot
 
@@ -63,9 +80,8 @@ Sources:
 
 All conditions are mandatory:
 
-1. A signed GREEN development eligibility record exists; no demo override and no compliance-only
-   direction. The protected holdout remains sealed until one final development configuration is
-   selected under its existing operator-token procedure.
+1. A signed GREEN development eligibility record and a passing single-use protected holdout record
+   exist; no demo override and no compliance-only direction.
 2. No macro embargo, halt flag, stale field, pending order, position mismatch, or account
    uncertainty.
 3. A closed 4H bar establishes the same-direction regime, with ADX at least 25 and EMA20/EMA50

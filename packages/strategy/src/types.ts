@@ -131,6 +131,8 @@ export interface StrategyConfig {
   };
   readonly volExpansion: {
     readonly timeframe: Timeframe;
+    /** Only take long breaks in trending_up and short breaks in trending_down. */
+    readonly requireTrendAlignment: boolean;
     /** Trailing window the compression percentile is measured against. */
     readonly compressionLookback: number;
     /** Bandwidth/vol at or below this percentile counts as compressed. */
@@ -203,6 +205,7 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = Object.freeze({
   }),
   volExpansion: Object.freeze({
     timeframe: '1H' as Timeframe,
+    requireTrendAlignment: false,
     compressionLookback: 100,
     compressionPercentile: 0.25,
     rangeBars: 20,

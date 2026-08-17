@@ -24,7 +24,15 @@ import type { SignalDraft } from '@plumb/core';
 import { percentileRank, tail, defined } from '../stats.js';
 
 export const VOL_EXPANSION_ID = 'vol_expansion';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
+
+export function isTrendAlignedBreakout(
+  side: 'long' | 'short',
+  regime: StrategyContext['regime']['label'],
+): boolean {
+  return (side === 'long' && regime === 'trending_up') ||
+    (side === 'short' && regime === 'trending_down');
+}
 
 function evaluate(context: StrategyContext): readonly SignalDraft[] {
   const { snapshot, regime, config, now } = context;
@@ -82,6 +90,7 @@ function evaluate(context: StrategyContext): readonly SignalDraft[] {
     strength = breakDown;
   }
   if (side === undefined) return [];
+  if (settings.requireTrendAlignment && !isTrendAlignedBreakout(side, regime.label)) return [];
 
   // ── 4. Stop INSIDE the compressed range. The asymmetry is the whole point. ───────────────
   const mid = (rangeHigh + rangeLow) / 2;

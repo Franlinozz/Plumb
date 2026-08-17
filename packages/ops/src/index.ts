@@ -73,3 +73,17 @@ export {
 } from './snapshot.js';
 
 export { Heartbeat, type HeartbeatOptions, type HeartbeatState } from './heartbeat.js';
+
+export {
+  CompetitionDecisionRejected,
+  FROZEN_COMPETITION_CONFIG_HASH,
+  competitionConfigHash,
+  createCompetitionDecision,
+  signCompetitionHoldoutEvidence,
+  verifyCompetitionHoldoutEvidence,
+  type CompetitionCostEstimate,
+  type CompetitionDecisionInput,
+  type CompetitionDecisionState,
+  type CompetitionEvidence,
+  type CompetitionHoldoutEvidence,
+} from './competition-decision.js';

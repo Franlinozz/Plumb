@@ -5,6 +5,7 @@ import { fixtureCandles } from '@plumb/market';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { runBacktest } from './engine.js';
+import { PERMISSIVE_CONFIG, permissiveStrategy } from './testkit.js';
 import {
   accrueFunding,
   buildFundingModel,
@@ -108,9 +109,18 @@ describe('the holdout GUARD', () => {
 
     const asked = { fromTs: dataFrom, toTs: dataTo };
     const allowed = clampToDevelopment(asked, tight);
-    const result = runBacktest({ candles, lookbackBars: 120, ...allowed });
+    const result = runBacktest({
+      candles,
+      lookbackBars: 120,
+      modules: [permissiveStrategy],
+      strategyConfig: PERMISSIVE_CONFIG,
+      ...allowed,
+    });
 
     expect(result.toTs).toBeLessThanOrEqual(tight.developmentTo);
+    expect(result.trades.length).toBeGreaterThan(0);
+    expect(result.trades.every((trade) => trade.openedAt <= tight.developmentTo)).toBe(true);
+    expect(result.trades.every((trade) => trade.closedAt <= tight.developmentTo)).toBe(true);
     expect(() => assertDevelopmentOnly({ fromTs: result.fromTs, toTs: result.toTs }, tight)).not.toThrow();
   });
 });
@@ -159,11 +169,18 @@ describe('holdout ACCESS requires a token, a reason, and leaves a trail', () => 
     expect(entry['actor']).toBe('francis');
   });
 
-  it('records EVERY look, so "we only looked once" is checkable', () => {
+  it('REFUSES a second look when the durable audit says the holdout was already used', () => {
     const path = tempFile('e.log');
-    requestHoldoutAccess(request, 'operator-token', path);
-    requestHoldoutAccess({ ...request, reason: 'just one more variant' }, 'operator-token', path);
-    expect(holdoutAuditLog(path)).toHaveLength(2);
+    const first = requestHoldoutAccess(request, 'operator-token', path);
+    const second = requestHoldoutAccess({
+      ...request,
+      reason: 'just one more variant',
+      previouslyUsed: holdoutAuditLog(path).length > 0,
+    }, 'operator-token', path);
+    expect(first.granted).toBe(true);
+    expect(second.granted).toBe(false);
+    if (!second.granted) expect(second.code).toBe('already_used');
+    expect(holdoutAuditLog(path)).toHaveLength(1);
   });
 
   it('reports an empty log when the holdout has never been read — the healthy state', () => {

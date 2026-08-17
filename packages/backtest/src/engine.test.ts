@@ -3,7 +3,13 @@ import { fixtureCandles, type Candle } from '@plumb/market';
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_COSTS, ZERO_COSTS } from './costs.js';
-import { LookaheadError, assertNoLookahead, runBacktest, type BacktestOptions } from './engine.js';
+import {
+  LookaheadError,
+  SeriesAlignmentError,
+  assertNoLookahead,
+  runBacktest,
+  type BacktestOptions,
+} from './engine.js';
 import { computeMetrics } from './metrics.js';
 import { PERMISSIVE_CONFIG, permissiveStrategy } from './testkit.js';
 
@@ -72,6 +78,20 @@ describe('lookahead detection', () => {
     const sizes = new Set<number>();
     run({ lookbackBars: 150, onWindow: (_i, window) => sizes.add(window.length) });
     expect([...sizes]).toEqual([150]);
+  });
+
+  it('fails closed when instrument series are not aligned by timestamp', () => {
+    const input = candles();
+    const eth = input['ETH-USDT-SWAP'] as readonly Candle[];
+    const shifted = eth.map((candle, index) =>
+      index === 120 ? { ...candle, ts: candle.ts + 3_600_000 } : candle,
+    );
+    expect(() =>
+      runBacktest({
+        candles: { ...input, 'ETH-USDT-SWAP': shifted },
+        lookbackBars: 120,
+      }),
+    ).toThrow(SeriesAlignmentError);
   });
 });
 
@@ -168,9 +188,14 @@ describe('replay mechanics', () => {
 
   it('honours a time window', () => {
     const all = run();
-    const half = run({ fromTs: all.fromTs, toTs: all.fromTs + (all.toTs - all.fromTs) / 2 });
+    const cutoff = all.fromTs + (all.toTs - all.fromTs) / 2;
+    const half = runPermissive({ fromTs: all.fromTs, toTs: cutoff });
     expect(half.cycles).toBeLessThan(all.cycles);
-    expect(half.toTs).toBeLessThanOrEqual(all.toTs);
+    expect(half.toTs).toBeLessThanOrEqual(cutoff);
+    expect(half.trades.length).toBeGreaterThan(0);
+    expect(half.trades.every((trade) => trade.openedAt <= cutoff)).toBe(true);
+    expect(half.trades.every((trade) => trade.closedAt <= cutoff)).toBe(true);
+    expect(half.trades.every((trade) => trade.holdBars <= PERMISSIVE_CONFIG.maxHoldBars)).toBe(true);
   });
 
   it('fills entries at the NEXT bar open, not the signal bar close', () => {

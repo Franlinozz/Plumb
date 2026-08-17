@@ -6,7 +6,7 @@ import { revertBand, REVERT_BAND_ID } from './revert_band.js';
 import { oiDivergence, OI_DIVERGENCE_ID } from './oi_divergence.js';
 import { trendEma, TREND_EMA_ID } from './trend_ema.js';
 import { sessionBias, SESSION_BIAS_ID } from './session_bias.js';
-import { volExpansion, VOL_EXPANSION_ID } from './vol_expansion.js';
+import { isTrendAlignedBreakout, volExpansion, VOL_EXPANSION_ID } from './vol_expansion.js';
 
 /**
  * The four candidates. **No edge is claimed for any of them.** P4's backtest decides which, if
@@ -40,6 +40,7 @@ export {
   sessionBias,
   trendEma,
   volExpansion,
+  isTrendAlignedBreakout,
   BREAKOUT_RANGE_ID,
   FUNDING_SKEW_ID,
   OI_DIVERGENCE_ID,

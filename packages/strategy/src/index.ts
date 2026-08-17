@@ -73,6 +73,7 @@ export {
   sessionBias,
   trendEma,
   volExpansion,
+  isTrendAlignedBreakout,
   SURVIVING_HOURS,
   TRADED_STATES,
   BREAKOUT_RANGE_ID,
