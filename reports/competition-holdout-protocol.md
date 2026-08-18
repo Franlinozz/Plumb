@@ -1,6 +1,12 @@
 # Competition candidate — protected holdout protocol
 
-Status: **SEALED — criteria frozen before access**
+Status: **CONSUMED — FINAL FAIL; MUST NOT REOPEN**
+
+The single permitted evaluation ran at 2026-08-18T09:04:40Z. It produced 14 trades, −15.45 USDT
+net, profit factor 0.49, and −22.46 USDT after removing its best trade. The candidate failed the
+net-PnL, profit-factor and outlier-independence criteria. `competition-candidate-holdout.md` is the
+authoritative result. No relaxation, rerun or replacement candidate is permitted under this frozen
+protocol.
 
 The protected 90-day holdout may be read exactly once, for `aligned-default` only, after the
 development artifact says both `defaultEligible: true` and `holdoutPermitted: true`. The durable

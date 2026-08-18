@@ -1,8 +1,8 @@
 # Competition candidate — development robustness
 
-Generated 2026-08-17T18:44:17.504Z · protected holdout **NOT READ**
+Generated 2026-08-17T18:44:17.504Z · protected holdout subsequently opened exactly once and **FAILED**
 
-Decision candidate: `aligned-default` · development gate: **PASS** · stability: **PASS** · holdout permitted: **YES**
+Decision candidate: `aligned-default` · development gate: **PASS** · stability: **PASS** · final protected holdout: **FAIL**
 
 | Variant | Eligible | Trades | PF | Net USDT | P(ruin) | Config hash |
 | --- | --- | ---: | ---: | ---: | ---: | --- |

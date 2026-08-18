@@ -1,15 +1,25 @@
 # Competition strategy gate
 
-Audit updated: 2026-08-17 UTC
+Audit updated: 2026-08-18 UTC
 
-## Status: YELLOW — development PASS; protected holdout remains sealed
+## Status: RED — protected holdout FAIL; no live trade permitted
 
 The corrected walk-forward engine and the predeclared trend-aligned volatility-breakout candidate
-pass the development and stability gates. This is not yet permission to trade: the single-use
-90-day holdout has not been opened, and no approved live DecisionEvent exists. External market
-commentary cannot substitute for that final evidence step.
+passed the development and stability gates, then failed the single-use protected 90-day holdout.
+No approved live DecisionEvent may be created. External market commentary, leaderboard pressure,
+or a compliance-only order cannot override this result.
 
-## Development evidence (holdout remains sealed)
+## Final protected holdout — consumed once
+
+| Trades | Net USDT | PF | Max drawdown | Minimum equity | Without best trade | Verdict |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 14 | -15.45 | 0.494 | 6.90% | 384.55 | -22.46 | **FAIL** |
+
+The durable audit contains exactly one access record at 2026-08-18T09:04:40Z. The candidate failed
+the frozen net-PnL, profit-factor and outlier-independence requirements. It will not be rerun,
+relabelled, or replaced during this competition.
+
+## Development evidence (historical; superseded by holdout FAIL)
 
 | Candidate | OOS trades | PF | Net USDT | P(ruin) | Verdict |
 |---|---:|---:|---:|---:|---|
@@ -25,9 +35,9 @@ could close positions using the full dataset tail and could fill a next-bar entr
 The corrected engine forbids both and enforces aligned instrument timestamps. The frozen aligned
 candidate is positive in both chronological halves, on all three instruments, and after removing
 its three best trades; all six one-parameter neighbours also remain positive with PF above 1.
-Exact evidence and hashes are in `competition-candidate-development.{json,md}`. No protected
-holdout row was read during this audit; its criteria are frozen in
-`competition-holdout-protocol.md`.
+Exact evidence and hashes are in `competition-candidate-development.{json,md}`. The protected
+holdout was subsequently consumed once and failed; its frozen rules and final state are in
+`competition-holdout-protocol.md` and `competition-candidate-holdout.md`.
 
 The extra first-trade filter is intentionally narrower than the underlying candidate. Requiring a
 fully closed 4H ADX ≥25 and directionally aligned EMA20/EMA50 leaves 44 development trades overall:
@@ -81,7 +91,7 @@ Sources:
 All conditions are mandatory:
 
 1. A signed GREEN development eligibility record and a passing single-use protected holdout record
-   exist; no demo override and no compliance-only direction.
+   exist; no demo override and no compliance-only direction. **CURRENTLY FAILS: holdout is RED.**
 2. No macro embargo, halt flag, stale field, pending order, position mismatch, or account
    uncertainty.
 3. A closed 4H bar establishes the same-direction regime, with ADX at least 25 and EMA20/EMA50

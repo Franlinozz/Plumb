@@ -3,7 +3,9 @@
   "scope": "development-only",
   "developmentTo": 1778544000000,
   "holdoutFrom": 1778544000000,
-  "holdoutRead": false,
+  "holdoutRead": true,
+  "holdoutConsumed": true,
+  "holdoutPassed": false,
   "decisionCandidate": "aligned-default",
   "defaultEligible": true,
   "stability": {
