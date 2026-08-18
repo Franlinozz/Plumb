@@ -1,6 +1,6 @@
 # Competition executor
 
-Audit time: 2026-08-11T13:20Z UTC
+Audit time: 2026-08-18T16:25Z UTC
 
 ## Status: YELLOW — implementation ready; strategy approval and live confirmation absent
 
@@ -27,6 +27,10 @@ Implemented gates:
 - canonical expected edge >= 3x estimated full friction;
 - 1% per-trade risk, 2% concurrent stop risk, 3% daily loss, 24 USDT drawdown stop,
   30 USDT loss budget, and 3x leverage ceiling.
+- independently enforced first-entry amendment: ETH only, one live entry, at most 0.25 USDT stop
+  risk, 0.35 USDT stop-plus-friction planned loss, 40 USDT notional and 10% position;
+- authorised entry window 2026-08-19T20:15Z through 2026-08-23T00:00Z, leaving recovery time
+  before the competition closes.
 
 Compatibility correction completed during this audit: Agent Trade Kit 1.4.2/OKX rejects a SWAP
 fee request carrying `--instId`; the adapter now uses the documented SWAP-wide request verified

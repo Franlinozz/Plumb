@@ -115,7 +115,7 @@ const approval: Approval = {
     instId: signal.instId,
     contracts: 1,
     notionalUsdt: 200,
-    leverage: 0.5,
+    leverage: 2,
     stopDistancePct: 0.02,
     intendedRiskUsdt: 4,
     actualRiskUsdt: 4,
@@ -174,11 +174,28 @@ describe('competition DecisionEvent factory', () => {
     expect(event.direction).toBe(signal.side);
     expect(event.stopPrice).toBe(signal.stop.price);
     expect(event.takeProfit).toBe(signal.takeProfit?.[0]?.price);
-    expect(event.riskUsd).toBe(2);
-    expect(event.positionPct).toBe(25);
+    expect(event.riskUsd).toBe(0.25);
+    expect(event.positionPct).toBe(3.125);
     expect(event.expectedCostBps).toBe(12);
     expect(event.expectedEdgeBps).toBe(50);
     expect(Object.isFrozen(event)).toBe(true);
+  });
+
+  it('caps stop risk, notional, position percentage, and stop-plus-friction loss', () => {
+    const candidate = input();
+    const event = createCompetitionDecision({
+      ...candidate,
+      signal: {
+        ...candidate.signal,
+        stop: { ...candidate.signal.stop, price: 99.9, distancePct: 0.001 },
+      },
+    });
+    const notional = event.riskUsd / 0.001;
+    const plannedLoss = event.riskUsd + notional * event.expectedCostBps / 10_000;
+    expect(event.riskUsd).toBeLessThanOrEqual(0.25);
+    expect(notional).toBeLessThanOrEqual(40);
+    expect(event.positionPct).toBeLessThanOrEqual(10);
+    expect(plannedLoss).toBeLessThanOrEqual(0.35);
   });
 
   it('rejects a config whose contents do not match its evidence hash', () => {

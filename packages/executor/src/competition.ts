@@ -1,4 +1,9 @@
-import { finalizeDecisionEvent, type DecisionEvent, type Instrument } from '@plumb/core';
+import {
+  COMPETITION_V2_AMENDMENT,
+  finalizeDecisionEvent,
+  type DecisionEvent,
+  type Instrument,
+} from '@plumb/core';
 
 import type { AtkClient, VenuePosition } from './atk.js';
 import { AtkError } from './atk.js';
@@ -48,6 +53,8 @@ export interface CompetitionExecutionInput {
   readonly expectedUid: string;
   readonly ledgerSignedPosition: number;
   readonly risk: CompetitionRiskState;
+  /** Previously placed competition entries other than this same idempotent decision. */
+  readonly priorLiveEntryCount: number;
   /** Required immediately before the live write; never persisted as a reusable global switch. */
   readonly liveConfirmation: string;
   readonly now: number;
@@ -108,6 +115,17 @@ export class AgentTradeKitCompetitionExecutor {
     }
     if (event.createdAt > input.now) throw new CompetitionExecutionRejected('DecisionEvent is future-dated');
     if (input.now >= event.validUntil) throw new CompetitionExecutionRejected('DecisionEvent is stale');
+    if (input.now < COMPETITION_V2_AMENDMENT.earliestEntryAt ||
+        input.now >= COMPETITION_V2_AMENDMENT.latestEntryAt) {
+      throw new CompetitionExecutionRejected('outside the operator-authorised first-entry window');
+    }
+    if (event.instrument !== COMPETITION_V2_AMENDMENT.instrument) {
+      throw new CompetitionExecutionRejected('operator amendment permits ETH-USDT-SWAP only');
+    }
+    if (!Number.isInteger(input.priorLiveEntryCount) || input.priorLiveEntryCount < 0 ||
+        input.priorLiveEntryCount >= COMPETITION_V2_AMENDMENT.maxLiveEntries) {
+      throw new CompetitionExecutionRejected('the one-live-entry allowance is exhausted or uncertain');
+    }
     if (!this.deps.publications.isFullyDelivered(event)) {
       throw new CompetitionExecutionRejected('the exact DecisionEvent was not acknowledged by every active subscriber');
     }
@@ -142,7 +160,7 @@ export class AgentTradeKitCompetitionExecutor {
     }
     const verifiedRisk = { ...input.risk, equityUsd: venueEquity,
       availableMarginUsd: Math.min(input.risk.availableMarginUsd, venueAvailable) };
-    this.assertRisk(verifiedRisk, event);
+    this.assertRisk(verifiedRisk, event, lastPrice);
 
     const roundTripFeeBps = Math.max(fees.maker, fees.taker) * 2 * 10_000;
     if (event.expectedCostBps < roundTripFeeBps) {
@@ -211,9 +229,20 @@ export class AgentTradeKitCompetitionExecutor {
       venueSignedPositionAfter: after, reversed };
   }
 
-  private assertRisk(risk: CompetitionRiskState, event: DecisionEvent): void {
+  private assertRisk(risk: CompetitionRiskState, event: DecisionEvent, liveReferencePrice: number): void {
     if (risk.equityUsd <= 0 || risk.availableMarginUsd < 0) throw new CompetitionExecutionRejected('invalid account equity');
     if (event.riskUsd / risk.equityUsd > 0.01) throw new CompetitionExecutionRejected('risk per trade exceeds 1%');
+    if (event.riskUsd > COMPETITION_V2_AMENDMENT.maxStopRiskUsd + 1e-9 ||
+        event.positionPct > COMPETITION_V2_AMENDMENT.maxPositionPct + 1e-9) {
+      throw new CompetitionExecutionRejected('event exceeds the operator-authorised first-trade caps');
+    }
+    const stopDistancePct = Math.abs(liveReferencePrice - event.stopPrice) / liveReferencePrice;
+    const notional = event.riskUsd / stopDistancePct;
+    const plannedLossUsd = event.riskUsd + notional * event.expectedCostBps / 10_000;
+    if (!Number.isFinite(notional) || notional > COMPETITION_V2_AMENDMENT.maxNotionalUsd + 1e-9 ||
+        plannedLossUsd > COMPETITION_V2_AMENDMENT.maxPlannedLossUsd + 1e-9) {
+      throw new CompetitionExecutionRejected('event exceeds the authorised notional or planned-loss cap');
+    }
     if (-risk.realisedPnlTodayUsd / risk.equityUsd >= 0.03) throw new CompetitionExecutionRejected('soft daily loss reached');
     if (risk.drawdownUsd >= 24) throw new CompetitionExecutionRejected('competition drawdown stop reached');
     if (risk.drawdownUsd + event.riskUsd > 30) throw new CompetitionExecutionRejected('30 USDT loss budget would be exceeded');

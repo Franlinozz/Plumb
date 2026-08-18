@@ -239,6 +239,14 @@ that touches payments, subscriptions or the trade kit.
   identity CLI requires `heartbeat --chain-index 196`, not the older reference script's agent-id
   form. The isolated delivery daemon uses the installed interface and cross-checks the official
   active fan-out with provider status before sending anything.
+- **Competition amendment · the operator authorised narrower first-trade risk in writing on
+  2026-08-18.** This does not revive or replace the failed protected-holdout candidate. Any future
+  eligible event is additionally limited to ETH, one entry, 0.25 USDT stop risk, 0.35 USDT total
+  planned loss, 40 USDT notional and 10% position, inside 2026-08-19T20:15Z–2026-08-23T00:00Z.
+- **A2A documentation drift · Trading Signal v1.2 replaced V1.1 by 2026-08-18.** Executable
+  perpetual messages now use `【Futures】`, a Market/Reference Price pair, one specific price, fixed
+  field order and at most 200 characters. Decision correlation stays in the immutable publication
+  record and Agent Trade Kit `clOrdId`; adding an undocumented text field would break the grammar.
 
 (append-only log — one line of reasoning each)
 

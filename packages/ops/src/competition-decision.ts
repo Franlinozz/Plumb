@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import {
+  COMPETITION_V2_AMENDMENT,
   finalizeDecisionEvent,
   MIN_EXPECTED_EDGE_COST_MULTIPLE,
   type DecisionEvent,
@@ -215,17 +216,26 @@ export function createCompetitionDecision(input: CompetitionDecisionInput): Deci
     throw new CompetitionDecisionRejected('stop distance is invalid');
   }
 
-  // First competition trade: at most 2 USDT, 0.75% equity, 25% position, and never more than the
-  // already-approved governor risk. A cap may reduce risk; it may never widen the stop.
+  // Operator-authorised first-trade amendment: a cap may only reduce the governor-approved risk;
+  // it may never widen the stop or manufacture an edge. Full estimated friction is included in
+  // the maximum planned loss, not hidden outside the stop-risk figure.
+  const costRate = expectedCostBps / 10_000;
+  const maxRiskForPlannedLoss = COMPETITION_V2_AMENDMENT.maxPlannedLossUsd /
+    (1 + costRate / stopDistancePct);
   const riskUsd = Math.min(
-    2,
-    state.equityUsd * 0.0075,
-    state.equityUsd * 0.25 * stopDistancePct,
+    COMPETITION_V2_AMENDMENT.maxStopRiskUsd,
+    COMPETITION_V2_AMENDMENT.maxNotionalUsd * stopDistancePct,
+    state.equityUsd * (COMPETITION_V2_AMENDMENT.maxPositionPct / 100) * stopDistancePct,
+    maxRiskForPlannedLoss,
     approval.sizing.actualRiskUsdt,
   );
   const notional = riskUsd / stopDistancePct;
   const positionPct = (notional / state.equityUsd) * 100;
-  if (!Number.isFinite(riskUsd) || riskUsd <= 0 || positionPct > 25 + 1e-9) {
+  const plannedLossUsd = riskUsd + notional * costRate;
+  if (!Number.isFinite(riskUsd) || riskUsd <= 0 ||
+      notional > COMPETITION_V2_AMENDMENT.maxNotionalUsd + 1e-9 ||
+      positionPct > COMPETITION_V2_AMENDMENT.maxPositionPct + 1e-9 ||
+      plannedLossUsd > COMPETITION_V2_AMENDMENT.maxPlannedLossUsd + 1e-9) {
     throw new CompetitionDecisionRejected('competition sizing is invalid');
   }
 

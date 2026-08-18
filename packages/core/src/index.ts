@@ -63,3 +63,5 @@ export {
   finalizeDecisionEvent,
   type DecisionEvent,
 } from './decision-event.js';
+
+export { COMPETITION_V2_AMENDMENT } from './competition-amendment.js';

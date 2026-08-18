@@ -1,0 +1,15 @@
+[Unit]
+Description=Plumb read-only competition Strategy v2 condition monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/plumb-okxai
+ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v2-monitor.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+StandardOutput=journal
+StandardError=journal

@@ -2,12 +2,21 @@
 
 Audit updated: 2026-08-18 UTC
 
-## Status: RED — protected holdout FAIL; no live trade permitted
+## Status: RED — protected holdout FAIL; amendment preparation cannot manufacture eligibility
 
 The corrected walk-forward engine and the predeclared trend-aligned volatility-breakout candidate
 passed the development and stability gates, then failed the single-use protected 90-day holdout.
 No approved live DecisionEvent may be created. External market commentary, leaderboard pressure,
 or a compliance-only order cannot override this result.
+
+On 2026-08-18 the operator authorised a capital-preservation amendment for a possible first valid
+trade. The failed candidate remains failed and is neither rerun nor relabelled. The amendment adds
+strict timing and damage caps plus a read-only condition monitor; it does **not** bypass the signed
+development/calibration/holdout evidence gate. Current official A2A output was also migrated from
+the obsolete V1.1 syntax to Trading Signal v1.2 before any executable publication.
+
+The 2026-08-18T16:25Z monitor was **NO TRADE**: ETH 4H ADX was 14.14 (ranging), 24H open interest
+was down 0.83%, no closed-1H candidate existed, and the authorised window had not opened.
 
 ## Final protected holdout — consumed once
 
@@ -102,9 +111,10 @@ All conditions are mandatory:
    never primary alpha.
 5. Expected edge is at least **3x** the full estimated friction. Current Lv1 taker fees alone are
    5 bp per side / 10 bp round trip; spread, slippage and expected funding must be added.
-6. For the first trade, use at most 25% account position and at most 2.00 USDT stop risk, despite
-   the higher locked ceilings. The position gets native attached TP and SL, both verified after
-   placement. No averaging, adding, reversal shortcut, or widened stop.
+6. The operator amendment narrows the first trade to ETH only, one entry, at most 10% account
+   position, 40 USDT notional, 0.25 USDT stop risk, and 0.35 USDT stop-plus-friction planned loss.
+   The position gets native attached TP and SL, both verified after placement. No averaging,
+   adding, reversal shortcut, or widened stop.
 7. The exact immutable DecisionEvent is previewed, delivered and acknowledged by every ACTIVE
    subscriber before the order. Execution uses only the dedicated Agent Trade Kit profile. The
    operator must then provide `CONFIRM LIVE <decisionId>` for that one event.

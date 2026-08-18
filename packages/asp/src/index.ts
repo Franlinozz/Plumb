@@ -81,7 +81,7 @@ export {
 export {
   ExecutableSignalRejected,
   formatDecisionEventForDelivery,
-  validateV11PerpetualSignal,
+  validateV12PerpetualSignal,
   type ExecutableSignalGate,
 } from './decision-delivery.js';
 

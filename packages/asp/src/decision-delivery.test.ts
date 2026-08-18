@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ExecutableSignalRejected,
   formatDecisionEventForDelivery,
-  validateV11PerpetualSignal,
+  validateV12PerpetualSignal,
 } from './decision-delivery.js';
 
 const NOW = 1_000_000;
@@ -45,10 +45,19 @@ const gate = (overrides = {}) => ({
 });
 
 describe('DecisionEvent A2A delivery gate', () => {
-  it('formats one deterministic V1.1 signal under 200 characters', () => {
+  it('formats one deterministic v1.2 market signal with one specific reference price', () => {
     const text = formatDecisionEventForDelivery(event(), gate());
-    expect(text).toContain('Decision DEC-abcdefghij');
+    expect(text).toBe(
+      '【Futures】BTC-USDT-PERP | LONG 2x | Market | Reference Price 64050 | Stop Loss 63000 | ' +
+      'Take Profit 66000 | Position 2% | Valid for 1h',
+    );
+    expect(text).not.toContain('64000-64100');
     expect(text.length).toBeLessThanOrEqual(200);
+  });
+
+  it('never overstates sub-hour validity', () => {
+    const expiring = finalizeDecisionEvent({ ...event(), validUntil: NOW + 5 * 60_000 });
+    expect(formatDecisionEventForDelivery(expiring, gate())).toMatch(/Valid for 5min$/u);
   });
 
   it.each([
@@ -75,7 +84,11 @@ describe('DecisionEvent A2A delivery gate', () => {
   });
 
   it('rejects malformed and over-200-character signals instead of rewriting them', () => {
-    expect(() => validateV11PerpetualSignal('BUY BTC now')).toThrow(/V1.1/);
-    expect(() => validateV11PerpetualSignal('x'.repeat(201))).toThrow(/200/);
+    expect(() => validateV12PerpetualSignal('BUY BTC now')).toThrow(/v1.2/);
+    expect(() => validateV12PerpetualSignal(
+      '【Futures】BTC-USDT-PERP | LONG 2x | Limit | Reference Price 64050 | Stop Loss 63000 | ' +
+      'Take Profit 66000 | Position 2% | Valid for 1h',
+    )).toThrow(/v1.2/);
+    expect(() => validateV12PerpetualSignal('x'.repeat(201))).toThrow(/200/);
   });
 });

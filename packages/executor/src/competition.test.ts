@@ -12,12 +12,12 @@ import {
 import { IntentStore } from './idempotency.js';
 import { MockAtk } from './mock.js';
 
-const NOW = Date.now();
+const NOW = Date.parse('2026-08-20T12:00:00Z');
 const event = finalizeDecisionEvent({
   decisionId: 'DEC-COMPETE0001', strategyVersion: 'momentum-v1', createdAt: NOW - 1_000,
-  validUntil: NOW + 60_000, instrument: 'BTC-USDT-SWAP', direction: 'long',
-  entryLow: 65_000, entryHigh: 66_000, stopPrice: 64_025, takeProfit: 68_000,
-  positionPct: 50, leverage: 2, riskUsd: 3, expectedCostBps: 12, expectedEdgeBps: 40,
+  validUntil: NOW + 60_000, instrument: 'ETH-USDT-SWAP', direction: 'long',
+  entryLow: 1_900, entryHigh: 1_901, stopPrice: 1_890, takeProfit: 1_920,
+  positionPct: 9.5, leverage: 2, riskUsd: 0.2, expectedCostBps: 12, expectedEdgeBps: 40,
   governorApproved: true, venuePositionBefore: 0, ledgerPositionBefore: 0,
   reconciliationVersion: 'signed-v1',
 });
@@ -30,10 +30,10 @@ class CompetitionMock extends MockAtk implements CompetitionVenue {
 
   async getAccountConfig() { return { uid: 'test-uid', acctLv: '2', posMode: 'net_mode' }; }
   async getInstrumentMetadata() {
-    return { ctVal: 0.01, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
+    return { ctVal: 0.1, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
   }
   async getFeeRates() { return { maker: 0.0002, taker: 0.0005 }; }
-  async getLastPrice() { return 65_000; }
+  async getLastPrice() { return 1_900; }
   async getLeverage() { return 2; }
   async getMaxAvailableSize() { return { buy: 10, sell: 10 }; }
 
@@ -56,6 +56,7 @@ const input = (candidate: DecisionEvent = event) => ({
   event: candidate, expectedUid: 'test-uid', ledgerSignedPosition: candidate.ledgerPositionBefore,
   risk: { equityUsd: 400, availableMarginUsd: 400, realisedPnlTodayUsd: 0,
     drawdownUsd: 0, concurrentStopRiskUsd: 0 },
+  priorLiveEntryCount: 0,
   liveConfirmation: `CONFIRM LIVE ${candidate.decisionId}`, now: NOW,
 });
 
@@ -66,10 +67,10 @@ describe('AgentTradeKitCompetitionExecutor', () => {
   it('executes a flat approved event only after exact A2A delivery proof', async () => {
     const venue = new CompetitionMock();
     const result = await executor(venue).execute(input());
-    expect(result).toMatchObject({ decisionId: event.decisionId, contracts: 0.3, reversed: false,
-      venueSignedPositionAfter: 0.3 });
+    expect(result).toMatchObject({ decisionId: event.decisionId, contracts: 0.2, reversed: false,
+      venueSignedPositionAfter: 0.2 });
     expect(venue.placed[0]).toMatchObject({
-      clOrdId: 'DECCOMPETE0001', slTriggerPx: 64_025, tpTriggerPx: 68_000,
+      clOrdId: 'DECCOMPETE0001', slTriggerPx: 1_890, tpTriggerPx: 1_920,
     });
   });
 
@@ -82,7 +83,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     expect(result.reversed).toBe(true);
     expect(venue.placed[0]).toMatchObject({ side: 'buy', sz: 0.1, reduceOnly: true });
     expect(venue.placed[1]).toMatchObject({
-      side: 'buy', sz: 0.3, slTriggerPx: 64_025, tpTriggerPx: 68_000,
+      side: 'buy', sz: 0.2, slTriggerPx: 1_890, tpTriggerPx: 1_920,
     });
   });
 
@@ -91,7 +92,9 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     ['missing live confirmation', { override: { liveConfirmation: 'no' } }],
     ['daily loss', { override: { risk: { ...input().risk, realisedPnlTodayUsd: -12 } } }],
     ['drawdown stop', { override: { risk: { ...input().risk, drawdownUsd: 24 } } }],
-    ['concurrent risk', { override: { risk: { ...input().risk, concurrentStopRiskUsd: 6 } } }],
+    ['concurrent risk', { override: { risk: { ...input().risk, concurrentStopRiskUsd: 8 } } }],
+    ['prior live entry', { override: { priorLiveEntryCount: 1 } }],
+    ['outside entry window', { override: { now: Date.parse('2026-08-19T19:00:00Z') } }],
   ])('fails closed on %s', async (_name, options) => {
     const venue = new CompetitionMock();
     const publications = 'publications' in options ? options.publications : proof();
@@ -103,7 +106,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
 
   it('rejects a correct-size position in the wrong signed direction', async () => {
     const venue = new CompetitionMock();
-    venue.setPosition(event.instrument, -0.3, 'net');
+    venue.setPosition(event.instrument, -0.2, 'net');
     await expect(executor(venue).execute(input())).rejects.toThrow(/signed venue/u);
     expect(venue.placed).toHaveLength(0);
   });
@@ -153,7 +156,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     }
     const venue = new PartialWithoutTargetVenue();
     await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
-    expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true, sz: 0.15 });
+    expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true, sz: 0.1 });
     expect(await venue.getPositions(event.instrument)).toMatchObject([{ pos: 0 }]);
   });
 

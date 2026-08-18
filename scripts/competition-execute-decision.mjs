@@ -48,9 +48,11 @@ const recorded = ledger.get(event.instrument);
 
 try {
   const executor = new AgentTradeKitCompetitionExecutor({ venue, publications, intents });
+  const priorLiveEntryCount = intents.all()
+    .filter((intent) => intent.status === 'placed' && intent.signalId !== event.decisionId).length;
   const result = await executor.execute({
     event, expectedUid, ledgerSignedPosition: recorded?.signedPosition ?? 0,
-    risk: bundle.risk, liveConfirmation: confirmation, now: Date.now(),
+    risk: bundle.risk, priorLiveEntryCount, liveConfirmation: confirmation, now: Date.now(),
   });
   ledger.set({ instrument: event.instrument, signedPosition: result.venueSignedPositionAfter,
     decisionId: result.decisionId, orderId: result.orderId, updatedAt: Date.now() });

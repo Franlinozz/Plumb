@@ -25,7 +25,7 @@ export const DecisionEventSchema = z
     stopPrice: positive,
     takeProfit: positive,
     positionPct: positive.max(100),
-    leverage: positive.max(3),
+    leverage: positive.min(1).max(3),
     riskUsd: positive,
     expectedCostBps: finite.nonnegative(),
     expectedEdgeBps: positive,

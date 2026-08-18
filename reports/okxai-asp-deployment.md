@@ -43,8 +43,9 @@ Implemented controls:
 - graceful network/auth/business-response handling.
 
 The fallback notice is non-executable and below 200 characters. Executable signal delivery remains
-disabled until the canonical immutable DecisionEvent, governor/cost/reconciliation gates and V1.1
-formatter are implemented.
+disabled until a canonical immutable DecisionEvent passes the governor, cost, evidence and
+reconciliation gates. The current Trading Signal v1.2 formatter is implemented and the obsolete
+V1.1 executable grammar is rejected.
 
 ## Review smoke test
 

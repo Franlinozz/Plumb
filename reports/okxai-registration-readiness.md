@@ -91,7 +91,7 @@ finished competition executor was therefore never on the pre-snapshot critical p
 
 ## Architecture gaps against the emergency specification
 
-1. A canonical immutable `DecisionEvent` and deterministic <=200-character V1.1 formatter now exist and fail closed on approval, halt, freshness, signed reconciliation, metadata, sizing, cost, duplicate and account-certainty failures.
+1. A canonical immutable `DecisionEvent` and deterministic <=200-character Trading Signal v1.2 formatter now exist and fail closed on approval, halt, freshness, signed reconciliation, metadata, sizing, cost, duplicate and account-certainty failures.
 2. The minimum official subscription/session/heartbeat runtime is deployed. The on-demand executable publisher now persists exact-event, per-subscriber acknowledgements, but has not been invoked because no genuine event is approved.
 3. The dedicated competition adapter implements pre/post-write and close-to-zero reversal gates. Live writes remain disabled pending a genuine event, a reliable live-profile read-only preflight, and decision-specific operator confirmation.
 4. Persistent public market/OI recording is now deployed. Historical depth will accumulate from this point; it cannot be reconstructed retroactively from this recorder.

@@ -23,13 +23,14 @@ export class ExecutableSignalRejected extends Error {
   }
 }
 
-const instrument = (instId: DecisionEvent['instrument']): string => instId.replace('-USDT-SWAP', '-PERP');
+const instrument = (instId: DecisionEvent['instrument']): string => instId.replace('-SWAP', '-PERP');
 const number = (value: number): string => Number(value.toFixed(8)).toString();
 
-export function validateV11PerpetualSignal(text: string): void {
+/** Current official Trading Signal v1.2 perpetual grammar (verified 2026-08-18). */
+export function validateV12PerpetualSignal(text: string): void {
   if (text.length > 200) throw new ExecutableSignalRejected('signal exceeds 200 characters');
-  const shape = /^\[Perpetual Signal\] (BTC|ETH|SOL)-PERP \| (LONG|SHORT) [0-3](?:\.\d+)?x \| Entry \d+(?:\.\d+)?-\d+(?:\.\d+)? \| SL \d+(?:\.\d+)? \| TP1 \d+(?:\.\d+)? \| Position \d+(?:\.\d+)?% \| Valid for \d+h \| Decision DEC-[A-Za-z0-9_-]+$/u;
-  if (!shape.test(text)) throw new ExecutableSignalRejected('signal does not match the V1.1 perpetual format');
+  const shape = /^【Futures】(BTC|ETH|SOL)-USDT-PERP \| (LONG|SHORT) [1-3](?:\.\d+)?x \| Market \| Reference Price \d+(?:\.\d+)? \| Stop Loss \d+(?:\.\d+)? \| Take Profit \d+(?:\.\d+)? \| Position \d+(?:\.\d+)?% \| Valid for \d+(?:min|h)$/u;
+  if (!shape.test(text)) throw new ExecutableSignalRejected('signal does not match the v1.2 perpetual format');
 }
 
 export function formatDecisionEventForDelivery(event: DecisionEvent, gate: ExecutableSignalGate): string {
@@ -51,12 +52,15 @@ export function formatDecisionEventForDelivery(event: DecisionEvent, gate: Execu
   if (gate.duplicateDecision) throw new ExecutableSignalRejected('duplicate decisionId');
   if (!gate.accountCertain) throw new ExecutableSignalRejected('account state is uncertain');
 
-  const hours = Math.max(1, Math.ceil((event.validUntil - gate.now) / 3_600_000));
+  const remainingMs = event.validUntil - gate.now;
+  const validity = remainingMs < 3_600_000
+    ? `${Math.max(1, Math.floor(remainingMs / 60_000))}min`
+    : `${Math.floor(remainingMs / 3_600_000)}h`;
+  const referencePrice = (event.entryLow + event.entryHigh) / 2;
   const text =
-    `[Perpetual Signal] ${instrument(event.instrument)} | ${event.direction.toUpperCase()} ${number(event.leverage)}x | ` +
-    `Entry ${number(event.entryLow)}-${number(event.entryHigh)} | SL ${number(event.stopPrice)} | ` +
-    `TP1 ${number(event.takeProfit)} | Position ${number(event.positionPct)}% | Valid for ${hours}h | ` +
-    `Decision ${event.decisionId}`;
-  validateV11PerpetualSignal(text);
+    `【Futures】${instrument(event.instrument)} | ${event.direction.toUpperCase()} ${number(event.leverage)}x | ` +
+    `Market | Reference Price ${number(referencePrice)} | Stop Loss ${number(event.stopPrice)} | ` +
+    `Take Profit ${number(event.takeProfit)} | Position ${number(event.positionPct)}% | Valid for ${validity}`;
+  validateV12PerpetualSignal(text);
   return text;
 }

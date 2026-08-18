@@ -51,7 +51,8 @@ describe('canonical DecisionEvent', () => {
     expect(() => finalizeDecisionEvent({ ...base(), takeProfit: 63_000 })).toThrow();
   });
 
-  it('rejects leverage above 3x', () => {
+  it('rejects leverage below 1x or above 3x', () => {
+    expect(() => finalizeDecisionEvent({ ...base(), leverage: 0.5 })).toThrow();
     expect(() => finalizeDecisionEvent({ ...base(), leverage: 3.01 })).toThrow();
   });
 
