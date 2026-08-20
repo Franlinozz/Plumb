@@ -45,6 +45,19 @@ describe('canonical DecisionEvent', () => {
     expect(() => finalizeDecisionEvent({ ...base(), expectedEdgeBps: 30 })).not.toThrow();
   });
 
+  it('records the narrow emergency basis without fabricating expected edge', () => {
+    const event = finalizeDecisionEvent({
+      ...base(), strategyVersion: 'emergency_participation@1.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-emergency-participation',
+    });
+    expect(event.expectedEdgeBps).toBe(0);
+    expect(() => finalizeDecisionEvent({ ...base(), expectedEdgeBps: 0 })).toThrow(/friction/u);
+    expect(() => finalizeDecisionEvent({
+      ...base(), strategyVersion: 'momentum-v1', expectedEdgeBps: 0,
+      approvalBasis: 'operator-emergency-participation',
+    })).toThrow(/malformed/u);
+  });
+
   it('rejects stale-at-creation and malformed price geometry', () => {
     expect(() => finalizeDecisionEvent({ ...base(), validUntil: 1_000 })).toThrow();
     expect(() => finalizeDecisionEvent({ ...base(), stopPrice: 65_000 })).toThrow();

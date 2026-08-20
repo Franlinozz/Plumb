@@ -13,6 +13,10 @@ import {
   competitionTrendPullback,
   COMPETITION_TREND_PULLBACK_ID,
 } from './competition_trend_pullback.js';
+import {
+  emergencyParticipation,
+  EMERGENCY_PARTICIPATION_ID,
+} from './emergency_participation.js';
 
 /**
  * The four candidates. **No edge is claimed for any of them.** P4's backtest decides which, if
@@ -58,6 +62,8 @@ export {
   aggregateClosedFourHour,
   classifyFourHourTrend,
   COMPETITION_TREND_PULLBACK_ID,
+  emergencyParticipation,
+  EMERGENCY_PARTICIPATION_ID,
 };
 export { SURVIVING_HOURS } from './session_bias.js';
 export { classifyOiState, TRADED_STATES, type OiState } from './oi_divergence.js';

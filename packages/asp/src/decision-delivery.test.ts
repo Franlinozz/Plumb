@@ -60,6 +60,15 @@ describe('DecisionEvent A2A delivery gate', () => {
     expect(formatDecisionEventForDelivery(expiring, gate())).toMatch(/Valid for 5min$/u);
   });
 
+  it('formats an explicitly labelled emergency event while preserving a zero edge claim', () => {
+    const emergency = finalizeDecisionEvent({
+      ...event(), strategyVersion: 'emergency_participation@1.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-emergency-participation',
+    });
+    expect(formatDecisionEventForDelivery(emergency, gate())).toMatch(/^【Futures】/u);
+    expect(emergency.expectedEdgeBps).toBe(0);
+  });
+
   it.each([
     ['halt', { haltFlags: { manual: true } }],
     ['stale market', { marketDataAt: NOW - 60_001 }],

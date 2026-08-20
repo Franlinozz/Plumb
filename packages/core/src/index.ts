@@ -64,4 +64,7 @@ export {
   type DecisionEvent,
 } from './decision-event.js';
 
-export { COMPETITION_V2_AMENDMENT } from './competition-amendment.js';
+export {
+  COMPETITION_V2_AMENDMENT,
+  EMERGENCY_PARTICIPATION_AMENDMENT,
+} from './competition-amendment.js';

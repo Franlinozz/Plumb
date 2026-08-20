@@ -1,5 +1,6 @@
 import {
   COMPETITION_V2_AMENDMENT,
+  EMERGENCY_PARTICIPATION_AMENDMENT,
   finalizeDecisionEvent,
   type DecisionEvent,
   type Instrument,
@@ -184,6 +185,10 @@ export class AgentTradeKitCompetitionExecutor {
     }
 
     const contracts = this.contractsFor(event, verifiedRisk, metadata, lastPrice);
+    if (event.approvalBasis === EMERGENCY_PARTICIPATION_AMENDMENT.approvalBasis &&
+        Math.abs(contracts - metadata.minSz) > metadata.lotSz / 2) {
+      throw new CompetitionExecutionRejected('emergency participation event must use exactly the venue minimum lot');
+    }
     const availableForSide = event.direction === 'long' ? maxSize.buy : maxSize.sell;
     if (contracts > availableForSide) throw new CompetitionExecutionRejected('approved size exceeds account maximum');
     let reversed = false;

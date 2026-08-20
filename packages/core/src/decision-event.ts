@@ -28,7 +28,8 @@ export const DecisionEventSchema = z
     leverage: positive.min(1).max(3),
     riskUsd: positive,
     expectedCostBps: finite.nonnegative(),
-    expectedEdgeBps: positive,
+    expectedEdgeBps: finite.nonnegative(),
+    approvalBasis: z.enum(['calibrated-edge', 'operator-emergency-participation']).optional(),
     governorApproved: z.boolean(),
     venuePositionBefore: finite,
     ledgerPositionBefore: finite,
@@ -67,7 +68,12 @@ export class DecisionEventRejected extends Error {
 export function finalizeDecisionEvent(candidate: unknown): DecisionEvent {
   const event = DecisionEventSchema.parse(candidate);
   if (event.governorApproved !== true) throw new DecisionEventRejected('governorApproved is not true');
-  if (event.expectedEdgeBps < event.expectedCostBps * MIN_EXPECTED_EDGE_COST_MULTIPLE) {
+  const emergency = event.approvalBasis === 'operator-emergency-participation';
+  if (emergency) {
+    if (event.strategyVersion !== 'emergency_participation@1.0.0' || event.expectedEdgeBps !== 0) {
+      throw new DecisionEventRejected('emergency participation basis is malformed or overstates expected edge');
+    }
+  } else if (event.expectedEdgeBps < event.expectedCostBps * MIN_EXPECTED_EDGE_COST_MULTIPLE) {
     throw new DecisionEventRejected(
       `expected edge is below ${MIN_EXPECTED_EDGE_COST_MULTIPLE}x estimated trading friction`,
     );

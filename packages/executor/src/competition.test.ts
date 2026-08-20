@@ -74,6 +74,26 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     });
   });
 
+  it('permits an emergency event only at exactly the venue minimum lot', async () => {
+    const minimum = finalizeDecisionEvent({
+      ...event,
+      decisionId: 'DEC-EMERGENCY01',
+      strategyVersion: 'emergency_participation@1.0.0',
+      positionPct: 0.475,
+      riskUsd: 0.01,
+      expectedEdgeBps: 0,
+      approvalBasis: 'operator-emergency-participation',
+    });
+    await expect(executor(new CompetitionMock(), proof(minimum)).execute(input(minimum)))
+      .resolves.toMatchObject({ contracts: 0.01 });
+
+    const oversized = finalizeDecisionEvent({
+      ...minimum, decisionId: 'DEC-EMERGENCY02', positionPct: 0.95, riskUsd: 0.02,
+    });
+    await expect(executor(new CompetitionMock(), proof(oversized)).execute(input(oversized)))
+      .rejects.toThrow(/minimum lot/u);
+  });
+
   it('closes to signed zero before reversing in net_mode', async () => {
     const venue = new CompetitionMock();
     venue.setPosition(event.instrument, -0.1, 'net');

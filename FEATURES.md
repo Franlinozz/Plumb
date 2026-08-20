@@ -81,6 +81,7 @@ Rules for this table:
 | **Publish-before-execute — the executor cannot reach an unpublished signal** | `@plumb/asp` | internal | `asp.test.ts` + `executor/src/publish_gate.test.ts` |
 | Trading Signal v1.2 perpetual formatter — one price, fixed field order, <=200 chars | `@plumb/asp` | A2A delivery | `asp/src/decision-delivery.test.ts` |
 | First-trade amendment — ETH only, one entry, $0.25 stop risk / $0.35 planned loss / $40 notional | `@plumb/core`, `@plumb/ops`, `@plumb/executor` | competition | `ops/src/competition-decision.test.ts` + `executor/src/competition.test.ts` |
+| Emergency participation amendment — one ETH minimum-lot entry, zero edge claimed, all signal/publication/execution safety retained | `@plumb/core`, `@plumb/strategy`, `@plumb/ops`, `@plumb/asp`, `@plumb/executor` | competition | `core/src/decision-event.test.ts` + `ops/src/emergency-participation-decision.test.ts` + `executor/src/competition.test.ts` |
 | Read-only first-trade condition monitor; no publication or order path | script + isolated timer | `node scripts/competition-v2-monitor.mjs` | `ops/src/competition-monitor.test.ts` + live public-data smoke test |
 | Hash-chained append-only published feed; tampering detected | `@plumb/asp` | internal | `asp.test.ts` › the published feed |
 | Claude rationale with schema validation + deterministic template fallback | `@plumb/asp` | internal | `asp.test.ts` › rationale |

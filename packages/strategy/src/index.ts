@@ -87,6 +87,8 @@ export {
   aggregateClosedFourHour,
   classifyFourHourTrend,
   COMPETITION_TREND_PULLBACK_ID,
+  emergencyParticipation,
+  EMERGENCY_PARTICIPATION_ID,
   type OiState,
 } from './strategies/index.js';
 

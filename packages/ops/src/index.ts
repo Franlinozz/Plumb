@@ -87,3 +87,9 @@ export {
   type CompetitionEvidence,
   type CompetitionHoldoutEvidence,
 } from './competition-decision.js';
+
+export {
+  createEmergencyParticipationDecision,
+  type EmergencyParticipationInput,
+  type EmergencyParticipationMetadata,
+} from './emergency-participation-decision.js';

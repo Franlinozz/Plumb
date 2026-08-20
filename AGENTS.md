@@ -247,6 +247,12 @@ that touches payments, subscriptions or the trade kit.
   perpetual messages now use `【Futures】`, a Market/Reference Price pair, one specific price, fixed
   field order and at most 200 characters. Decision correlation stays in the immutable publication
   record and Agent Trade Kit `clOrdId`; adding an undocumented text field would break the grammar.
+- **Emergency participation · the operator explicitly authorised the amendment on 2026-08-20.**
+  Exactly one ETH minimum-venue-lot entry may bypass only the independent-holdout and calibrated-
+  edge requirements, with `expectedEdgeBps: 0` recorded honestly. Closed-4H trend/ADX, matching
+  24H price and OI participation, moderate 1H RSI, the governor, exact A2A publication, ATK-only
+  execution, attached exits, signed reconciliation and decision-specific live confirmation remain
+  mandatory. Maximum stop risk is 0.05 USDT and maximum planned loss is 0.08 USDT.
 
 (append-only log — one line of reasoning each)
 
