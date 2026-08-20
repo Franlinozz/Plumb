@@ -83,6 +83,10 @@ export {
   SESSION_BIAS_ID,
   TREND_EMA_ID,
   VOL_EXPANSION_ID,
+  competitionTrendPullback,
+  aggregateClosedFourHour,
+  classifyFourHourTrend,
+  COMPETITION_TREND_PULLBACK_ID,
   type OiState,
 } from './strategies/index.js';
 

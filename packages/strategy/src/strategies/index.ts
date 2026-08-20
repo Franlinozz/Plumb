@@ -7,6 +7,12 @@ import { oiDivergence, OI_DIVERGENCE_ID } from './oi_divergence.js';
 import { trendEma, TREND_EMA_ID } from './trend_ema.js';
 import { sessionBias, SESSION_BIAS_ID } from './session_bias.js';
 import { isTrendAlignedBreakout, volExpansion, VOL_EXPANSION_ID } from './vol_expansion.js';
+import {
+  aggregateClosedFourHour,
+  classifyFourHourTrend,
+  competitionTrendPullback,
+  COMPETITION_TREND_PULLBACK_ID,
+} from './competition_trend_pullback.js';
 
 /**
  * The four candidates. **No edge is claimed for any of them.** P4's backtest decides which, if
@@ -48,6 +54,10 @@ export {
   SESSION_BIAS_ID,
   TREND_EMA_ID,
   VOL_EXPANSION_ID,
+  competitionTrendPullback,
+  aggregateClosedFourHour,
+  classifyFourHourTrend,
+  COMPETITION_TREND_PULLBACK_ID,
 };
 export { SURVIVING_HOURS } from './session_bias.js';
 export { classifyOiState, TRADED_STATES, type OiState } from './oi_divergence.js';
