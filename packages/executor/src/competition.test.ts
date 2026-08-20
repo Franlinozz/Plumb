@@ -60,8 +60,8 @@ const input = (candidate: DecisionEvent = event) => ({
   liveConfirmation: `CONFIRM LIVE ${candidate.decisionId}`, now: NOW,
 });
 
-const executor = (venue = new CompetitionMock(), publications = proof()) =>
-  new AgentTradeKitCompetitionExecutor({ venue, publications, intents: new IntentStore(), sleep: async () => {} });
+const executor = (venue = new CompetitionMock(), publications = proof(), now = () => NOW) =>
+  new AgentTradeKitCompetitionExecutor({ venue, publications, intents: new IntentStore(), sleep: async () => {}, now });
 
 describe('AgentTradeKitCompetitionExecutor', () => {
   it('executes a flat approved event only after exact A2A delivery proof', async () => {
@@ -85,6 +85,18 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     expect(venue.placed[1]).toMatchObject({
       side: 'buy', sz: 0.2, slTriggerPx: 1_890, tpTriggerPx: 1_920,
     });
+  });
+
+  it('does not open the reversal when the event expires after reaching signed zero', async () => {
+    const venue = new CompetitionMock();
+    venue.setPosition(event.instrument, -0.1, 'net');
+    const reversal = finalizeDecisionEvent({ ...event, decisionId: 'DEC-COMPETE0003',
+      venuePositionBefore: -0.1, ledgerPositionBefore: -0.1 });
+    await expect(executor(venue, proof(reversal), () => reversal.validUntil).execute(input(reversal)))
+      .rejects.toThrow(/stale during reversal/u);
+    expect(venue.placed).toHaveLength(1);
+    expect(venue.placed[0]).toMatchObject({ reduceOnly: true });
+    expect(await venue.getPositions(event.instrument)).toMatchObject([{ pos: 0 }]);
   });
 
   it.each([

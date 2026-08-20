@@ -73,6 +73,8 @@ export interface CompetitionExecutorDeps {
   readonly publications: CompetitionPublicationProof;
   readonly intents: IntentStore;
   readonly sleep?: (ms: number) => Promise<void>;
+  /** Injected wall clock for freshness checks that occur after awaited venue writes. */
+  readonly now?: () => number;
 }
 
 export class CompetitionExecutionRejected extends Error {
@@ -98,9 +100,11 @@ const floorToStep = (value: number, step: number): number => {
 
 export class AgentTradeKitCompetitionExecutor {
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly now: () => number;
 
   constructor(private readonly deps: CompetitionExecutorDeps) {
     this.sleep = deps.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.now = deps.now ?? Date.now;
     if (deps.venue.transport !== 'agent-trade-kit') {
       throw new CompetitionExecutionRejected('direct REST or unknown transport is forbidden');
     }
@@ -196,7 +200,7 @@ export class AgentTradeKitCompetitionExecutor {
       if (closeOrder === undefined || !closeFills.some((fill) => fill.ordId === close.ordId && fill.clOrdId === close.clOrdId)) {
         throw new CompetitionExecutionRejected('reversal close lacks an attributable order/fill acknowledgement');
       }
-      if (Date.now() >= event.validUntil) throw new CompetitionExecutionRejected('DecisionEvent became stale during reversal');
+      if (this.now() >= event.validUntil) throw new CompetitionExecutionRejected('DecisionEvent became stale during reversal');
       reversed = true;
     }
 
