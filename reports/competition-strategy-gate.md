@@ -1,6 +1,6 @@
 # Competition strategy gate
 
-Audit updated: 2026-08-18 UTC
+Audit updated: 2026-08-20 UTC
 
 ## Status: RED — protected holdout FAIL; amendment preparation cannot manufacture eligibility
 
@@ -17,6 +17,45 @@ the obsolete V1.1 syntax to Trading Signal v1.2 before any executable publicatio
 
 The 2026-08-18T16:25Z monitor was **NO TRADE**: ETH 4H ADX was 14.14 (ranging), 24H open interest
 was down 0.83%, no closed-1H candidate existed, and the authorised window had not opened.
+
+## 2026-08-20 compliance-warning audit
+
+The operator received a first warning saying activity in the registered account did not align with
+the ASP's signals, with a re-review scheduled for 2026-08-21. A read-only audit at approximately
+2026-08-20T11:15Z found **no competition-period CEX trade to match to that warning**:
+
+- current, recent and archived USDT-perpetual orders: none;
+- current, recent and archived fills: none;
+- open positions and SWAP/account bills: none;
+- local Agent Trade Kit audit log: read operations only, no order write;
+- X Layer identity wallet: no transaction after the competition began;
+- executable A2A DecisionEvent deliveries: none (only non-executable no-trade notices and welcomes).
+
+This evidence does not prove what the platform's warning system observed. Plausible causes include
+an attribution/binding issue or automated treatment of a signal-only/no-trade state as a mismatch.
+The operator must ask OKX.AI support for the exact instrument, order id, timestamp, execution path
+and signal they classified as mismatched. Plumb will not create a speculative order merely to make
+the warning disappear.
+
+The same audit exposed two independent constraints:
+
+1. The participating service is active, online and has three currently ACTIVE subscriptions, but
+   has delivered zero executable signals. The public convenience feed contains only two expired
+   pre-competition test signals; it is not the official A2A subscription ledger.
+2. The current `createCompetitionDecision` path can never approve a live event because the sole
+   protected holdout is permanently RED. Time and market conditions cannot change that fact. A new
+   strategy/version would require an explicit, honest governance amendment and fresh evidence; the
+   failed result must never be relabelled or bypassed.
+
+Current leaderboard visibility does not establish eligibility: the official page says ASPs with
+status issues or minimal performance changes may be hidden and updates approximately every ten
+minutes. Plumb's absence is consistent with zero recognized trades, but only OKX can confirm the
+warning's internal attribution.
+
+The persistent observation recorder also had a data-integrity defect: it inserted the first partial
+form of each candle and ignored the later closed form because both share a primary key. The store now
+permits only a monotonic `closed=false` to `closed=true` replacement. This repair does not alter the
+live monitor, protected holdout or any trading decision.
 
 ## Final protected holdout — consumed once
 

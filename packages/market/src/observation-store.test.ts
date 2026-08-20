@@ -34,4 +34,17 @@ describe('MarketObservationStore', () => {
     expect(store.count()).toBe(2);
     store.close();
   });
+
+  it('replaces a partial candle exactly once when OKX confirms it closed', () => {
+    const store = new MarketObservationStore();
+    const partial = { ...observation, kind: 'candle' as const, timeframe: '1H', payload: { closed: false, close: 100 } };
+    const closed = { ...partial, recordedAt: partial.recordedAt + 1, payload: { closed: true, close: 101 } };
+
+    expect(store.put(partial)).toBe(true);
+    expect(store.put(closed)).toBe(true);
+    expect(store.put({ ...closed, recordedAt: closed.recordedAt + 1 })).toBe(false);
+    expect(store.put({ ...partial, recordedAt: closed.recordedAt + 2 })).toBe(false);
+    expect(store.count()).toBe(1);
+    store.close();
+  });
 });
