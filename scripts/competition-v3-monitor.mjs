@@ -82,6 +82,7 @@ const signal = cycle.signals[0];
 const participationConfirmed = signal === undefined ? false :
   oiChangePct1h > 0.001 && oiChangePct4h > 0.001 && oiChangePct24h > 0.001 &&
   (signal.side === 'long' ? priceChangePct24h > 0.001 : priceChangePct24h < -0.001);
+const publicPreparationReady = signal !== undefined && participationConfirmed;
 
 // Explain the frozen strategy's exact closed-bar gates. This is diagnostic only: these values
 // cannot create, approve, publish or execute a signal.
@@ -176,7 +177,11 @@ console.log(JSON.stringify({
     longGates,
     shortGates,
   },
+  amendmentAuthorised: true,
+  publicPreparationReady,
   executionEligible: false,
-  blocker: 'research candidate has no independent holdout and OKX attribution warning is unresolved',
+  blocker: publicPreparationReady
+    ? 'public setup ready; private account reconciliation, DecisionEvent, A2A delivery and exact live confirmation remain required'
+    : 'frozen closed-bar strategy or multi-horizon participation confirmation is absent',
   requests: client.stats.requests,
 }));

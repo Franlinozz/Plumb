@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(resolve(process.cwd(), 'scripts/competition-v2-monitor.mjs'), 'utf8');
+const v3Source = readFileSync(resolve(process.cwd(), 'scripts/competition-v3-monitor.mjs'), 'utf8');
 
 describe('the automated competition monitor is read-only by construction', () => {
   it('has no executor, A2A, account, credential, child-process, or order path', () => {
@@ -20,6 +21,25 @@ describe('the automated competition monitor is read-only by construction', () =>
     ]) {
       expect(source, forbidden).not.toContain(forbidden);
     }
+  });
+
+  it('keeps the authorised v3 opportunity monitor public-data-only', () => {
+    for (const forbidden of [
+      '@plumb/executor',
+      '@plumb/asp',
+      'child_process',
+      'spawn',
+      'execFile',
+      'onchainos',
+      'okx swap',
+      'placeOrder',
+      'process.env',
+    ]) {
+      expect(v3Source, forbidden).not.toContain(forbidden);
+    }
+    expect(v3Source).toContain('publicPreparationReady');
+    expect(v3Source).toContain('executionEligible: false');
+    expect(v3Source).toContain('exact live confirmation remain required');
   });
 
   it('prints an unconditional non-execution blocker while exposing public candidate readiness', () => {
