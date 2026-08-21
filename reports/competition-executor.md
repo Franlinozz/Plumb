@@ -13,6 +13,11 @@ the on-demand A2A publisher. The default command is preview-only. A write additi
 the dedicated Agent Trade Kit profile, exact acknowledgement by every active subscriber, and a
 decision-specific live-money confirmation.
 
+Live status update (2026-08-21T11:31Z): decision `DEC-ydBHBkzgyA` was acknowledged by all three
+ACTIVE A2A subscriptions, then filled through the dedicated Agent Trade Kit competition profile at
+the venue minimum 0.01 ETH-USDT-SWAP contract. Independent readback confirmed the attributable
+fill, signed +0.01 net position, and attached stop/target. The one-entry allowance is now consumed.
+
 Implemented gates:
 
 - exact account UID, account level, `net_mode`, venue positions and pending orders;

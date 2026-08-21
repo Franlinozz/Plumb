@@ -55,3 +55,22 @@ before the boundary and to fail closed when history does not reach it. The autom
 timer now evaluates the emergency strategy rather than the obsolete failed candidate. At
 2026-08-21T06:36Z the corrected check remained NO TRADE: price +4.80%, closed-4H ADX 53.33 and 1H
 RSI 72.59 passed, while 24H OI −3.47% and 1H OI −0.97% failed participation confirmation.
+
+## Live execution — PASS
+
+At 2026-08-21T11:28:42Z the complete corrected preparation path produced immutable DecisionEvent
+`DEC-ydBHBkzgyA`. The operator then supplied the exact decision-specific live confirmation.
+
+- A2A publication: acknowledged by all 3 ACTIVE subscribers before execution.
+- Instrument/direction: ETH-USDT-SWAP LONG.
+- Agent Trade Kit order: filled, 0.01 contract at 2,384.28.
+- Correlation: the order and fill carry `clOrdId` `DECydBHBkzgyA`.
+- Venue signed position after: +0.01 in `net_mode`; competition ledger persisted +0.01.
+- Attached protection independently observed: stop 2,340.03 and take profit 2,451.10, with an
+  attached algo identifier present.
+- Entry fee: 0.00119214 USDT.
+- Account equity immediately after readback: 409.89817786 USDT.
+
+No direct REST order path was used. Publication, fill, position, stop and target were independently
+read back after the write. This completes the one-live-entry emergency allowance; the executor
+will reject another entry under the same amendment.
