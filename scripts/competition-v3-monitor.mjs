@@ -2,7 +2,7 @@
 /** Read-only public-data monitor for the frozen v3 research candidate. */
 
 import { createSeededIdFactory } from '@plumb/core';
-import { buildSnapshot, OkxPublicClient } from '@plumb/market';
+import { buildSnapshot, OkxPublicClient, openInterestChangeOverWindow } from '@plumb/market';
 import {
   COMPETITION_TREND_PULLBACK_ID,
   DEFAULT_STRATEGY_CONFIG,
@@ -56,11 +56,9 @@ const cycle = runCycle(snapshot, {
   regimeTimeframe: '4H',
 });
 
-const changeFrom = (hours) => {
-  const threshold = now - hours * 3_600_000;
-  const base = oiHistory.find((row) => row.ts >= threshold) ?? oiHistory[0];
-  return base === undefined || base.oi === 0 ? Number.NaN : openInterest.oi / base.oi - 1;
-};
+const changeFrom = (hours) => openInterestChangeOverWindow(
+  openInterest, oiHistory, hours * 3_600_000,
+);
 const priceChangePct24h = ticker.open24h === 0 ? Number.NaN : ticker.last / ticker.open24h - 1;
 const oiChangePct1h = changeFrom(1);
 const oiChangePct4h = changeFrom(4);

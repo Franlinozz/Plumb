@@ -5,7 +5,7 @@ import { randomInt } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 
 import { createEntropyIdFactory, EMERGENCY_PARTICIPATION_AMENDMENT } from '@plumb/core';
-import { buildSnapshot, OkxPublicClient } from '@plumb/market';
+import { buildSnapshot, OkxPublicClient, openInterestChangeOverWindow } from '@plumb/market';
 import {
   DEFAULT_STRATEGY_CONFIG,
   EMERGENCY_PARTICIPATION_ID,
@@ -97,11 +97,9 @@ const governorState = {
 const verdict = createGovernor().evaluate(signal, governorState, snapshot, now);
 if (!verdict.approved) throw new Error(`governor vetoed emergency signal: ${verdict.code}`);
 
-const changeFrom = (hours) => {
-  const threshold = now - hours * 3_600_000;
-  const base = oiHistory.find((row) => row.ts >= threshold) ?? oiHistory[0];
-  return base === undefined || base.oi === 0 ? Number.NaN : openInterest.oi / base.oi - 1;
-};
+const changeFrom = (hours) => openInterestChangeOverWindow(
+  openInterest, oiHistory, hours * 3_600_000,
+);
 const priceChangePct24h = ticker.open24h === 0 ? Number.NaN : ticker.last / ticker.open24h - 1;
 const fourHourIndicators = snapshot.indicators['4H'];
 const oneHourRsi = snapshot.indicators['1H']?.rsi;

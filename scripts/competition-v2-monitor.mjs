@@ -7,13 +7,14 @@
  */
 
 import { COMPETITION_V2_AMENDMENT, createSeededIdFactory } from '@plumb/core';
-import { buildSnapshot, OkxPublicClient } from '@plumb/market';
+import { buildSnapshot, OkxPublicClient, openInterestChangeOverWindow } from '@plumb/market';
 import {
   DEFAULT_STRATEGY_CONFIG,
+  EMERGENCY_PARTICIPATION_ID,
   STRATEGY_IDS,
   classifyRegime,
+  emergencyParticipation,
   runCycle,
-  volExpansion,
 } from '@plumb/strategy';
 
 const instrument = COMPETITION_V2_AMENDMENT.instrument;
@@ -60,28 +61,27 @@ const snapshot = buildSnapshot({
   ],
 });
 
-const enabled = Object.fromEntries(STRATEGY_IDS.map((id) => [id, id === 'vol_expansion']));
+const enabled = Object.fromEntries([
+  ...STRATEGY_IDS.map((id) => [id, false]),
+  [EMERGENCY_PARTICIPATION_ID, true],
+]);
 const config = {
   ...DEFAULT_STRATEGY_CONFIG,
   enabled,
-  volExpansion: { ...DEFAULT_STRATEGY_CONFIG.volExpansion, requireTrendAlignment: true },
 };
 const cycle = runCycle(snapshot, {
   now,
   newId: createSeededIdFactory(Math.floor(now / 3_600_000)),
   config,
-  modules: [volExpansion],
-  regimeTimeframe: '1H',
+  modules: [emergencyParticipation],
+  regimeTimeframe: '4H',
 });
 const fourHourRegime = classifyRegime(snapshot, '4H', config.regime);
 const fourHourIndicators = snapshot.indicators['4H'];
 const emaDirection = fourHourIndicators?.emaFast === undefined || fourHourIndicators.emaSlow === undefined
   ? 'unclear'
   : fourHourIndicators.emaFast > fourHourIndicators.emaSlow ? 'up' : 'down';
-const oldestOi = oiHistory[0];
-const oiChangePct24h = oldestOi === undefined || oldestOi.oi === 0
-  ? Number.NaN
-  : openInterest.oi / oldestOi.oi - 1;
+const oiChangePct24h = openInterestChangeOverWindow(openInterest, oiHistory, 24 * 3_600_000);
 const priceChangePct24h = ticker.open24h === 0 ? Number.NaN : ticker.last / ticker.open24h - 1;
 const signal = cycle.signals[0];
 const directionConfirmed = signal === undefined ? false : signal.side === 'long'
@@ -120,7 +120,9 @@ console.log(JSON.stringify({
     side: signal?.side ?? null,
     directionAndParticipationConfirmed: directionConfirmed,
   },
+  publicCandidateReady: now >= COMPETITION_V2_AMENDMENT.earliestEntryAt &&
+    now < COMPETITION_V2_AMENDMENT.latestEntryAt && signal !== undefined && directionConfirmed,
   executionEligible: false,
-  blocker: 'protected holdout remains failed; this monitor cannot create or publish a DecisionEvent',
+  blocker: 'read-only monitor cannot query the account, create a DecisionEvent, publish or trade',
   requests: client.stats.requests,
 }));

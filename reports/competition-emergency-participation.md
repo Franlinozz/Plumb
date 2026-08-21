@@ -40,3 +40,18 @@ Preparation can proceed only when the same fresh snapshot simultaneously satisfi
 trend, price, OI and RSI conditions before 2026-08-23T00:00:00Z. Once it does, the system produces
 one short-lived bundle for dry-run publication and order preview. A separate exact
 `CONFIRM LIVE <decisionId>` remains required before any external write.
+
+## 2026-08-21 correction
+
+The first emergency preparation implementation selected the first hourly OI sample after the
+`current timestamp − 24 hours` boundary. At 22:10 UTC this selected 23:00 rather than 22:00,
+shortening the interval to roughly 23 hours and reversing the OI-change sign. The independent
+15-minute monitor proves that price, trend, RSI and correctly bounded 24H OI aligned for a long
+between approximately 22:15 and 23:00 UTC after the amendment was authorised. That public window
+was missed because of this implementation defect, not because the operator checked late.
+
+The calculation is now centralized and regression-tested to select the latest observation at or
+before the boundary and to fail closed when history does not reach it. The automated 15-minute
+timer now evaluates the emergency strategy rather than the obsolete failed candidate. At
+2026-08-21T06:36Z the corrected check remained NO TRADE: price +4.80%, closed-4H ADX 53.33 and 1H
+RSI 72.59 passed, while 24H OI −3.47% and 1H OI −0.97% failed participation confirmation.

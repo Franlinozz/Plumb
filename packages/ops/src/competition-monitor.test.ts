@@ -22,8 +22,9 @@ describe('the automated competition monitor is read-only by construction', () =>
     }
   });
 
-  it('prints an unconditional non-eligibility blocker', () => {
+  it('prints an unconditional non-execution blocker while exposing public candidate readiness', () => {
     expect(source).toContain('executionEligible: false');
-    expect(source).toContain('protected holdout remains failed');
+    expect(source).toContain('publicCandidateReady');
+    expect(source).toContain('read-only monitor cannot query the account');
   });
 });

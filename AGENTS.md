@@ -253,6 +253,10 @@ that touches payments, subscriptions or the trade kit.
   24H price and OI participation, moderate 1H RSI, the governor, exact A2A publication, ATK-only
   execution, attached exits, signed reconciliation and decision-specific live confirmation remain
   mandatory. Maximum stop risk is 0.05 USDT and maximum planned loss is 0.08 USDT.
+- **Emergency OI boundary · hourly OI must be sampled at or before the rolling boundary.** The
+  first implementation selected the first observation after `now − 24H`, silently shortened the
+  window and reversed the sign during the 2026-08-20 qualifying interval. A shared tested helper
+  now fails closed without a boundary-reaching sample, and both monitors and preparation use it.
 
 (append-only log — one line of reasoning each)
 

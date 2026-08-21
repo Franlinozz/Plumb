@@ -147,3 +147,5 @@ export {
   type MarketObservation,
   type ObservationKind,
 } from './observation-store.js';
+
+export { openInterestChangeOverWindow } from './open-interest.js';
