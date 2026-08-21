@@ -5,6 +5,9 @@ import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(resolve(process.cwd(), 'scripts/competition-v2-monitor.mjs'), 'utf8');
 const v3Source = readFileSync(resolve(process.cwd(), 'scripts/competition-v3-monitor.mjs'), 'utf8');
+const alertSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-v3-discord-alert.mjs'), 'utf8',
+);
 
 describe('the automated competition monitor is read-only by construction', () => {
   it('has no executor, A2A, account, credential, child-process, or order path', () => {
@@ -40,6 +43,16 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(v3Source).toContain('publicPreparationReady');
     expect(v3Source).toContain('executionEligible: false');
     expect(v3Source).toContain('exact live confirmation remain required');
+  });
+
+  it('keeps the Discord wrapper notification-only and idempotent', () => {
+    for (const forbidden of ['@plumb/executor', '@plumb/asp', 'onchainos', 'okx swap', 'placeOrder']) {
+      expect(alertSource, forbidden).not.toContain(forbidden);
+    }
+    expect(alertSource).toContain('publicPreparationReady !== true');
+    expect(alertSource).toContain('discord_setup_alert_deduplicated');
+    expect(alertSource).toContain('This is **not an order**');
+    expect(alertSource).toContain('allowed_mentions: { parse: [] }');
   });
 
   it('prints an unconditional non-execution blocker while exposing public candidate readiness', () => {

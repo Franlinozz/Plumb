@@ -114,6 +114,10 @@ visibility.
 - At 2026-08-21T15:37Z both BTC and SOL rehearsals stopped at `frozen v3 strategy emitted no
   signal`. No bundle, signal or order was created. Existing ETH remained signed +0.01 and its
   venue stop 2340.03 / target 2451.10 were verified against the durable intent.
+- A Discord notifier now wraps the public BTC/SOL monitor every 15 minutes. It sends at most one
+  alert per instrument, direction and closed 1H bar only when the frozen signal and all public OI
+  participation gates pass. The webhook is stored outside the repository with mode 0600; the
+  notifier has no executor, A2A, account or order path. A delivered alert is not trade authority.
 
 ## Evidence limitation
 

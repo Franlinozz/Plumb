@@ -7,12 +7,13 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory=/root/plumb-okxai
 Environment=NODE_OPTIONS=--dns-result-order=ipv4first
-ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v3-monitor.mjs BTC-USDT-SWAP
-ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v3-monitor.mjs SOL-USDT-SWAP
+EnvironmentFile=/root/.plumb/discord.env
+ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v3-discord-alert.mjs BTC-USDT-SWAP
+ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v3-discord-alert.mjs SOL-USDT-SWAP
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
+ReadWritePaths=/var/lib/plumb-okxai
 StandardOutput=journal
 StandardError=journal
-
