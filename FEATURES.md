@@ -87,6 +87,7 @@ Rules for this table:
 | Evidence-limited second-entry factory — BTC/SOL only, multi-window OI, $1.50 stop / $1.75 planned-loss / $85 notional caps | `@plumb/core`, `@plumb/ops`, `@plumb/executor` | competition | `ops/src/second-entry-decision.test.ts` + `executor/src/competition.test.ts` |
 | One-shot unattended second-entry orchestration — public gate → private preparation → A2A acknowledgement → Agent Trade Kit, uncertainty never retried | script + isolated timer | `competition-second-entry-auto.mjs` | `ops/src/competition-monitor.test.ts` + `executor/src/competition.test.ts` |
 | Venue-native competition TP/SL exit reconciliation — exact entry intent + algo execution + fill + closed-position proof before signed ledger update | script + competition ledger | `competition-reconcile-exits.mjs` | live Agent Trade Kit proof + `ops/src/competition-monitor.test.ts` |
+| Authorised competition hard time-stop — idempotent reduce-only Agent Trade Kit close at 2026-08-25T03:30Z with fill/flat/ledger proof | `@plumb/executor` + armed timer | `CompetitionTimeStopExecutor` | `competition-time-stop.test.ts` + `competition-monitor.test.ts` |
 | Idempotent Discord readiness/result alerts | script + isolated timer | `competition-v3-discord-alert.mjs` | `ops/src/competition-monitor.test.ts` |
 | Hash-chained append-only published feed; tampering detected | `@plumb/asp` | internal | `asp.test.ts` › the published feed |
 | Claude rationale with schema validation + deterministic template fallback | `@plumb/asp` | internal | `asp.test.ts` › rationale |

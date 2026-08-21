@@ -126,3 +126,9 @@ export {
   CompetitionLedgerStore,
   type CompetitionLedgerPosition,
 } from './competition-ledger.js';
+
+export {
+  CompetitionTimeStopExecutor,
+  type CompetitionTimeStopDeps,
+  type CompetitionTimeStopResult,
+} from './competition-time-stop.js';

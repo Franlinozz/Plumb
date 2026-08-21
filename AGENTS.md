@@ -268,6 +268,11 @@ that touches payments, subscriptions or the trade kit.
   flat. Accept flat only after Agent Trade Kit proves the exact entry, TP/SL algo, opposite fill,
   direction/size and closed-position record; otherwise fail closed. This first occurred when
   `DEC-ydBHBkzgyA` hit TP on 2026-08-21.
+- **The second-entry hard exit is an authorised risk reduction, not a new signal.** At or after
+  2026-08-25T03:30Z, only the exact fully-published BTC/SOL DecisionEvent may be closed. The close
+  uses a separately persisted deterministic intent and an Agent Trade Kit reduce-only market order;
+  it must verify order, fill, signed-flat venue and ledger. A pending/uncertain intent is queried,
+  never resubmitted blindly.
 
 (append-only log — one line of reasoning each)
 

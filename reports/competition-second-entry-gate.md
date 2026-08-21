@@ -115,6 +115,11 @@ visibility.
 - The unattended worker durably claims the one-shot allowance before publication. A crash or
   uncertain publication/execution state is terminal for automation and sends Discord; it never
   retries an order or manufactures a replacement DecisionEvent.
+- If a surviving second entry reaches 2026-08-25T03:30:00Z, the same timer invokes the authorised
+  hard time-stop. Only the exact fully delivered DecisionEvent can be closed; the executor persists
+  a distinct exit intent before an Agent Trade Kit reduce-only market write, then requires the
+  exact order, fill, signed-flat venue and ledger acknowledgement. An uncertain intent is never
+  blindly resubmitted.
 - At 2026-08-21T15:37Z both BTC and SOL rehearsals stopped at `frozen v3 strategy emitted no
   signal`. No bundle, signal or order was created. Existing ETH remained signed +0.01 and its
   venue stop 2340.03 / target 2451.10 were verified against the durable intent.

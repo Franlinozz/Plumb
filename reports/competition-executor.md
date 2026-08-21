@@ -67,5 +67,10 @@ The original ETH entry reached its attached take-profit on 2026-08-21 at 2454.44
 requires matching entry intent, native TP/SL algo, opposite fill, direction/size and closed-position
 history before changing the isolated signed ledger; this proof passed and the ledger is now flat.
 
+The approved second-entry hard exit is also implemented in `@plumb/executor`. At or after
+2026-08-25T03:30:00Z the existing 15-minute worker will close only a still-open exact BTC/SOL
+DecisionEvent through a persisted deterministic reduce-only Agent Trade Kit intent, then verify its
+order, fill, signed-flat position and ledger. It cannot open or reverse a position.
+
 The compliance-only order script remains a fail-closed tombstone. P8 is not repointed, restarted,
 or reused as the competition executor.

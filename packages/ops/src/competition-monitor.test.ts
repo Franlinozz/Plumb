@@ -17,6 +17,9 @@ const autoUnit = readFileSync(
 const exitReconcilerSource = readFileSync(
   resolve(process.cwd(), 'scripts/competition-reconcile-exits.mjs'), 'utf8',
 );
+const timeStopScriptSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-time-stop.mjs'), 'utf8',
+);
 
 describe('the automated competition monitor is read-only by construction', () => {
   it('has no executor, A2A, account, credential, child-process, or order path', () => {
@@ -77,12 +80,20 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(autoSource).toContain('REQUIRES MANUAL RECONCILIATION');
     expect(autoSource).toContain("'--unattended-second-entry'");
     expect(autoSource).toContain("runNode('competition-reconcile-exits.mjs'");
+    expect(autoSource).toContain("runNode('competition-time-stop.mjs'");
     expect(autoSource.indexOf("runNode('competition-reconcile-exits.mjs'"))
       .toBeLessThan(autoSource.indexOf("runNode('competition-v3-monitor.mjs'"));
     expect(autoSource).not.toContain('direct REST');
     expect(autoUnit).toContain('competition-auto.env');
     expect(autoUnit).not.toContain('secrets.env');
     expect(autoUnit).toContain('competition-second-entry-auto.mjs');
+  });
+
+  it('routes the pre-authorised hard exit through the executor package', () => {
+    expect(timeStopScriptSource).toContain('CompetitionTimeStopExecutor');
+    expect(timeStopScriptSource).toContain('SECOND_ENTRY_AMENDMENT.hardExitAt');
+    expect(timeStopScriptSource).not.toContain('.placeOrder(');
+    expect(timeStopScriptSource).not.toContain('.closePosition(');
   });
 
   it('keeps native-exit reconciliation read-only at the venue and proof-gated', () => {

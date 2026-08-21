@@ -78,6 +78,23 @@ const save = (state) => {
   renameSync(temporary, statePath);
 };
 
+const reconcileExits = async () => {
+  const run = await runNode('competition-reconcile-exits.mjs', []);
+  const result = parseLastJson(run.stdout);
+  if (result.event !== 'competition_exit_reconciliation_complete') {
+    throw new Error('competition exit reconciler returned an invalid acknowledgement');
+  }
+  for (const exit of result.reconciled) {
+    await notify([
+      '✅ **PLUMB PROTECTIVE EXIT VERIFIED AND RECONCILED**',
+      `${exit.instrument} · Decision ${exit.decisionId}`,
+      `${String(exit.exitKind).toUpperCase()} filled at ${exit.exitPrice} · Realized PnL ${exit.realisedPnl.toFixed(8)} USDT`,
+      'Venue is signed-flat and the durable competition ledger now matches.',
+    ].join('\n'));
+  }
+  return result;
+};
+
 if (existsSync(statePath)) {
   const existing = JSON.parse(readFileSync(statePath, 'utf8'));
   if (existing.status !== 'complete' && existing.incidentAlertedAt === undefined) {
@@ -91,24 +108,48 @@ if (existsSync(statePath)) {
     existing.updatedAt = existing.incidentAlertedAt;
     save(existing);
   }
+  if (existing.status === 'complete') {
+    try {
+      await reconcileExits();
+      const run = await runNode('competition-time-stop.mjs', []);
+      const result = parseLastJson(run.stdout);
+      if (result.event === 'competition_time_stop_complete' &&
+          (result.closed === true || result.alreadyClosed === true)) {
+        existing.timeStopStatus = result.closed ? 'closed' : 'already-flat';
+        existing.timeStopOrderId = result.orderId ?? null;
+        existing.updatedAt = new Date().toISOString();
+        save(existing);
+        if (result.closed === true && existing.timeStopNotifiedAt === undefined) {
+          await notify([
+            '✅ **PLUMB HARD TIME-STOP EXECUTED AND RECONCILED**',
+            `${result.instrument} · Decision ${result.decisionId}`,
+            `Reduce-only order ${result.orderId} closed the position through Agent Trade Kit.`,
+          ].join('\n'));
+          existing.timeStopNotifiedAt = new Date().toISOString();
+          save(existing);
+        }
+      }
+    } catch (error) {
+      if (existing.timeStopIncidentAlertedAt === undefined) {
+        existing.timeStopStatus = 'uncertain';
+        existing.timeStopIncidentAlertedAt = new Date().toISOString();
+        existing.updatedAt = existing.timeStopIncidentAlertedAt;
+        save(existing);
+        await notify([
+          '🚨 **PLUMB HARD TIME-STOP REQUIRES MANUAL RECONCILIATION**',
+          `${existing.instrument} · Decision ${existing.decisionId}`,
+          `${String(error).slice(0, 500)} No automatic order resubmission will occur.`,
+        ].join('\n'));
+      }
+      throw error;
+    }
+  }
   console.log(JSON.stringify({ event: 'second_entry_auto_already_terminal_or_blocked',
     status: existing.status, decisionId: existing.decisionId ?? null }));
   process.exit(0);
 }
 
-const reconciliationRun = await runNode('competition-reconcile-exits.mjs', []);
-const reconciliation = parseLastJson(reconciliationRun.stdout);
-if (reconciliation.event !== 'competition_exit_reconciliation_complete') {
-  throw new Error('competition exit reconciler returned an invalid acknowledgement');
-}
-for (const exit of reconciliation.reconciled) {
-  await notify([
-    '✅ **PLUMB PROTECTIVE EXIT VERIFIED AND RECONCILED**',
-    `${exit.instrument} · Decision ${exit.decisionId}`,
-    `${String(exit.exitKind).toUpperCase()} filled at ${exit.exitPrice} · Realized PnL ${exit.realisedPnl.toFixed(8)} USDT`,
-    'Venue is signed-flat and the durable competition ledger now matches.',
-  ].join('\n'));
-}
+await reconcileExits();
 
 if (Date.now() >= SECOND_ENTRY_AMENDMENT.latestEntryAt) {
   console.log(JSON.stringify({ event: 'second_entry_auto_window_closed' }));
