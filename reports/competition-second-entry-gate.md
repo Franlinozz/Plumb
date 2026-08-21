@@ -1,7 +1,7 @@
 # Competition second-entry gate — BTC / SOL
 
-Recorded: 2026-08-21T15:21Z UTC  
-Status: **PROPOSED / READ-ONLY / NO LIVE AUTHORITY**
+Recorded: 2026-08-21T15:37Z UTC
+Status: **AUTHORIZED / IMPLEMENTED / NOT TRIGGERED / NO ORDER**
 
 ## Decision now
 
@@ -55,10 +55,12 @@ without publishing or trading.
 - A breakout is not a substitute. A breakout above the 24h high is considered only if a 4H close
   holds above it and a later 1H retest independently satisfies the frozen trigger.
 
-## Proposed damage envelope for one additional entry
+## Authorised damage envelope for one additional entry
 
-This envelope is deliberately narrower than the original 0.75% risk mandate. It is **not active**
-until the operator explicitly authorises the evidence-limited amendment.
+The operator explicitly authorised this evidence-limited amendment at 2026-08-21T15:24:00Z. This
+authorises the bounded policy, not an unconditional market order: a newly generated immutable
+DecisionEvent, complete A2A acknowledgement and exact decision-specific live confirmation remain
+mandatory.
 
 - Instruments: BTC-USDT-SWAP or SOL-USDT-SWAP; first qualifying instrument wins.
 - Strategy: only `competition_trend_pullback@3.0.0`; no discretionary direction.
@@ -95,6 +97,23 @@ The immutable DecisionEvent remains the sole source for both paths. Before any o
 
 No signal may be rewritten after publication, and no trade may be sent merely to change leaderboard
 visibility.
+
+## Implemented verification
+
+- `SECOND_ENTRY_AMENDMENT` is shared by producer and executor; any other strategy, instrument,
+  timing, entry count or approval basis fails closed.
+- `scripts/prepare-second-entry.mjs` is read-only and cannot publish or trade. It verifies the
+  dedicated UID/profile, `net_mode`, fees, leverage, balance, pending orders, current metadata,
+  signed venue/ledger state across BTC/ETH/SOL, the existing ETH order attribution and its native
+  attached stop/take-profit before it can create a private preparation bundle.
+- Venue tick size is read from current instrument metadata so protective-price reconciliation
+  accepts only legitimate exchange rounding.
+- The executor independently rechecks one prior entry, a flat BTC/SOL target, entry freshness,
+  account state, signed reconciliation, costs, live projected target, damage caps and full A2A
+  delivery before any Agent Trade Kit write.
+- At 2026-08-21T15:37Z both BTC and SOL rehearsals stopped at `frozen v3 strategy emitted no
+  signal`. No bundle, signal or order was created. Existing ETH remained signed +0.01 and its
+  venue stop 2340.03 / target 2451.10 were verified against the durable intent.
 
 ## Evidence limitation
 

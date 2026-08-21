@@ -310,9 +310,11 @@ export class CliAtkClient implements AtkClient {
       ctMult: num(row['ctMult'] ?? 1),
       minSz: num(row['minSz']),
       lotSz: num(row['lotSz']),
+      tickSz: num(row['tickSz']),
       state: String(row['state'] ?? ''),
     };
-    if (metadata.ctVal <= 0 || metadata.ctMult <= 0 || metadata.minSz <= 0 || metadata.lotSz <= 0) {
+    if (metadata.ctVal <= 0 || metadata.ctMult <= 0 || metadata.minSz <= 0 ||
+        metadata.lotSz <= 0 || metadata.tickSz <= 0) {
       throw new AtkError('malformed', `instrument metadata is incomplete for ${instId}`);
     }
     return metadata;

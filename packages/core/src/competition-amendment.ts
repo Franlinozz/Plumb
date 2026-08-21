@@ -46,3 +46,32 @@ export const EMERGENCY_PARTICIPATION_AMENDMENT = Object.freeze({
   minOneHourRsi: 25,
   maxOneHourRsi: 75,
 });
+
+/**
+ * Operator-authorised evidence-limited second-entry amendment — 2026-08-21.
+ *
+ * The frozen v3 candidate passed development but has no unused independent holdout. This amendment
+ * records that limitation instead of manufacturing calibrated edge. It permits at most one
+ * additional BTC-or-SOL entry while retaining every publication, reconciliation, protection,
+ * Agent Trade Kit and decision-specific confirmation gate.
+ */
+export const SECOND_ENTRY_AMENDMENT = Object.freeze({
+  authorisedAt: Date.parse('2026-08-21T15:24:00Z'),
+  latestEntryAt: Date.parse('2026-08-23T16:00:00Z'),
+  hardExitAt: Date.parse('2026-08-25T03:30:00Z'),
+  competitionEndsAt: COMPETITION_V2_AMENDMENT.competitionEndsAt,
+  instruments: Object.freeze(['BTC-USDT-SWAP', 'SOL-USDT-SWAP'] as const),
+  strategyId: 'competition_trend_pullback',
+  strategyVersion: '3.0.0',
+  approvalBasis: 'operator-evidence-limited-v3' as const,
+  priorLiveEntryCount: 1,
+  maxTotalLiveEntries: 2,
+  maxStopRiskUsd: 1.5,
+  maxPlannedLossUsd: 1.75,
+  maxNotionalUsd: 85,
+  maxPositionPct: 21,
+  minProjectedNetTargetUsd: 2,
+  maxValidityMs: 30 * 60_000,
+  minOpenInterestChangePct: 0.001,
+  maxEntryToleranceBps: 10,
+});

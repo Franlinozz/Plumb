@@ -13,6 +13,7 @@ import { IntentStore } from './idempotency.js';
 import { MockAtk } from './mock.js';
 
 const NOW = Date.parse('2026-08-20T12:00:00Z');
+const SECOND_NOW = Date.parse('2026-08-21T16:00:00Z');
 const event = finalizeDecisionEvent({
   decisionId: 'DEC-COMPETE0001', strategyVersion: 'momentum-v1', createdAt: NOW - 1_000,
   validUntil: NOW + 60_000, instrument: 'ETH-USDT-SWAP', direction: 'long',
@@ -92,6 +93,113 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     });
     await expect(executor(new CompetitionMock(), proof(oversized)).execute(input(oversized)))
       .rejects.toThrow(/minimum lot/u);
+  });
+
+  it('executes exactly one flat BTC/SOL evidence-limited second entry', async () => {
+    const second = finalizeDecisionEvent({
+      ...event,
+      decisionId: 'DEC-SECONDENTRY1',
+      strategyVersion: 'competition_trend_pullback@3.0.0',
+      createdAt: SECOND_NOW - 1_000,
+      validUntil: SECOND_NOW + 60_000,
+      instrument: 'BTC-USDT-SWAP',
+      entryLow: 75_990,
+      entryHigh: 76_010,
+      stopPrice: 74_500,
+      takeProfit: 78_250,
+      positionPct: 19,
+      leverage: 3,
+      riskUsd: 1.5,
+      expectedCostBps: 12.2,
+      expectedEdgeBps: 0,
+      approvalBasis: 'operator-evidence-limited-v3',
+    });
+    class SecondEntryVenue extends CompetitionMock {
+      override async getInstrumentMetadata() {
+        return { ctVal: 0.01, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
+      }
+      override async getLastPrice() { return 76_000; }
+      override async getLeverage() { return 3; }
+    }
+    const secondInput = {
+      ...input(second), now: SECOND_NOW, priorLiveEntryCount: 1,
+      liveConfirmation: `CONFIRM LIVE ${second.decisionId}`,
+    };
+    const venue = new SecondEntryVenue();
+    await expect(executor(venue, proof(second), () => SECOND_NOW).execute(secondInput))
+      .resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.1, reversed: false });
+
+    await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW)
+      .execute({ ...secondInput, priorLiveEntryCount: 0 })).rejects.toThrow(/additional-entry allowance/u);
+    await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW)
+      .execute({ ...secondInput, priorLiveEntryCount: 2 })).rejects.toThrow(/additional-entry allowance/u);
+  });
+
+  it('forbids a second-entry increase or reversal on an occupied instrument', async () => {
+    const second = finalizeDecisionEvent({
+      ...event,
+      decisionId: 'DEC-SECONDENTRY2',
+      strategyVersion: 'competition_trend_pullback@3.0.0',
+      createdAt: SECOND_NOW - 1_000,
+      validUntil: SECOND_NOW + 60_000,
+      instrument: 'BTC-USDT-SWAP',
+      entryLow: 75_990,
+      entryHigh: 76_010,
+      stopPrice: 74_500,
+      takeProfit: 78_250,
+      positionPct: 19,
+      leverage: 3,
+      riskUsd: 1.5,
+      expectedCostBps: 12.2,
+      expectedEdgeBps: 0,
+      approvalBasis: 'operator-evidence-limited-v3',
+      venuePositionBefore: 0.1,
+      ledgerPositionBefore: 0.1,
+    });
+    class OccupiedSecondVenue extends CompetitionMock {
+      constructor() {
+        super();
+        this.setPosition('BTC-USDT-SWAP', 0.1, 'net');
+      }
+      override async getInstrumentMetadata() {
+        return { ctVal: 0.01, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
+      }
+      override async getLastPrice() { return 76_000; }
+      override async getLeverage() { return 3; }
+    }
+    const candidate = { ...input(second), now: SECOND_NOW, priorLiveEntryCount: 1,
+      liveConfirmation: `CONFIRM LIVE ${second.decisionId}` };
+    const venue = new OccupiedSecondVenue();
+    await expect(executor(venue, proof(second), () => SECOND_NOW).execute(candidate))
+      .rejects.toThrow(/must be flat/u);
+    expect(venue.placed).toHaveLength(0);
+  });
+
+  it('does not let the second-entry approval basis disguise another strategy or claimed edge', async () => {
+    const disguised = {
+      ...event,
+      decisionId: 'DEC-SECONDENTRY3',
+      strategyVersion: 'unfrozen-discretion@9.9.9',
+      createdAt: SECOND_NOW - 1_000,
+      validUntil: SECOND_NOW + 60_000,
+      instrument: 'BTC-USDT-SWAP',
+      entryLow: 75_990,
+      entryHigh: 76_010,
+      stopPrice: 74_500,
+      takeProfit: 78_250,
+      positionPct: 19,
+      leverage: 3,
+      riskUsd: 1.5,
+      expectedCostBps: 12.2,
+      expectedEdgeBps: 40,
+      approvalBasis: 'operator-evidence-limited-v3',
+    } as DecisionEvent;
+    const venue = new CompetitionMock();
+    await expect(executor(venue, proof(disguised), () => SECOND_NOW).execute({
+      ...input(disguised), now: SECOND_NOW, priorLiveEntryCount: 1,
+      liveConfirmation: `CONFIRM LIVE ${disguised.decisionId}`,
+    })).rejects.toThrow(/evidence-limited v3/u);
+    expect(venue.placed).toHaveLength(0);
   });
 
   it('closes to signed zero before reversing in net_mode', async () => {

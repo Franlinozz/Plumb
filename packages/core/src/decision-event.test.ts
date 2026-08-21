@@ -58,6 +58,18 @@ describe('canonical DecisionEvent', () => {
     })).toThrow(/malformed/u);
   });
 
+  it('records the evidence-limited v3 basis without fabricating expected edge', () => {
+    const event = finalizeDecisionEvent({
+      ...base(), strategyVersion: 'competition_trend_pullback@3.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-evidence-limited-v3',
+    });
+    expect(event.expectedEdgeBps).toBe(0);
+    expect(() => finalizeDecisionEvent({
+      ...base(), strategyVersion: 'competition_trend_pullback@3.0.1', expectedEdgeBps: 0,
+      approvalBasis: 'operator-evidence-limited-v3',
+    })).toThrow(/malformed/u);
+  });
+
   it('rejects stale-at-creation and malformed price geometry', () => {
     expect(() => finalizeDecisionEvent({ ...base(), validUntil: 1_000 })).toThrow();
     expect(() => finalizeDecisionEvent({ ...base(), stopPrice: 65_000 })).toThrow();

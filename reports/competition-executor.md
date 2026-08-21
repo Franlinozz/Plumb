@@ -1,6 +1,6 @@
 # Competition executor
 
-Audit time: 2026-08-18T16:25Z UTC
+Audit time: 2026-08-21T15:37Z UTC
 
 ## Status: YELLOW — implementation ready; strategy approval and live confirmation absent
 
@@ -16,7 +16,9 @@ decision-specific live-money confirmation.
 Live status update (2026-08-21T11:31Z): decision `DEC-ydBHBkzgyA` was acknowledged by all three
 ACTIVE A2A subscriptions, then filled through the dedicated Agent Trade Kit competition profile at
 the venue minimum 0.01 ETH-USDT-SWAP contract. Independent readback confirmed the attributable
-fill, signed +0.01 net position, and attached stop/target. The one-entry allowance is now consumed.
+fill, signed +0.01 net position, and attached stop/target. The original one-entry allowance is
+consumed. A separately recorded evidence-limited amendment now permits at most one qualifying
+BTC-or-SOL v3 entry under narrower explicit gates.
 
 Implemented gates:
 
@@ -36,15 +38,21 @@ Implemented gates:
   risk, 0.35 USDT stop-plus-friction planned loss, 40 USDT notional and 10% position;
 - authorised entry window 2026-08-19T20:15Z through 2026-08-23T00:00Z, leaving recovery time
   before the competition closes.
+- independently enforced second-entry amendment: exact frozen v3 strategy and approval basis,
+  exactly one prior placed entry, BTC or SOL only, signed-flat target, no increase/reversal, at
+  most 1.50 USDT stop risk, 1.75 USDT planned loss, 85 USDT notional, 21% position, and at least
+  2.00 USDT projected net at the live first target;
+- current venue tick-size parsing plus full BTC/ETH/SOL signed reconciliation and existing-position
+  bracket verification in the read-only preparation path.
 
 Compatibility correction completed during this audit: Agent Trade Kit 1.4.2/OKX rejects a SWAP
 fee request carrying `--instId`; the adapter now uses the documented SWAP-wide request verified
 against the live read-only competition profile. No order was placed.
 
-Remaining blockers before the first live trade:
+Remaining blockers before the authorised second live trade:
 
-- no strategy configuration has passed the evidence gate, so no genuine approved DecisionEvent
-  exists;
+- frozen v3 has not emitted a current qualifying BTC/SOL signal; rehearsals at
+  2026-08-21T15:37Z correctly produced no DecisionEvent;
 - a real event needs an end-to-end dry-run publication and order preview;
 - the operator must provide the exact decision-specific live-money confirmation immediately
   before execution.

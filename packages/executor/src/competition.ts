@@ -1,6 +1,7 @@
 import {
   COMPETITION_V2_AMENDMENT,
   EMERGENCY_PARTICIPATION_AMENDMENT,
+  SECOND_ENTRY_AMENDMENT,
   finalizeDecisionEvent,
   type DecisionEvent,
   type Instrument,
@@ -21,6 +22,8 @@ export interface CompetitionInstrumentMetadata {
   readonly ctMult: number;
   readonly minSz: number;
   readonly lotSz: number;
+  /** Venue price increment. Optional only for older injected test doubles. */
+  readonly tickSz?: number;
   readonly state: string;
 }
 
@@ -115,21 +118,44 @@ export class AgentTradeKitCompetitionExecutor {
 
   async execute(input: CompetitionExecutionInput): Promise<CompetitionExecutionResult> {
     const event = finalizeDecisionEvent(input.event);
+    const secondEntry = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis;
     if (input.liveConfirmation !== `CONFIRM LIVE ${event.decisionId}`) {
       throw new CompetitionExecutionRejected('missing decision-specific live-money confirmation');
     }
     if (event.createdAt > input.now) throw new CompetitionExecutionRejected('DecisionEvent is future-dated');
     if (input.now >= event.validUntil) throw new CompetitionExecutionRejected('DecisionEvent is stale');
-    if (input.now < COMPETITION_V2_AMENDMENT.earliestEntryAt ||
-        input.now >= COMPETITION_V2_AMENDMENT.latestEntryAt) {
-      throw new CompetitionExecutionRejected('outside the operator-authorised first-entry window');
+    if (!Number.isInteger(input.priorLiveEntryCount) || input.priorLiveEntryCount < 0) {
+      throw new CompetitionExecutionRejected('prior live-entry count is invalid or uncertain');
     }
-    if (event.instrument !== COMPETITION_V2_AMENDMENT.instrument) {
-      throw new CompetitionExecutionRejected('operator amendment permits ETH-USDT-SWAP only');
-    }
-    if (!Number.isInteger(input.priorLiveEntryCount) || input.priorLiveEntryCount < 0 ||
-        input.priorLiveEntryCount >= COMPETITION_V2_AMENDMENT.maxLiveEntries) {
-      throw new CompetitionExecutionRejected('the one-live-entry allowance is exhausted or uncertain');
+    if (secondEntry) {
+      if (input.now < SECOND_ENTRY_AMENDMENT.authorisedAt || input.now >= SECOND_ENTRY_AMENDMENT.latestEntryAt) {
+        throw new CompetitionExecutionRejected('outside the authorised second-entry window');
+      }
+      if (event.strategyVersion !==
+          `${SECOND_ENTRY_AMENDMENT.strategyId}@${SECOND_ENTRY_AMENDMENT.strategyVersion}` ||
+          event.expectedEdgeBps !== 0) {
+        throw new CompetitionExecutionRejected('second-entry event does not preserve the frozen strategy and evidence limitation');
+      }
+      if (!SECOND_ENTRY_AMENDMENT.instruments.includes(
+        event.instrument as (typeof SECOND_ENTRY_AMENDMENT.instruments)[number],
+      )) {
+        throw new CompetitionExecutionRejected('second-entry amendment permits BTC or SOL only');
+      }
+      if (input.priorLiveEntryCount !== SECOND_ENTRY_AMENDMENT.priorLiveEntryCount ||
+          input.priorLiveEntryCount >= SECOND_ENTRY_AMENDMENT.maxTotalLiveEntries) {
+        throw new CompetitionExecutionRejected('the one-additional-entry allowance is unavailable or exhausted');
+      }
+    } else {
+      if (input.now < COMPETITION_V2_AMENDMENT.earliestEntryAt ||
+          input.now >= COMPETITION_V2_AMENDMENT.latestEntryAt) {
+        throw new CompetitionExecutionRejected('outside the operator-authorised first-entry window');
+      }
+      if (event.instrument !== COMPETITION_V2_AMENDMENT.instrument) {
+        throw new CompetitionExecutionRejected('operator amendment permits ETH-USDT-SWAP only');
+      }
+      if (input.priorLiveEntryCount >= COMPETITION_V2_AMENDMENT.maxLiveEntries) {
+        throw new CompetitionExecutionRejected('the one-live-entry allowance is exhausted or uncertain');
+      }
     }
     if (!this.deps.publications.isFullyDelivered(event)) {
       throw new CompetitionExecutionRejected('the exact DecisionEvent was not acknowledged by every active subscriber');
@@ -177,6 +203,9 @@ export class AgentTradeKitCompetitionExecutor {
         Math.abs(venueSigned - event.venuePositionBefore) > metadata.lotSz / 2 ||
         Math.abs(input.ledgerSignedPosition - event.ledgerPositionBefore) > metadata.lotSz / 2) {
       throw new CompetitionExecutionRejected('signed venue, ledger, and DecisionEvent positions disagree');
+    }
+    if (secondEntry && Math.abs(venueSigned) > metadata.lotSz / 2) {
+      throw new CompetitionExecutionRejected('second-entry instrument must be flat; reversal or increase is forbidden');
     }
 
     const intendedSign = event.direction === 'long' ? 1 : -1;
@@ -239,18 +268,30 @@ export class AgentTradeKitCompetitionExecutor {
   }
 
   private assertRisk(risk: CompetitionRiskState, event: DecisionEvent, liveReferencePrice: number): void {
+    const caps = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis
+      ? SECOND_ENTRY_AMENDMENT
+      : COMPETITION_V2_AMENDMENT;
     if (risk.equityUsd <= 0 || risk.availableMarginUsd < 0) throw new CompetitionExecutionRejected('invalid account equity');
     if (event.riskUsd / risk.equityUsd > 0.01) throw new CompetitionExecutionRejected('risk per trade exceeds 1%');
-    if (event.riskUsd > COMPETITION_V2_AMENDMENT.maxStopRiskUsd + 1e-9 ||
-        event.positionPct > COMPETITION_V2_AMENDMENT.maxPositionPct + 1e-9) {
-      throw new CompetitionExecutionRejected('event exceeds the operator-authorised first-trade caps');
+    if (event.riskUsd > caps.maxStopRiskUsd + 1e-9 ||
+        event.positionPct > caps.maxPositionPct + 1e-9) {
+      throw new CompetitionExecutionRejected('event exceeds the operator-authorised trade caps');
     }
     const stopDistancePct = Math.abs(liveReferencePrice - event.stopPrice) / liveReferencePrice;
     const notional = event.riskUsd / stopDistancePct;
     const plannedLossUsd = event.riskUsd + notional * event.expectedCostBps / 10_000;
-    if (!Number.isFinite(notional) || notional > COMPETITION_V2_AMENDMENT.maxNotionalUsd + 1e-9 ||
-        plannedLossUsd > COMPETITION_V2_AMENDMENT.maxPlannedLossUsd + 1e-9) {
+    if (!Number.isFinite(notional) || notional > caps.maxNotionalUsd + 1e-9 ||
+        plannedLossUsd > caps.maxPlannedLossUsd + 1e-9) {
       throw new CompetitionExecutionRejected('event exceeds the authorised notional or planned-loss cap');
+    }
+    if (event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis) {
+      const targetDistancePct = Math.abs(event.takeProfit - liveReferencePrice) / liveReferencePrice;
+      const projectedNetTargetUsd = notional * targetDistancePct -
+        notional * event.expectedCostBps / 10_000;
+      if (!Number.isFinite(projectedNetTargetUsd) ||
+          projectedNetTargetUsd + 1e-9 < SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd) {
+        throw new CompetitionExecutionRejected('live projected net target is below the authorised minimum');
+      }
     }
     if (-risk.realisedPnlTodayUsd / risk.equityUsd >= 0.03) throw new CompetitionExecutionRejected('soft daily loss reached');
     if (risk.drawdownUsd >= 24) throw new CompetitionExecutionRejected('competition drawdown stop reached');

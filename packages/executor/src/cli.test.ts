@@ -110,7 +110,8 @@ describe('CLI argument construction', () => {
   it('queries current competition metadata, fee rates, and last price through the CLI', async () => {
     const { client, calls } = recording((args) => {
       if (args[0] === 'market' && args[1] === 'instruments') {
-        return [{ instId: 'BTC-USDT-SWAP', ctVal: '0.01', ctMult: '1', minSz: '0.01', lotSz: '0.01', state: 'live' }];
+        return [{ instId: 'BTC-USDT-SWAP', ctVal: '0.01', ctMult: '1', minSz: '0.01',
+          lotSz: '0.01', tickSz: '0.1', state: 'live' }];
       }
       if (args[0] === 'account' && args[1] === 'fees') return [{ maker: '-0.0002', taker: '-0.0005' }];
       if (args[0] === 'market' && args[1] === 'ticker') return [{ last: '65000' }];
@@ -118,7 +119,9 @@ describe('CLI argument construction', () => {
       if (args[0] === 'account' && args[1] === 'max-avail-size') return [{ availBuy: '4.2', availSell: '3.8' }];
       return [];
     });
-    await expect(client.getInstrumentMetadata('BTC-USDT-SWAP')).resolves.toMatchObject({ ctVal: 0.01, state: 'live' });
+    await expect(client.getInstrumentMetadata('BTC-USDT-SWAP')).resolves.toMatchObject({
+      ctVal: 0.01, tickSz: 0.1, state: 'live',
+    });
     await expect(client.getFeeRates('BTC-USDT-SWAP')).resolves.toEqual({ maker: 0.0002, taker: 0.0005 });
     await expect(client.getLastPrice('BTC-USDT-SWAP')).resolves.toBe(65_000);
     await expect(client.getLeverage('BTC-USDT-SWAP')).resolves.toBe(2);

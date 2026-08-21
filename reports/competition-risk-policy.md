@@ -1,6 +1,6 @@
 # Competition risk policy
 
-Audit time: 2026-08-18T16:25Z UTC
+Audit time: 2026-08-21T15:37Z UTC
 
 ## Status: YELLOW — first-trade caps implemented; eligible alpha remains absent
 
@@ -38,3 +38,29 @@ publication, cost, reconciliation or decision-specific live-confirmation gates.
 
 Leverage remains a venue margin setting between 1x and the locked 3x ceiling. Exposure is bounded
 by notional and stop loss; a lower notional does not require a fictional sub-1x leverage setting.
+
+## Operator-authorised evidence-limited second-entry amendment
+
+The operator authorised one additional entry at 2026-08-21T15:24:00Z while explicitly retaining
+the evidence limitation: frozen v3 passed development but has no unused independent holdout. This
+does not permit discretionarily choosing a direction or chasing price.
+
+| Limit | Value |
+| --- | ---: |
+| Instrument | BTC-USDT-SWAP or SOL-USDT-SWAP; first qualifying one only |
+| Strategy | `competition_trend_pullback@3.0.0` only |
+| Prior successful entries | exactly 1 |
+| Total successful entries | 2 maximum |
+| Stop risk | 1.50 USDT maximum |
+| Stop + full estimated friction | 1.75 USDT maximum |
+| Notional | 85 USDT maximum |
+| Position | 21% maximum |
+| Projected first-target net | 2.00 USDT minimum |
+| Event validity | 30 minutes maximum |
+| Latest entry | 2026-08-23T16:00:00Z |
+| Hard competition exit | 2026-08-25T03:30:00Z |
+
+The existing ETH position may not be increased, reversed or have its protection weakened. The
+second instrument must be signed-flat at both venue and ledger. Combined stop risk remains subject
+to the original 2% account cap. A separate exact `CONFIRM LIVE <decisionId>` is still required
+after publication and immediately before a live order.

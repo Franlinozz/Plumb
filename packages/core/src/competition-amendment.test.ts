@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { COMPETITION_V2_AMENDMENT } from './competition-amendment.js';
+import { COMPETITION_V2_AMENDMENT, SECOND_ENTRY_AMENDMENT } from './competition-amendment.js';
 
 describe('operator-authorised competition v2 amendment', () => {
   it('pins the one-entry damage envelope and time boundaries against silent drift', () => {
@@ -22,5 +22,32 @@ describe('operator-authorised competition v2 amendment', () => {
       .toBeLessThan(COMPETITION_V2_AMENDMENT.latestEntryAt);
     expect(COMPETITION_V2_AMENDMENT.latestEntryAt)
       .toBeLessThan(COMPETITION_V2_AMENDMENT.competitionEndsAt);
+  });
+});
+
+describe('operator-authorised evidence-limited second-entry amendment', () => {
+  it('pins a narrower one-additional-entry envelope without claiming holdout evidence', () => {
+    expect(SECOND_ENTRY_AMENDMENT).toMatchObject({
+      authorisedAt: Date.parse('2026-08-21T15:24:00Z'),
+      latestEntryAt: Date.parse('2026-08-23T16:00:00Z'),
+      hardExitAt: Date.parse('2026-08-25T03:30:00Z'),
+      competitionEndsAt: Date.parse('2026-08-25T04:00:00Z'),
+      instruments: ['BTC-USDT-SWAP', 'SOL-USDT-SWAP'],
+      strategyId: 'competition_trend_pullback',
+      strategyVersion: '3.0.0',
+      approvalBasis: 'operator-evidence-limited-v3',
+      priorLiveEntryCount: 1,
+      maxTotalLiveEntries: 2,
+      maxStopRiskUsd: 1.5,
+      maxPlannedLossUsd: 1.75,
+      maxNotionalUsd: 85,
+      maxPositionPct: 21,
+      minProjectedNetTargetUsd: 2,
+      maxValidityMs: 1_800_000,
+      minOpenInterestChangePct: 0.001,
+      maxEntryToleranceBps: 10,
+    });
+    expect(SECOND_ENTRY_AMENDMENT.latestEntryAt).toBeLessThan(SECOND_ENTRY_AMENDMENT.hardExitAt);
+    expect(SECOND_ENTRY_AMENDMENT.hardExitAt).toBeLessThan(SECOND_ENTRY_AMENDMENT.competitionEndsAt);
   });
 });

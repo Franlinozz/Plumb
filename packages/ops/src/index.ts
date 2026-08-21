@@ -93,3 +93,9 @@ export {
   type EmergencyParticipationInput,
   type EmergencyParticipationMetadata,
 } from './emergency-participation-decision.js';
+
+export {
+  createSecondEntryDecision,
+  type SecondEntryInput,
+  type SecondEntryMetadata,
+} from './second-entry-decision.js';
