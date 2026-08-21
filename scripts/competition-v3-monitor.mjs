@@ -2,8 +2,19 @@
 /** Read-only public-data monitor for the frozen v3 research candidate. */
 
 import { createSeededIdFactory } from '@plumb/core';
-import { buildSnapshot, OkxPublicClient, openInterestChangeOverWindow } from '@plumb/market';
 import {
+  buildSnapshot,
+  closes,
+  ema,
+  macd,
+  OkxPublicClient,
+  openInterestChangeOverWindow,
+  rsi,
+  seriesFor,
+} from '@plumb/market';
+import {
+  aggregateClosedFourHour,
+  classifyFourHourTrend,
   COMPETITION_TREND_PULLBACK_ID,
   DEFAULT_STRATEGY_CONFIG,
   STRATEGY_IDS,
@@ -11,7 +22,11 @@ import {
   runCycle,
 } from '@plumb/strategy';
 
-const instrument = 'ETH-USDT-SWAP';
+const allowedInstruments = new Set(['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']);
+const instrument = process.argv[2] ?? 'ETH-USDT-SWAP';
+if (!allowedInstruments.has(instrument)) {
+  throw new Error(`unsupported competition monitor instrument: ${instrument}`);
+}
 const now = Date.now();
 const client = new OkxPublicClient();
 const closed = (rows) => rows.filter((row) => row.closed);
@@ -68,6 +83,56 @@ const participationConfirmed = signal === undefined ? false :
   oiChangePct1h > 0.001 && oiChangePct4h > 0.001 && oiChangePct24h > 0.001 &&
   (signal.side === 'long' ? priceChangePct24h > 0.001 : priceChangePct24h < -0.001);
 
+// Explain the frozen strategy's exact closed-bar gates. This is diagnostic only: these values
+// cannot create, approve, publish or execute a signal.
+const hourly = seriesFor(snapshot, '1H') ?? [];
+const price = closes(hourly);
+const hourlyEma = ema(price, 20);
+const hourlyRsi = rsi(price, 14);
+const histogram = macd(price, 12, 26, 9).histogram;
+const i = hourly.length - 1;
+const current = hourly[i];
+const previous = hourly[i - 1];
+const priorVolume = hourly.slice(Math.max(0, i - 20), i).map((bar) => bar.volume);
+const priorVolumeMean = priorVolume.length === 0
+  ? undefined
+  : priorVolume.reduce((sum, value) => sum + value, 0) / priorVolume.length;
+const trend = classifyFourHourTrend(aggregateClosedFourHour(hourly));
+const emaNow = hourlyEma[i];
+const emaPrevious = hourlyEma[i - 1];
+const rsiNow = hourlyRsi[i];
+const histogramNow = histogram[i];
+const histogramPrevious = histogram[i - 1];
+const volumeRatio = current === undefined || priorVolumeMean === undefined || priorVolumeMean === 0
+  ? undefined
+  : current.volume / priorVolumeMean;
+const longGates = {
+  fourHourTrendUp: trend.direction === 'up',
+  priorCloseAtOrBelowEma20: previous !== undefined && emaPrevious !== undefined && previous.close <= emaPrevious,
+  currentCloseAboveEma20: current !== undefined && emaNow !== undefined && current.close > emaNow,
+  continuationAbovePriorHigh: current !== undefined && previous !== undefined && current.close > previous.high,
+  rsiInBand50To68: rsiNow !== undefined && rsiNow >= 50 && rsiNow <= 68,
+  macdPositiveAndImproving: histogramNow !== undefined && histogramPrevious !== undefined &&
+    histogramNow > 0 && histogramNow > histogramPrevious,
+  volumeAtLeast80PctMean: volumeRatio !== undefined && volumeRatio >= 0.8,
+  oiOneHourPositive: oiChangePct1h > 0.001,
+  oiFourHourPositive: oiChangePct4h > 0.001,
+  oiTwentyFourHourPositive: oiChangePct24h > 0.001,
+};
+const shortGates = {
+  fourHourTrendDown: trend.direction === 'down',
+  priorCloseAtOrAboveEma20: previous !== undefined && emaPrevious !== undefined && previous.close >= emaPrevious,
+  currentCloseBelowEma20: current !== undefined && emaNow !== undefined && current.close < emaNow,
+  continuationBelowPriorLow: current !== undefined && previous !== undefined && current.close < previous.low,
+  rsiInBand32To50: rsiNow !== undefined && rsiNow >= 32 && rsiNow <= 50,
+  macdNegativeAndWorsening: histogramNow !== undefined && histogramPrevious !== undefined &&
+    histogramNow < 0 && histogramNow < histogramPrevious,
+  volumeAtLeast80PctMean: volumeRatio !== undefined && volumeRatio >= 0.8,
+  oiOneHourPositive: oiChangePct1h > 0.001,
+  oiFourHourPositive: oiChangePct4h > 0.001,
+  oiTwentyFourHourPositive: oiChangePct24h > 0.001,
+};
+
 console.log(JSON.stringify({
   ts: new Date(now).toISOString(),
   event: 'competition_v3_read_only_monitor',
@@ -97,6 +162,19 @@ console.log(JSON.stringify({
     stop: signal?.stop.price ?? null,
     takeProfit: signal?.takeProfit?.[0]?.price ?? null,
     participationConfirmed,
+  },
+  triggerDiagnostics: {
+    values: {
+      fourHourTrend: trend.direction,
+      oneHourClose: current?.close ?? null,
+      oneHourEma20: emaNow ?? null,
+      oneHourRsi: rsiNow ?? null,
+      oneHourMacdHistogram: histogramNow ?? null,
+      oneHourMacdHistogramPrevious: histogramPrevious ?? null,
+      oneHourVolumeRatio: volumeRatio ?? null,
+    },
+    longGates,
+    shortGates,
   },
   executionEligible: false,
   blocker: 'research candidate has no independent holdout and OKX attribution warning is unresolved',
