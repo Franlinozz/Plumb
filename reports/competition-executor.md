@@ -2,7 +2,7 @@
 
 Audit time: 2026-08-21T15:37Z UTC
 
-## Status: YELLOW — implementation ready; strategy approval and live confirmation absent
+## Status: YELLOW — first entry protected; one-shot second-entry automation armed, no signal
 
 Read-only competition preflight passed 8/8 checks: dedicated profile authentication and registered
 UID binding, account level 2, `net_mode`, read+trade without withdrawal, 409.90 USDT in Trading,
@@ -49,13 +49,23 @@ Compatibility correction completed during this audit: Agent Trade Kit 1.4.2/OKX 
 fee request carrying `--instId`; the adapter now uses the documented SWAP-wide request verified
 against the live read-only competition profile. No order was placed.
 
-Remaining blockers before the authorised second live trade:
+Remaining blocker before the authorised second live trade:
 
 - frozen v3 has not emitted a current qualifying BTC/SOL signal; rehearsals at
   2026-08-21T15:37Z correctly produced no DecisionEvent;
-- a real event needs an end-to-end dry-run publication and order preview;
-- the operator must provide the exact decision-specific live-money confirmation immediately
-  before execution.
+- a current frozen-v3 BTC/SOL setup must pass every closed-bar, OI, account, cost, governor and
+  reconciliation gate. The installed one-shot service rehearsal passed at 2026-08-21T22:11Z and
+  correctly stopped before private preparation because no public signal existed.
+
+The recorded unattended authorization applies only to the evidence-limited second entry. The
+worker persists its one-shot claim before publication, requires every ACTIVE subscriber to
+acknowledge before Agent Trade Kit execution, and makes any uncertain state terminal for automatic
+retry. All other live writes retain exact decision-specific confirmation.
+
+The original ETH entry reached its attached take-profit on 2026-08-21 at 2454.44. OKX reports
++0.067501361 USDT realized after fees/funding and a signed-flat account. The new exit reconciler
+requires matching entry intent, native TP/SL algo, opposite fill, direction/size and closed-position
+history before changing the isolated signed ledger; this proof passed and the ledger is now flat.
 
 The compliance-only order script remains a fail-closed tombstone. P8 is not repointed, restarted,
 or reused as the competition executor.

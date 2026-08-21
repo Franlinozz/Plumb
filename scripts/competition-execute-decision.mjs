@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 
 import { DecisionPublicationStore } from '@plumb/asp';
-import { finalizeDecisionEvent } from '@plumb/core';
+import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
 import {
   AgentTradeKitCompetitionExecutor,
   CliAtkClient,
@@ -14,6 +14,7 @@ import {
 
 const args = process.argv.slice(2);
 const execute = args.includes('--execute');
+const unattended = args.includes('--unattended-second-entry');
 const inputPath = args.find((arg) => !arg.startsWith('--'));
 if (inputPath === undefined) throw new Error('usage: competition-execute-decision.mjs <bundle.json> [--execute]');
 
@@ -35,8 +36,11 @@ if (!execute) {
 }
 
 if (!/^\d+$/u.test(expectedUid)) throw new Error('PLUMB_COMPETITION_UID is required outside the repository');
-if (confirmation !== `CONFIRM LIVE ${event.decisionId}`) {
+if (!unattended && confirmation !== `CONFIRM LIVE ${event.decisionId}`) {
   throw new Error(`PLUMB_LIVE_CONFIRMATION must equal CONFIRM LIVE ${event.decisionId}`);
+}
+if (unattended && event.approvalBasis !== SECOND_ENTRY_AMENDMENT.approvalBasis) {
+  throw new Error('unattended execution is authorised only for the evidence-limited second entry');
 }
 if (bundle.risk === undefined) throw new Error('bundle.risk is required');
 
@@ -52,7 +56,9 @@ try {
     .filter((intent) => intent.status === 'placed' && intent.signalId !== event.decisionId).length;
   const result = await executor.execute({
     event, expectedUid, ledgerSignedPosition: recorded?.signedPosition ?? 0,
-    risk: bundle.risk, priorLiveEntryCount, liveConfirmation: confirmation, now: Date.now(),
+    risk: bundle.risk, priorLiveEntryCount, liveConfirmation: confirmation,
+    ...(unattended ? { unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt } : {}),
+    now: Date.now(),
   });
   ledger.set({ instrument: event.instrument, signedPosition: result.venueSignedPositionAfter,
     decisionId: result.decisionId, orderId: result.orderId, updatedAt: Date.now() });

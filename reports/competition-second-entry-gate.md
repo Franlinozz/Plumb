@@ -1,7 +1,7 @@
 # Competition second-entry gate — BTC / SOL
 
 Recorded: 2026-08-21T15:37Z UTC
-Status: **AUTHORIZED / IMPLEMENTED / NOT TRIGGERED / NO ORDER**
+Status: **UNATTENDED AUTO-ENTRY ARMED / NOT TRIGGERED / NO SECOND ORDER**
 
 ## Decision now
 
@@ -59,8 +59,9 @@ without publishing or trading.
 
 The operator explicitly authorised this evidence-limited amendment at 2026-08-21T15:24:00Z. This
 authorises the bounded policy, not an unconditional market order: a newly generated immutable
-DecisionEvent, complete A2A acknowledgement and exact decision-specific live confirmation remain
-mandatory.
+DecisionEvent and complete A2A acknowledgement remain mandatory. On 2026-08-21 the operator added
+a one-shot unattended authorization for this exact second-entry amendment, replacing only its
+per-decision confirmation step.
 
 - Instruments: BTC-USDT-SWAP or SOL-USDT-SWAP; first qualifying instrument wins.
 - Strategy: only `competition_trend_pullback@3.0.0`; no discretionary direction.
@@ -111,6 +112,9 @@ visibility.
 - The executor independently rechecks one prior entry, a flat BTC/SOL target, entry freshness,
   account state, signed reconciliation, costs, live projected target, damage caps and full A2A
   delivery before any Agent Trade Kit write.
+- The unattended worker durably claims the one-shot allowance before publication. A crash or
+  uncertain publication/execution state is terminal for automation and sends Discord; it never
+  retries an order or manufactures a replacement DecisionEvent.
 - At 2026-08-21T15:37Z both BTC and SOL rehearsals stopped at `frozen v3 strategy emitted no
   signal`. No bundle, signal or order was created. Existing ETH remained signed +0.01 and its
   venue stop 2340.03 / target 2451.10 were verified against the durable intent.
@@ -118,6 +122,15 @@ visibility.
   alert per instrument, direction and closed 1H bar only when the frozen signal and all public OI
   participation gates pass. The webhook is stored outside the repository with mode 0600; the
   notifier has no executor, A2A, account or order path. A delivered alert is not trade authority.
+- Armed-service rehearsal at 2026-08-21T22:11Z completed successfully for BTC and SOL. Both exited
+  before private preparation because the frozen setup was absent. The one-shot state file remains
+  absent, proving no allowance was claimed and no publication/order path ran.
+- The first ETH position subsequently hit its native TP: entry 2384.28, exit 2454.44 at
+  2026-08-21T21:11:46.319Z, and OKX closed-position history reports +0.067501361 USDT realized
+  after fees/funding. Agent Trade Kit verified the OCO, exit fill and signed-flat venue; the
+  isolated competition ledger was reconciled to zero. The worker now performs this strict
+  reconciliation before evaluating BTC/SOL, so a venue-native exit cannot leave a stale local
+  position or silently unblock on weak evidence.
 
 ## Evidence limitation
 

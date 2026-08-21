@@ -257,6 +257,17 @@ that touches payments, subscriptions or the trade kit.
   first implementation selected the first observation after `now − 24H`, silently shortened the
   window and reversed the sign during the 2026-08-20 qualifying interval. A shared tested helper
   now fails closed without a boundary-reaching sample, and both monitors and preparation use it.
+- **Unattended second entry · the operator explicitly authorised one-shot automation on
+  2026-08-21.** Only a frozen `competition_trend_pullback@3.0.0` BTC-or-SOL DecisionEvent may use
+  it, within the separately recorded second-entry time/damage envelope. The state claim is durable
+  before A2A publication; publication must fully acknowledge before Agent Trade Kit execution; any
+  crash or uncertainty blocks every automatic retry and raises Discord. All other live writes keep
+  decision-specific confirmation. The unit reads a UID-only allowlist, never `secrets.env`.
+- **Native TP/SL exits need explicit ledger reconciliation.** OKX closes an attached OCO with a
+  new venue order/client-order ID, so an entry-only ledger can remain non-zero while the account is
+  flat. Accept flat only after Agent Trade Kit proves the exact entry, TP/SL algo, opposite fill,
+  direction/size and closed-position record; otherwise fail closed. This first occurred when
+  `DEC-ydBHBkzgyA` hit TP on 2026-08-21.
 
 (append-only log — one line of reasoning each)
 

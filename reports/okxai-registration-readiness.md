@@ -61,7 +61,9 @@ finished competition executor was therefore never on the pre-snapshot critical p
 - `plumb-asp.service`: active since 2026-08-10 15:04:23 CEST, zero recorded restarts.
 - `plumb-runner.service`: active since 2026-08-10 15:45:22 CEST, zero recorded restarts.
 - P8 run 2 baseline: `2026-08-10T13:45:22.983Z`.
-- Health and feed verification: healthy; every halt flag false.
+- Process/HTTP availability remains healthy. A 2026-08-22 read-only recheck found the protected P8
+  governor correctly latched `manual` and `reconcileMismatch`: its ledger records BTC short 0.3
+  while the demo venue is flat. It was not cleared or mutated; see `reports/p8-lifecycle-audit.md`.
 - Current runner state at audit: equity 400 USDT, one demo position, cycle 18.
 - Protected files/services: `/var/lib/plumb/**`, `/opt/plumb/**`, `/root/plumb/reports/p8-gate.md`, `plumb-asp.service`, `plumb-runner.service`, and the deployed Agent Trade Kit profile/runtime.
 - No P8 service, state file, account setting, baseline, or deployed artifact was changed during this audit.

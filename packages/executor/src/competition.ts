@@ -61,6 +61,8 @@ export interface CompetitionExecutionInput {
   readonly priorLiveEntryCount: number;
   /** Required immediately before the live write; never persisted as a reusable global switch. */
   readonly liveConfirmation: string;
+  /** Exact timestamp of the recorded one-shot unattended second-entry authorization. */
+  readonly unattendedAuthorizationAt?: number;
   readonly now: number;
 }
 
@@ -119,7 +121,12 @@ export class AgentTradeKitCompetitionExecutor {
   async execute(input: CompetitionExecutionInput): Promise<CompetitionExecutionResult> {
     const event = finalizeDecisionEvent(input.event);
     const secondEntry = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis;
-    if (input.liveConfirmation !== `CONFIRM LIVE ${event.decisionId}`) {
+    const unattended = input.unattendedAuthorizationAt !== undefined;
+    if (unattended && (!secondEntry || input.unattendedAuthorizationAt !==
+        SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt)) {
+      throw new CompetitionExecutionRejected('unattended authorization is absent, mismatched, or outside its second-entry scope');
+    }
+    if (!unattended && input.liveConfirmation !== `CONFIRM LIVE ${event.decisionId}`) {
       throw new CompetitionExecutionRejected('missing decision-specific live-money confirmation');
     }
     if (event.createdAt > input.now) throw new CompetitionExecutionRejected('DecisionEvent is future-dated');

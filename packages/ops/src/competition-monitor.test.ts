@@ -8,6 +8,15 @@ const v3Source = readFileSync(resolve(process.cwd(), 'scripts/competition-v3-mon
 const alertSource = readFileSync(
   resolve(process.cwd(), 'scripts/competition-v3-discord-alert.mjs'), 'utf8',
 );
+const autoSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-second-entry-auto.mjs'), 'utf8',
+);
+const autoUnit = readFileSync(
+  resolve(process.cwd(), 'deploy/plumb-okxai-v3-opportunity-monitor.service'), 'utf8',
+);
+const exitReconcilerSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-reconcile-exits.mjs'), 'utf8',
+);
 
 describe('the automated competition monitor is read-only by construction', () => {
   it('has no executor, A2A, account, credential, child-process, or order path', () => {
@@ -53,6 +62,37 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(alertSource).toContain('discord_setup_alert_deduplicated');
     expect(alertSource).toContain('This is **not an order**');
     expect(alertSource).toContain('allowed_mentions: { parse: [] }');
+  });
+
+  it('makes unattended execution one-shot, publication-first, and no-retry on uncertainty', () => {
+    expect(autoSource).toContain("status: 'prepared'");
+    expect(autoSource.indexOf("save(state); // Durable one-shot claim"))
+      .toBeLessThan(autoSource.indexOf("runNode('asp-push-decision.mjs'"));
+    expect(autoSource.indexOf("runNode('asp-push-decision.mjs'"))
+      .toBeLessThan(autoSource.indexOf("runNode('competition-execute-decision.mjs'"));
+    expect(autoSource).toContain("status: 'executing'");
+    expect(autoSource).toContain("status: 'uncertain'");
+    expect(autoSource).toContain('NO AUTOMATIC RETRY');
+    expect(autoSource).toContain('incidentAlertedAt');
+    expect(autoSource).toContain('REQUIRES MANUAL RECONCILIATION');
+    expect(autoSource).toContain("'--unattended-second-entry'");
+    expect(autoSource).toContain("runNode('competition-reconcile-exits.mjs'");
+    expect(autoSource.indexOf("runNode('competition-reconcile-exits.mjs'"))
+      .toBeLessThan(autoSource.indexOf("runNode('competition-v3-monitor.mjs'"));
+    expect(autoSource).not.toContain('direct REST');
+    expect(autoUnit).toContain('competition-auto.env');
+    expect(autoUnit).not.toContain('secrets.env');
+    expect(autoUnit).toContain('competition-second-entry-auto.mjs');
+  });
+
+  it('keeps native-exit reconciliation read-only at the venue and proof-gated', () => {
+    expect(exitReconcilerSource).toContain("['tp', 'sl'].includes(candidate.actualSide)");
+    expect(exitReconcilerSource).toContain("candidate.reduceOnly === 'true'");
+    expect(exitReconcilerSource).toContain('closed-position history does not match');
+    expect(exitReconcilerSource).toContain("kind: 'competition_protective_exit_reconciled'");
+    expect(exitReconcilerSource).not.toContain('.placeOrder(');
+    expect(exitReconcilerSource).not.toContain('.closePosition(');
+    expect(exitReconcilerSource).not.toContain('fetch(');
   });
 
   it('prints an unconditional non-execution blocker while exposing public candidate readiness', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { finalizeDecisionEvent, type DecisionEvent } from '@plumb/core';
+import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent, type DecisionEvent } from '@plumb/core';
 
 import type { PlaceOrderRequest, OrderRef, VenueOrder } from './atk.js';
 import {
@@ -133,6 +133,22 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       .execute({ ...secondInput, priorLiveEntryCount: 0 })).rejects.toThrow(/additional-entry allowance/u);
     await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW)
       .execute({ ...secondInput, priorLiveEntryCount: 2 })).rejects.toThrow(/additional-entry allowance/u);
+
+    await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW).execute({
+      ...secondInput,
+      liveConfirmation: '',
+      unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt,
+    })).resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.1 });
+    await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW).execute({
+      ...secondInput,
+      liveConfirmation: '',
+      unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt + 1,
+    })).rejects.toThrow(/unattended authorization/u);
+    await expect(executor(new CompetitionMock(), proof(event), () => NOW).execute({
+      ...input(event),
+      liveConfirmation: '',
+      unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt,
+    })).rejects.toThrow(/outside its second-entry scope/u);
   });
 
   it('forbids a second-entry increase or reversal on an occupied instrument', async () => {

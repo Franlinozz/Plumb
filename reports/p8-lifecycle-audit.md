@@ -29,3 +29,15 @@ Fixing this correctly requires a new isolated run with:
 
 Until then, P8 run 2 is valid evidence for uptime, veto behaviour, recovery and reconciliation, but
 not for strategy turnover or max-hold exit behaviour.
+
+## 2026-08-22 read-only addendum
+
+P8 remains running from the original 2026-08-10 baseline and was not restarted or changed. Its
+current public status has `manual=true` and `reconcileMismatch=true`. The built-in read-only report
+shows the ledger still records BTC-USDT-SWAP short 0.3 for `SIG-fUGzS2JHbX` while the demo venue is
+flat (`missing_fill`). This is consistent with the unwired position-lifecycle/exit-accounting gap
+above. The flags were deliberately not cleared and the protected baseline was not altered.
+
+The competition account, ledger, profile and worker are isolated under `/var/lib/plumb-okxai` and
+do not consume P8 halt state. The live competition executor independently fails closed on its own
+account, signed ledger, publication and risk checks.

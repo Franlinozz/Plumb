@@ -62,5 +62,6 @@ does not permit discretionarily choosing a direction or chasing price.
 
 The existing ETH position may not be increased, reversed or have its protection weakened. The
 second instrument must be signed-flat at both venue and ledger. Combined stop risk remains subject
-to the original 2% account cap. A separate exact `CONFIRM LIVE <decisionId>` is still required
-after publication and immediately before a live order.
+to the original 2% account cap. On 2026-08-21 the operator separately authorised one-shot
+unattended execution for this exact amendment. That exception cannot apply to another strategy,
+instrument, additional entry or live action; any uncertain state blocks automatic retry.

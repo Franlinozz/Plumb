@@ -57,6 +57,7 @@ export const EMERGENCY_PARTICIPATION_AMENDMENT = Object.freeze({
  */
 export const SECOND_ENTRY_AMENDMENT = Object.freeze({
   authorisedAt: Date.parse('2026-08-21T15:24:00Z'),
+  unattendedExecutionAuthorisedAt: Date.parse('2026-08-21T21:43:00Z'),
   latestEntryAt: Date.parse('2026-08-23T16:00:00Z'),
   hardExitAt: Date.parse('2026-08-25T03:30:00Z'),
   competitionEndsAt: COMPETITION_V2_AMENDMENT.competitionEndsAt,
