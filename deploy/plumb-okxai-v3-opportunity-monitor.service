@@ -1,0 +1,18 @@
+[Unit]
+Description=Plumb read-only BTC/SOL competition opportunity monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/plumb-okxai
+Environment=NODE_OPTIONS=--dns-result-order=ipv4first
+ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v3-monitor.mjs BTC-USDT-SWAP
+ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-v3-monitor.mjs SOL-USDT-SWAP
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+StandardOutput=journal
+StandardError=journal
+

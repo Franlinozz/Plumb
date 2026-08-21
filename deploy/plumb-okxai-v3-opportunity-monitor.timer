@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Plumb BTC/SOL opportunity monitor every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=20
+Unit=plumb-okxai-v3-opportunity-monitor.service
+
+[Install]
+WantedBy=timers.target
