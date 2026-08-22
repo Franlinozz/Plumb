@@ -62,6 +62,7 @@ Rules for this table:
 | Hostile-strategy simulation over real history | `@plumb/risk` | `npm run hostile` | `risk/src/hostile.test.ts` |
 | Funding-rate history storage + backfill | `@plumb/market` | `npm run backfill` | `backtest/src/costs.test.ts` |
 | Full-pipeline bar-by-bar replay (governor in the loop) | `@plumb/backtest` | internal | `backtest/src/engine.test.ts` |
+| First attached take-profit replay with pessimistic same-bar stop precedence and exit friction | `@plumb/backtest` | internal | `engine.test.ts` › "models the first attached take-profit" + ambiguous-candle test |
 | Lookahead detection — a cheating window throws | `@plumb/backtest` | internal | `engine.test.ts` › lookahead |
 | Pessimistic cost model — taker fees, slippage, gap-side stop fills, real funding | `@plumb/backtest` | internal | `backtest/src/costs.test.ts` |
 | Walk-forward IS/OOS windows that never overlap | `@plumb/backtest` | internal | `backtest/src/analysis.test.ts` |

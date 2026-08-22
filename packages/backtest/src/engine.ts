@@ -99,7 +99,7 @@ export interface BacktestTrade {
   readonly feesUsdt: number;
   readonly fundingUsdt: number;
   readonly netPnlUsdt: number;
-  readonly exitReason: 'stop' | 'timeout' | 'flatten';
+  readonly exitReason: 'stop' | 'target' | 'timeout' | 'flatten';
   readonly equityAfter: number;
   readonly fundingFallbackSettlements: number;
 }
@@ -153,6 +153,8 @@ interface LivePosition extends OpenPosition {
   readonly openedAtBar: number;
   readonly maxHoldBars: number;
   readonly entryFeeUsdt: number;
+  /** First venue take-profit. Plumb's live competition adapter attaches exactly one TP. */
+  readonly takeProfitPrice: number;
 }
 
 export function runBacktest(options: BacktestOptions): BacktestResult {
@@ -307,15 +309,28 @@ export function runBacktest(options: BacktestOptions): BacktestResult {
       if (candle === undefined) continue;
       const hitStop =
         position.side === 'long' ? candle.low <= position.stopPrice : candle.high >= position.stopPrice;
+      const hitTarget = position.side === 'long'
+        ? candle.high >= position.takeProfitPrice
+        : candle.low <= position.takeProfitPrice;
       const heldFor = bar - position.openedAtBar;
       const barRangePct = candle.close > 0 ? (candle.high - candle.low) / candle.close : 0;
       const slip = slippageBps({ notionalUsdt: position.notionalUsdt, barRangePct, costs });
 
       if (hitStop) {
+        // A 15m/1H candle does not reveal whether the stop or target traded first. Taking the stop
+        // when both are touched is the pessimistic, non-flattering assumption.
         closePosition(
           position,
           stopFillPrice(position.side, position.stopPrice, candle.open, slip),
           'stop',
+          candle.ts,
+          bar,
+        );
+      } else if (hitTarget) {
+        closePosition(
+          position,
+          exitFillPrice(position.side, position.takeProfitPrice, slip),
+          'target',
           candle.ts,
           bar,
         );
@@ -451,6 +466,9 @@ export function runBacktest(options: BacktestOptions): BacktestResult {
           openedAtBar: bar + 1,
           maxHoldBars: signal.invalidation.maxHoldBars,
           entryFeeUsdt: entryFee,
+          takeProfitPrice: signal.takeProfit?.[0]?.price ?? (() => {
+            throw new Error(`signal ${signal.id} lacks the first take-profit used by live execution`);
+          })(),
         });
         syncBook();
       }

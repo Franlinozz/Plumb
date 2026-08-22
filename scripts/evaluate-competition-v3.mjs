@@ -22,8 +22,13 @@ import {
 } from '@plumb/backtest';
 
 const dbPath = process.env.PLUMB_DB_PATH ?? './data/plumb.db';
-const outputJson = 'reports/competition-strategy-v3-development.json';
-const outputMarkdown = 'reports/competition-strategy-v3-development.md';
+const outputSuffix = process.env.PLUMB_V3_OUTPUT_SUFFIX ?? '';
+if (outputSuffix !== '' && !/^[a-z0-9-]+$/u.test(outputSuffix)) {
+  throw new Error('PLUMB_V3_OUTPUT_SUFFIX must contain only lowercase letters, digits, and hyphens');
+}
+const outputBase = `reports/competition-strategy-v3-development${outputSuffix === '' ? '' : `-${outputSuffix}`}`;
+const outputJson = `${outputBase}.json`;
+const outputMarkdown = `${outputBase}.md`;
 const split = Object.freeze({ inSampleDays: 60, outOfSampleDays: 20, stepDays: 20 });
 const generatedAt = Date.now();
 
@@ -105,6 +110,12 @@ const diagnostics = {
   })),
 };
 
+const metrics = eligibility.outOfSampleMetrics;
+const predeclaredPass = metrics.tradeCount >= 30 && metrics.profitFactor > 1 &&
+  metrics.totalReturnUsdt > 0 && metrics.minEquity > LOCKED.KILL_SWITCH_EQUITY_USDT &&
+  monteCarlo.probabilityOfRuin <= 0.05 && diagnostics.firstHalfNetPnlUsdt > 0 &&
+  diagnostics.secondHalfNetPnlUsdt > 0 && diagnostics.withoutTop3NetPnlUsdt > 0;
+
 const artifact = {
   generatedAt: new Date(generatedAt).toISOString(),
   scope: 'development-only',
@@ -114,22 +125,24 @@ const artifact = {
   competitionPeriodRead: false,
   strategyId: COMPETITION_TREND_PULLBACK_ID,
   strategyVersion: competitionTrendPullback.version,
+  backtestFirstTargetModeled: true,
   configHash,
   config,
   costs: DEFAULT_COSTS,
   split,
   eligibility,
+  predeclaredPass,
   diagnostics,
 };
 writeFileSync(outputJson, `${JSON.stringify(artifact, null, 2)}\n`, { mode: 0o600 });
 
-const metrics = eligibility.outOfSampleMetrics;
 const lines = [
   '# Competition strategy v3 — development result',
   '',
   `Generated ${artifact.generatedAt}. Protected holdout **NOT READ**. Competition period **NOT READ**.`,
+  'The corrected replay engine models the first attached take-profit and gives the stop priority on an ambiguous candle.',
   '',
-  `## Verdict: ${eligibility.eligible ? 'DEVELOPMENT PASS' : 'DEVELOPMENT FAIL'} — never live-eligible without new independent validation`,
+  `## Verdict: ${predeclaredPass ? 'DEVELOPMENT PASS' : 'DEVELOPMENT FAIL'} — exact frozen protocol`,
   '',
   '| OOS trades | Net USDT | PF | Max drawdown | P(ruin) | Without best 3 |',
   '| ---: | ---: | ---: | ---: | ---: | ---: |',
@@ -154,7 +167,7 @@ const lines = [
 ];
 writeFileSync(outputMarkdown, lines.join('\n'), { mode: 0o600 });
 console.log(JSON.stringify({
-  verdict: eligibility.eligible ? 'DEVELOPMENT_PASS' : 'DEVELOPMENT_FAIL',
+  verdict: predeclaredPass ? 'DEVELOPMENT_PASS' : 'DEVELOPMENT_FAIL',
   trades: metrics.tradeCount,
   netPnlUsdt: metrics.totalReturnUsdt,
   profitFactor: metrics.profitFactor,

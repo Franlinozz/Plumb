@@ -511,3 +511,14 @@ that touches payments, subscriptions or the trade kit.
   authorised the maximum normal-risk form: 4.00 USDT stop risk, 4.35 USDT planned loss, 200 USDT
   notional, 50% position and 5.50 USDT minimum projected net. A literal 6 USDT net at the frozen
   1.5R first target would require more than 1% account risk after costs, so it remains forbidden.
+- **Competition research · the replay engine originally omitted take-profit exits.** Stops,
+  timeouts and flattening were modeled, but the first attached venue target was not. The corrected
+  engine now closes at TP with exit friction and pessimistically assigns the stop when one candle
+  touches both. A like-for-like v3 re-audit fell from +141.42/PF 1.90 to +15.22/PF 1.12 and failed
+  its frozen robustness conditions (negative second half and negative without its best three).
+  The isolated competition auto-entry timer was therefore paused fail-closed; P8 stayed active.
+- **Competition research · frequency was not a free improvement.** Three predeclared attempts to
+  make the trigger easier all failed on development data after realistic costs: 15m continuation
+  -166.54/PF 0.924; broad 1H continuation -350.76/PF 0.824; final 4H-trend/1H-reclaim candidate
+  -212.12/PF 0.731. None read the protected holdout or competition period, none was armed, and no
+  further candidate may be derived from those failures during this competition.

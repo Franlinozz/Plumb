@@ -17,6 +17,28 @@ import {
   emergencyParticipation,
   EMERGENCY_PARTICIPATION_ID,
 } from './emergency_participation.js';
+import {
+  aggregateClosedOneHour,
+  competitionIntradayContinuation,
+  createCompetitionIntradayContinuation,
+  COMPETITION_INTRADAY_CONTINUATION_ID,
+  COMPETITION_INTRADAY_CONTINUATION_SETTINGS,
+  type CompetitionIntradayContinuationSettings,
+} from './competition_intraday_continuation.js';
+import {
+  competitionTrendContinuation,
+  createCompetitionTrendContinuation,
+  COMPETITION_TREND_CONTINUATION_ID,
+  COMPETITION_TREND_CONTINUATION_SETTINGS,
+  type CompetitionTrendContinuationSettings,
+} from './competition_trend_continuation.js';
+import {
+  competitionTrendReclaim,
+  createCompetitionTrendReclaim,
+  COMPETITION_TREND_RECLAIM_ID,
+  COMPETITION_TREND_RECLAIM_SETTINGS,
+  type CompetitionTrendReclaimSettings,
+} from './competition_trend_reclaim.js';
 
 /**
  * The four candidates. **No edge is claimed for any of them.** P4's backtest decides which, if
@@ -64,6 +86,22 @@ export {
   COMPETITION_TREND_PULLBACK_ID,
   emergencyParticipation,
   EMERGENCY_PARTICIPATION_ID,
+  aggregateClosedOneHour,
+  competitionIntradayContinuation,
+  createCompetitionIntradayContinuation,
+  COMPETITION_INTRADAY_CONTINUATION_ID,
+  COMPETITION_INTRADAY_CONTINUATION_SETTINGS,
+  type CompetitionIntradayContinuationSettings,
+  competitionTrendContinuation,
+  createCompetitionTrendContinuation,
+  COMPETITION_TREND_CONTINUATION_ID,
+  COMPETITION_TREND_CONTINUATION_SETTINGS,
+  type CompetitionTrendContinuationSettings,
+  competitionTrendReclaim,
+  createCompetitionTrendReclaim,
+  COMPETITION_TREND_RECLAIM_ID,
+  COMPETITION_TREND_RECLAIM_SETTINGS,
+  type CompetitionTrendReclaimSettings,
 };
 export { SURVIVING_HOURS } from './session_bias.js';
 export { classifyOiState, TRADED_STATES, type OiState } from './oi_divergence.js';

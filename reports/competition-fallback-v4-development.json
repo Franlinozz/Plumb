@@ -1,0 +1,239 @@
+{
+  "generatedAt": "2026-08-22T23:29:56.424Z",
+  "scope": "development-only",
+  "developmentTo": 1778544000000,
+  "holdoutRead": false,
+  "competitionPeriodRead": false,
+  "strategyId": "competition_trend_continuation",
+  "strategyVersion": "4.0.0",
+  "settings": {
+    "fourHourAdxMin": 20,
+    "volumeFloor": 0.5,
+    "longRsiMin": 48,
+    "longRsiMax": 72,
+    "shortRsiMin": 28,
+    "shortRsiMax": 52
+  },
+  "config": {
+    "enabled": {
+      "competition_trend_continuation": true
+    },
+    "lookbackBars": 300,
+    "regime": {
+      "trendAdxMin": 20,
+      "rangeAdxMax": 20,
+      "compressedPercentile": 0.2,
+      "expandedPercentile": 0.85,
+      "expansionAtrRatio": 1.5,
+      "percentileWindow": 100
+    },
+    "stops": {
+      "minDistancePct": 0.0149,
+      "maxDistancePct": 0.02
+    },
+    "gate": {
+      "minRegimeConfidence": 0,
+      "cooldownMs": 0
+    },
+    "portfolio": {
+      "maxCorrelatedPerCycle": 1
+    },
+    "trendEma": {
+      "timeframe": "1H",
+      "adxMin": 25,
+      "atrMultiple": 2
+    },
+    "revertBand": {
+      "timeframe": "1H",
+      "adxMax": 20,
+      "rsiOverbought": 70,
+      "rsiOversold": 30,
+      "atrMultiple": 1.5
+    },
+    "breakoutRange": {
+      "timeframe": "1H",
+      "rangeBars": 20,
+      "minBreakAtr": 0.5,
+      "atrMultiple": 1.5
+    },
+    "fundingSkew": {
+      "timeframe": "1H",
+      "extremePercentile": 0.9,
+      "minHistory": 20,
+      "standalone": true,
+      "standaloneMaxAdx": 30
+    },
+    "volExpansion": {
+      "timeframe": "1H",
+      "requireTrendAlignment": false,
+      "compressionLookback": 100,
+      "compressionPercentile": 0.25,
+      "rangeBars": 20,
+      "minBreakAtr": 0.5
+    },
+    "oiDivergence": {
+      "timeframe": "1H",
+      "lookbackBars": 6,
+      "minHistory": 24,
+      "deadbandPct": 0.001,
+      "minMoveAtr": 0.75,
+      "atrMultiple": 2
+    },
+    "sessionBias": {
+      "timeframe": "1H",
+      "atrMultiple": 1.5
+    },
+    "takeProfitR": [
+      2
+    ],
+    "maxHoldBars": 24,
+    "expiryBars": 1
+  },
+  "costs": {
+    "takerRate": 0.0005,
+    "baseSlippageBps": 1,
+    "notionalSlippageBps": 2,
+    "referenceNotionalUsdt": 400,
+    "volatilitySlippageCoeff": 0.05,
+    "fundingFallbackRate": 0.0001
+  },
+  "split": {
+    "inSampleDays": 60,
+    "outOfSampleDays": 20,
+    "stepDays": 20
+  },
+  "passed": false,
+  "primaryPass": false,
+  "candidate": {
+    "label": "predeclared-default",
+    "metrics": {
+      "maxDrawdownUsdt": 414.41502774382843,
+      "maxDrawdownPct": 95.55629108909575,
+      "minEquity": 19.271779289558765,
+      "longestDrawdownBars": 22093,
+      "longestDrawdownDays": 918.6666666666666,
+      "startingEquity": 400,
+      "finalEquity": 49.23820169519945,
+      "totalReturnUsdt": -350.76179830480055,
+      "totalReturnPct": -87.69044957620014,
+      "cagrPct": -55.6653811961348,
+      "days": 940,
+      "sharpe": -0.4026566431153076,
+      "sortino": -0.6504150517178531,
+      "calmar": -0.5825402028656904,
+      "tradeCount": 959,
+      "winRate": 38.373305526590194,
+      "averageWinUsdt": 4.46430909033409,
+      "averageLossUsdt": -3.373312256425969,
+      "profitFactor": 0.8240585111095492,
+      "expectancyUsdt": -0.36575787101647594,
+      "largestLossUsdt": -5.724550070567312,
+      "largestWinUsdt": 7.445444840871027,
+      "longestLosingStreak": 13,
+      "averageHoldBars": 12.510948905109489,
+      "totalFeesUsdt": 202.2685776831497,
+      "fundingPaidUsdt": 34.28928865680821,
+      "fundingReceivedUsdt": 0,
+      "fundingFallbackSettlements": 1623,
+      "pctTimeBelowStartingCapital": 97.49192727916132,
+      "governorVetoes": {
+        "max_concurrent": 373
+      },
+      "gateRejections": {},
+      "killSwitchTriggers": 0,
+      "dailyLimitTriggers": 0,
+      "signalsEmitted": 1332,
+      "cycles": 22607
+    },
+    "inSampleMetrics": {
+      "maxDrawdownUsdt": 790.6410754614991,
+      "maxDrawdownPct": 189.2882880063304,
+      "minEquity": -372.94958287688786,
+      "longestDrawdownBars": 67304,
+      "longestDrawdownDays": 962.4166666666666,
+      "startingEquity": 400,
+      "finalEquity": -284.93483808323435,
+      "totalReturnUsdt": -684.9348380832344,
+      "totalReturnPct": -171.2337095208086,
+      "cagrPct": 0,
+      "days": 967.5,
+      "sharpe": -0.7819396727296603,
+      "sortino": -0.9312697292707608,
+      "calmar": 0,
+      "tradeCount": 2542,
+      "winRate": 38.82769472856019,
+      "averageWinUsdt": 3.7100054527944195,
+      "averageLossUsdt": -2.7953120385796333,
+      "profitFactor": 0.8424245455947132,
+      "expectancyUsdt": -0.26944722190528525,
+      "largestLossUsdt": -5.724550070567312,
+      "largestWinUsdt": 7.445444840871027,
+      "longestLosingStreak": 18,
+      "averageHoldBars": 13.164830841856805,
+      "totalFeesUsdt": 450.4876713657041,
+      "fundingPaidUsdt": 79.48928678235833,
+      "fundingReceivedUsdt": 0,
+      "fundingFallbackSettlements": 4487,
+      "pctTimeBelowStartingCapital": 99.6277455618669,
+      "governorVetoes": {
+        "max_concurrent": 1703,
+        "no_new_positions": 462
+      },
+      "gateRejections": {},
+      "killSwitchTriggers": 0,
+      "dailyLimitTriggers": 0,
+      "signalsEmitted": 4707,
+      "cycles": 67427
+    },
+    "degradation": 0.9781986000037565,
+    "overfitVerdict": "Unprofitable both in and out of sample (OOS profit factor 0.82).",
+    "monteCarlo": {
+      "iterations": 10000,
+      "pathLength": 959,
+      "seed": 20260823,
+      "p5Equity": 330.70138344212853,
+      "p25Equity": 332.1396716018343,
+      "medianEquity": 333.37841026742547,
+      "p75Equity": 334.25465356837896,
+      "p95Equity": 334.86887305087004,
+      "meanEquity": 333.4406064849791,
+      "worstEquity": 329.6790925420126,
+      "probabilityOfRuin": 0.9959,
+      "probabilityBelowStart": 0.9976,
+      "p5MaxDrawdownPct": 16.5098759988919,
+      "medianMaxDrawdownPct": 19.693345702726486,
+      "worstMaxDrawdownPct": 43.09706655444281
+    },
+    "diagnostics": {
+      "profitableWindows": 12,
+      "totalWindows": 47,
+      "firstHalfNetPnlUsdt": -157.8316467290346,
+      "secondHalfNetPnlUsdt": -192.93015157576548,
+      "withoutBestTenNetPnlUsdt": -424.56874686697114,
+      "exits": {
+        "target": 223,
+        "stop": 472,
+        "timeout": 238,
+        "flatten": 26
+      },
+      "byInstrument": {
+        "BTC-USDT-SWAP": {
+          "trades": 421,
+          "netPnlUsdt": -77.85914040237509,
+          "profitFactor": 0.8949813581207078
+        },
+        "ETH-USDT-SWAP": {
+          "trades": 334,
+          "netPnlUsdt": -125.81012684564274,
+          "profitFactor": 0.8298302878467035
+        },
+        "SOL-USDT-SWAP": {
+          "trades": 204,
+          "netPnlUsdt": -147.0925310567822,
+          "profitFactor": 0.7132263433615227
+        }
+      }
+    }
+  },
+  "secondaryRunsSkipped": true
+}
