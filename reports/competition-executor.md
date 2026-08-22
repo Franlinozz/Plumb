@@ -74,3 +74,25 @@ order, fill, signed-flat position and ledger. It cannot open or reverse a positi
 
 The compliance-only order script remains a fail-closed tombstone. P8 is not repointed, restarted,
 or reused as the competition executor.
+
+## Autonomous-path audit — 2026-08-22T07:30Z UTC
+
+The complete repository suite passed: 52 files and 658 tests. The installed timer/unit match the
+repository architecture and a live no-order smoke cycle evaluated BTC and SOL, left the durable
+one-shot state absent, and left the competition account signed-flat. The subsequent account
+preflight passed 8/8 with 409.97 USDT in Trading, no Funding balance, `net_mode`, the registered UID,
+and read+trade permissions without withdrawal.
+
+One availability defect was found and fixed. Because systemd runs BTC and SOL as sequential
+`ExecStart=` commands, a BTC public-check error or private-preflight rejection previously returned
+nonzero and prevented SOL evaluation even though no state had been claimed and no external write
+had occurred. Pre-write candidate rejection now alerts, records an explicit `*_no_write` event and
+returns success so the other authorised instrument is checked. Failures after the durable claim
+remain terminal `uncertain`, nonzero and ineligible for automatic retry. This did not expose funds;
+it could only have caused a valid SOL opportunity to be missed.
+
+Agent Trade Kit 1.4.2 remains pinned operationally for this competition path. Version 1.4.4 is
+available, but the current binary already executed and reconciled the successful ETH entry/exit and
+the global binary is also resolved dynamically by protected P8. A deadline-period global upgrade
+would create more regression risk than it removes; upgrade only in an isolated profile/runtime with
+the complete fault suite rerun.

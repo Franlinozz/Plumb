@@ -495,3 +495,9 @@ that touches payments, subscriptions or the trade kit.
   parameter, so encoding it as `averagingDown: false` would be the first step toward a config value
   that enables it. Instead the tripwire asserts no key in `LOCKED` matches an averaging-down-shaped
   name.
+- **Competition one-shot · distinguish a candidate rejection from post-write uncertainty.** The
+  systemd unit evaluates BTC and then SOL with sequential `ExecStart=` commands. A public-check or
+  private-preflight rejection before the durable one-shot claim and before every external write must
+  log/alert and exit successfully so the other authorised instrument is still evaluated. Once the
+  claim exists, every failure remains terminal `uncertain` and nonzero: never continue to the other
+  instrument and never retry automatically after a possibly completed publication or order.

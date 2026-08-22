@@ -78,6 +78,9 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(autoSource).toContain('NO AUTOMATIC RETRY');
     expect(autoSource).toContain('incidentAlertedAt');
     expect(autoSource).toContain('REQUIRES MANUAL RECONCILIATION');
+    expect(autoSource).toContain('second_entry_public_check_rejected_no_write');
+    expect(autoSource).toContain('second_entry_private_preflight_rejected_no_write');
+    expect(autoSource).toContain('The other authorised instrument may still be evaluated');
     expect(autoSource).toContain("'--unattended-second-entry'");
     expect(autoSource).toContain("runNode('competition-reconcile-exits.mjs'");
     expect(autoSource).toContain("runNode('competition-time-stop.mjs'");

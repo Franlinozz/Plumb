@@ -156,8 +156,21 @@ if (Date.now() >= SECOND_ENTRY_AMENDMENT.latestEntryAt) {
   process.exit(0);
 }
 
-const monitorRun = await runNode('competition-v3-monitor.mjs', [instrument]);
-const publicResult = parseLastJson(monitorRun.stdout);
+let publicResult;
+try {
+  const monitorRun = await runNode('competition-v3-monitor.mjs', [instrument]);
+  publicResult = parseLastJson(monitorRun.stdout);
+} catch (error) {
+  const detail = error instanceof Error ? error.message : String(error);
+  await notify([
+    '⚠️ **PLUMB PUBLIC CANDIDATE CHECK FAILED — NO WRITE ATTEMPTED**',
+    `${instrument} · ${detail.slice(0, 500)}`,
+    'The other authorised instrument may still be evaluated in this cycle.',
+  ].join('\n'));
+  console.log(JSON.stringify({ event: 'second_entry_public_check_rejected_no_write',
+    instrument, detail: detail.slice(0, 500) }));
+  process.exit(0);
+}
 console.log(JSON.stringify(publicResult));
 if (publicResult.publicPreparationReady !== true) process.exit(0);
 
@@ -217,7 +230,16 @@ try {
   ].join('\n'));
 } catch (error) {
   const detail = error instanceof Error ? error.message : String(error);
-  if (state !== undefined) {
+  if (state === undefined) {
+    await notify([
+      '⚠️ **PLUMB PRIVATE CANDIDATE REJECTED — NO WRITE ATTEMPTED**',
+      `${instrument} · ${detail.slice(0, 500)}`,
+      'No one-shot allowance was claimed. The other authorised instrument may still be evaluated.',
+    ].join('\n'));
+    console.log(JSON.stringify({ event: 'second_entry_private_preflight_rejected_no_write',
+      instrument, detail: detail.slice(0, 500) }));
+    process.exit(0);
+  } else {
     state = { ...state, status: 'uncertain', failedStage: state.status,
       error: detail.slice(0, 500), updatedAt: new Date().toISOString() };
     save(state);
