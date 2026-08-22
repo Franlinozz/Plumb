@@ -40,8 +40,8 @@ Implemented gates:
   before the competition closes.
 - independently enforced second-entry amendment: exact frozen v3 strategy and approval basis,
   exactly one prior placed entry, BTC, ETH or SOL only, signed-flat target, no increase/reversal, at
-  most 1.50 USDT stop risk, 1.75 USDT planned loss, 85 USDT notional, 21% position, and at least
-  2.00 USDT projected net at the live first target;
+  most 3.00 USDT stop risk, 3.25 USDT planned loss, 150 USDT notional, 37% position, and at least
+  4.00 USDT projected net at the live first target;
 - current venue tick-size parsing plus full BTC/ETH/SOL signed reconciliation and existing-position
   bracket verification in the read-only preparation path.
 
@@ -101,3 +101,9 @@ At 2026-08-22T08:30:32Z the operator expanded the second-entry candidate univers
 after the first ETH position had reached TP and strict reconciliation proved the account flat. The
 single-additional-entry limit and all damage, timing, publication, protection and no-retry controls
 are unchanged. Evaluation order is BTC, ETH, then SOL; the first fully qualifying event wins.
+
+At 2026-08-22T18:21:33Z the operator expanded only the second-entry damage/payoff envelope in
+response to a copied +0.90 USDT / +0.29% rank-40 threshold. Stop risk is capped at 3.00 USDT
+(approximately 0.73% of current equity), planned loss at 3.25 USDT, notional at 150 USDT, position
+at 37%, and projected first-target net must be at least 4.00 USDT. Signal gates, one-shot count,
+leverage ceiling, publication-first execution and every fail-closed control are unchanged.

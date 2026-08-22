@@ -67,13 +67,13 @@ per-decision confirmation step.
 - Strategy: only `competition_trend_pullback@3.0.0`; no discretionary direction.
 - Additional successful entries: one maximum; never open more than one of BTC, ETH or SOL.
 - Every candidate instrument must be signed-flat; no same-instrument add, reversal or stop change.
-- Actual stop risk: at most 1.50 USDT.
-- Stop plus all estimated friction: at most 1.75 USDT.
-- Notional: at most 85 USDT and at most 21% of current equity.
+- Actual stop risk: at most 3.00 USDT.
+- Stop plus all estimated friction: at most 3.25 USDT.
+- Notional: at most 150 USDT and at most 37% of current equity.
 - Leverage: 1x–3x venue setting; exposure is controlled by notional and stop risk.
 - Full estimated friction includes 5 bp taker entry, 5 bp taker exit, live spread, conservative
   slippage and expected funding.
-- First attached target must project at least 2.00 USDT **net** after full friction; target and stop
+- First attached target must project at least 4.00 USDT **net** after full friction; target and stop
   must be verified natively after entry.
 - Maximum event age at execution: 30 minutes.
 - Latest possible entry: 2026-08-23T16:00:00Z; hard competition exit no later than
@@ -81,10 +81,11 @@ per-decision confirmation step.
 - Any unresolved halt, stale data, account uncertainty, missing metadata/protection, pending order,
   ledger mismatch or duplicate decision fails closed.
 
-With approximately 1.50 USDT structural stop risk, the frozen 1.5R first target is about 2.25 USDT
-gross. An entry is rejected unless the live cost calculation still leaves at least 2.00 USDT net.
-This is enough to clear the copied current rank-40 threshold (+0.12% / +0.48 USDT) with a buffer,
-but it cannot guarantee the cutoff will remain there or that the trade will win.
+The 2026-08-22T18:21:33Z operator amendment raises the damage envelope without altering the frozen
+trigger. At current equity, 3.00 USDT is about 0.73% stop risk and remains inside the original 0.75%
+mandate. An entry is rejected unless the live first target still projects at least 4.00 USDT net.
+That exceeds the operator-copied current rank-40 threshold (+0.29% / +0.90 USDT) with a buffer, but
+cannot guarantee the cutoff will remain there or that the trade will win.
 
 ## Marketplace and competition attribution
 

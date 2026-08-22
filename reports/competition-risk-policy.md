@@ -51,11 +51,11 @@ does not permit discretionarily choosing a direction or chasing price.
 | Strategy | `competition_trend_pullback@3.0.0` only |
 | Prior successful entries | exactly 1 |
 | Total successful entries | 2 maximum |
-| Stop risk | 1.50 USDT maximum |
-| Stop + full estimated friction | 1.75 USDT maximum |
-| Notional | 85 USDT maximum |
-| Position | 21% maximum |
-| Projected first-target net | 2.00 USDT minimum |
+| Stop risk | 3.00 USDT maximum |
+| Stop + full estimated friction | 3.25 USDT maximum |
+| Notional | 150 USDT maximum |
+| Position | 37% maximum |
+| Projected first-target net | 4.00 USDT minimum |
 | Event validity | 30 minutes maximum |
 | Latest entry | 2026-08-23T16:00:00Z |
 | Hard competition exit | 2026-08-25T03:30:00Z |

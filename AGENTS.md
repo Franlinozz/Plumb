@@ -502,3 +502,8 @@ that touches payments, subscriptions or the trade kit.
   log/alert and exit successfully so the other authorised instrument is still evaluated. Once the
   claim exists, every failure remains terminal `uncertain` and nonzero: never continue to the other
   instrument and never retry automatically after a possibly completed publication or order.
+- **Competition payoff amendment · size for the prize-zone objective without relaxing evidence.**
+  On 2026-08-22 the operator raised only the one-shot second-entry caps to 3.00 USDT stop risk,
+  3.25 USDT planned loss, 150 USDT notional, 37% position and a 4.00 USDT minimum projected net
+  target. At 409.97 USDT equity the stop cap is about 0.73%, inside the original 0.75% mandate.
+  The frozen trigger, one-entry count, 3x ceiling, A2A-first ordering and all failure gates remain.
