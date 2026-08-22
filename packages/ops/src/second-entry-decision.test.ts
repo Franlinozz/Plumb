@@ -41,14 +41,14 @@ const input = () => ({
 });
 
 describe('evidence-limited second-entry DecisionEvent factory', () => {
-  it('rounds to the venue grid and retains at least 4 USDT projected net target', () => {
+  it('rounds to the venue grid and retains at least 5.5 USDT projected net target', () => {
     const event = createSecondEntryDecision(input());
     expect(event.approvalBasis).toBe('operator-evidence-limited-v3');
     expect(event.expectedEdgeBps).toBe(0);
     expect(event.strategyVersion).toBe('competition_trend_pullback@3.0.0');
     expect(event.instrument).toBe('BTC-USDT-SWAP');
-    expect(event.riskUsd).toBeCloseTo(2.85);
-    expect(event.positionPct).toBeCloseTo(36.1);
+    expect(event.riskUsd).toBeCloseTo(3.9);
+    expect(event.positionPct).toBeCloseTo(49.4);
     expect(event.validUntil).toBe(NOW + 30 * 60_000);
   });
 

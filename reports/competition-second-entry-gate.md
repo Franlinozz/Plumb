@@ -67,13 +67,13 @@ per-decision confirmation step.
 - Strategy: only `competition_trend_pullback@3.0.0`; no discretionary direction.
 - Additional successful entries: one maximum; never open more than one of BTC, ETH or SOL.
 - Every candidate instrument must be signed-flat; no same-instrument add, reversal or stop change.
-- Actual stop risk: at most 3.00 USDT.
-- Stop plus all estimated friction: at most 3.25 USDT.
-- Notional: at most 150 USDT and at most 37% of current equity.
+- Actual stop risk: at most 4.00 USDT.
+- Stop plus all estimated friction: at most 4.35 USDT.
+- Notional: at most 200 USDT and at most 50% of current equity.
 - Leverage: 1x–3x venue setting; exposure is controlled by notional and stop risk.
 - Full estimated friction includes 5 bp taker entry, 5 bp taker exit, live spread, conservative
   slippage and expected funding.
-- First attached target must project at least 4.00 USDT **net** after full friction; target and stop
+- First attached target must project at least 5.50 USDT **net** after full friction; target and stop
   must be verified natively after entry.
 - Maximum event age at execution: 30 minutes.
 - Latest possible entry: 2026-08-23T16:00:00Z; hard competition exit no later than
@@ -86,6 +86,12 @@ trigger. At current equity, 3.00 USDT is about 0.73% stop risk and remains insid
 mandate. An entry is rejected unless the live first target still projects at least 4.00 USDT net.
 That exceeds the operator-copied current rank-40 threshold (+0.29% / +0.90 USDT) with a buffer, but
 cannot guarantee the cutoff will remain there or that the trade will win.
+
+At 2026-08-22T19:35:45Z the operator requested an approximately 6 USDT payoff. The final bounded
+form keeps the frozen 1.5R target and caps stop risk at 4.00 USDT (about 0.98% of current equity),
+planned loss at 4.35 USDT, notional at 200 USDT and position at 50%. Because fees and slippage make
+6 USDT net incompatible with both 1.5R and the 1% risk ceiling, the executable minimum is 5.50 USDT
+projected net—approximately 6 USDT gross. No signal gate was relaxed.
 
 ## Marketplace and competition attribution
 

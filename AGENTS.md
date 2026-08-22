@@ -507,3 +507,7 @@ that touches payments, subscriptions or the trade kit.
   3.25 USDT planned loss, 150 USDT notional, 37% position and a 4.00 USDT minimum projected net
   target. At 409.97 USDT equity the stop cap is about 0.73%, inside the original 0.75% mandate.
   The frozen trigger, one-entry count, 3x ceiling, A2A-first ordering and all failure gates remain.
+- **Final payoff ceiling · “6 USDT” means gross, not a 6 USDT stop.** On 2026-08-22 the operator
+  authorised the maximum normal-risk form: 4.00 USDT stop risk, 4.35 USDT planned loss, 200 USDT
+  notional, 50% position and 5.50 USDT minimum projected net. A literal 6 USDT net at the frozen
+  1.5R first target would require more than 1% account risk after costs, so it remains forbidden.

@@ -40,8 +40,8 @@ Implemented gates:
   before the competition closes.
 - independently enforced second-entry amendment: exact frozen v3 strategy and approval basis,
   exactly one prior placed entry, BTC, ETH or SOL only, signed-flat target, no increase/reversal, at
-  most 3.00 USDT stop risk, 3.25 USDT planned loss, 150 USDT notional, 37% position, and at least
-  4.00 USDT projected net at the live first target;
+  most 4.00 USDT stop risk, 4.35 USDT planned loss, 200 USDT notional, 50% position, and at least
+  5.50 USDT projected net at the live first target;
 - current venue tick-size parsing plus full BTC/ETH/SOL signed reconciliation and existing-position
   bracket verification in the read-only preparation path.
 
@@ -107,3 +107,8 @@ response to a copied +0.90 USDT / +0.29% rank-40 threshold. Stop risk is capped 
 (approximately 0.73% of current equity), planned loss at 3.25 USDT, notional at 150 USDT, position
 at 37%, and projected first-target net must be at least 4.00 USDT. Signal gates, one-shot count,
 leverage ceiling, publication-first execution and every fail-closed control are unchanged.
+
+At 2026-08-22T19:35:45Z the final operator payoff amendment superseded only those second-entry
+caps: 4.00 USDT stop risk (about 0.98% of current equity), 4.35 USDT planned loss, 200 USDT
+notional, 50% position and at least 5.50 USDT projected net. This represents approximately 6 USDT
+gross at the frozen 1.5R target while remaining under the original 1% normal risk ceiling.

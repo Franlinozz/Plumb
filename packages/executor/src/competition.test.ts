@@ -107,9 +107,9 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       entryHigh: 76_010,
       stopPrice: 74_500,
       takeProfit: 78_250,
-      positionPct: 36.1,
+      positionPct: 49.4,
       leverage: 3,
-      riskUsd: 2.85,
+      riskUsd: 3.9,
       expectedCostBps: 12.2,
       expectedEdgeBps: 0,
       approvalBasis: 'operator-evidence-limited-v3',
@@ -127,7 +127,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
     };
     const venue = new SecondEntryVenue();
     await expect(executor(venue, proof(second), () => SECOND_NOW).execute(secondInput))
-      .resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.19, reversed: false });
+      .resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.26, reversed: false });
 
     await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW)
       .execute({ ...secondInput, priorLiveEntryCount: 0 })).rejects.toThrow(/additional-entry allowance/u);
@@ -138,7 +138,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       ...secondInput,
       liveConfirmation: '',
       unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt,
-    })).resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.19 });
+    })).resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.26 });
 
     const eth = finalizeDecisionEvent({
       ...second,
@@ -148,8 +148,8 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       entryHigh: 2_451,
       stopPrice: 2_400,
       takeProfit: 2_530,
-      positionPct: 32.2855,
-      riskUsd: 2.66135,
+      positionPct: 44.109,
+      riskUsd: 3.636,
     });
     class EthSecondEntryVenue extends SecondEntryVenue {
       override async getLastPrice() { return 2_450.5; }
@@ -182,9 +182,9 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       entryHigh: 76_010,
       stopPrice: 74_500,
       takeProfit: 78_250,
-      positionPct: 36.1,
+      positionPct: 49.4,
       leverage: 3,
-      riskUsd: 2.85,
+      riskUsd: 3.9,
       expectedCostBps: 12.2,
       expectedEdgeBps: 0,
       approvalBasis: 'operator-evidence-limited-v3',
