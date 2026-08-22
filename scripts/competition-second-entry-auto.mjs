@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** One-shot unattended BTC/SOL competition entry under the recorded 2026-08-21 authorization. */
+/** One-shot unattended BTC/ETH/SOL entry under the recorded 2026-08-21/22 authorizations. */
 
 import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
@@ -12,7 +12,7 @@ const executeFile = promisify(execFile);
 const instrument = process.argv[2];
 const dryRun = process.argv.includes('--dry-run');
 if (!SECOND_ENTRY_AMENDMENT.instruments.includes(instrument)) {
-  throw new Error('usage: competition-second-entry-auto.mjs <BTC-USDT-SWAP|SOL-USDT-SWAP> [--dry-run]');
+  throw new Error('usage: competition-second-entry-auto.mjs <BTC-USDT-SWAP|ETH-USDT-SWAP|SOL-USDT-SWAP> [--dry-run]');
 }
 const expectedUid = process.env.OKX_UID?.trim() ?? '';
 const agentId = process.env.PLUMB_ASP_AGENT_ID?.trim() ?? '';

@@ -55,7 +55,7 @@ export function createSecondEntryDecision(input: SecondEntryInput): DecisionEven
   if (signal.strategyId !== amendment.strategyId || signal.version !== amendment.strategyVersion ||
       !amendment.instruments.includes(signal.instId as (typeof amendment.instruments)[number]) ||
       signal.intent !== 'open') {
-    throw new CompetitionDecisionRejected('signal is not the authorised frozen v3 BTC/SOL strategy');
+    throw new CompetitionDecisionRejected('signal is not the authorised frozen v3 BTC/ETH/SOL strategy');
   }
   if (!approval.approved || approval.signalId !== signal.id) {
     throw new CompetitionDecisionRejected('governor did not approve this exact signal');

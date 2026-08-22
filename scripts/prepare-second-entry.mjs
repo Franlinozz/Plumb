@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Prepare, but never publish or execute, one authorised BTC/SOL second-entry DecisionEvent. */
+/** Prepare, but never publish or execute, one authorised BTC/ETH/SOL second-entry DecisionEvent. */
 
 import { randomInt } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -24,7 +24,7 @@ if (!/^\d+$/u.test(expectedUid)) throw new Error('PLUMB_COMPETITION_UID is requi
 
 const instrument = process.argv[2];
 if (!SECOND_ENTRY_AMENDMENT.instruments.includes(instrument)) {
-  throw new Error('usage: prepare-second-entry.mjs <BTC-USDT-SWAP|SOL-USDT-SWAP> [output.json]');
+  throw new Error('usage: prepare-second-entry.mjs <BTC-USDT-SWAP|ETH-USDT-SWAP|SOL-USDT-SWAP> [output.json]');
 }
 const output = process.argv[3] ?? `.tmp/second-entry-${instrument}.json`;
 const stateDir = process.env.PLUMB_COMPETITION_STATE_DIR ?? '/var/lib/plumb-okxai';

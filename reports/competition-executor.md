@@ -18,7 +18,7 @@ ACTIVE A2A subscriptions, then filled through the dedicated Agent Trade Kit comp
 the venue minimum 0.01 ETH-USDT-SWAP contract. Independent readback confirmed the attributable
 fill, signed +0.01 net position, and attached stop/target. The original one-entry allowance is
 consumed. A separately recorded evidence-limited amendment now permits at most one qualifying
-BTC-or-SOL v3 entry under narrower explicit gates.
+BTC/ETH/SOL v3 entry under narrower explicit gates.
 
 Implemented gates:
 
@@ -39,7 +39,7 @@ Implemented gates:
 - authorised entry window 2026-08-19T20:15Z through 2026-08-23T00:00Z, leaving recovery time
   before the competition closes.
 - independently enforced second-entry amendment: exact frozen v3 strategy and approval basis,
-  exactly one prior placed entry, BTC or SOL only, signed-flat target, no increase/reversal, at
+  exactly one prior placed entry, BTC, ETH or SOL only, signed-flat target, no increase/reversal, at
   most 1.50 USDT stop risk, 1.75 USDT planned loss, 85 USDT notional, 21% position, and at least
   2.00 USDT projected net at the live first target;
 - current venue tick-size parsing plus full BTC/ETH/SOL signed reconciliation and existing-position
@@ -51,9 +51,9 @@ against the live read-only competition profile. No order was placed.
 
 Remaining blocker before the authorised second live trade:
 
-- frozen v3 has not emitted a current qualifying BTC/SOL signal; rehearsals at
+- frozen v3 has not emitted a current qualifying BTC/ETH/SOL signal; rehearsals at
   2026-08-21T15:37Z correctly produced no DecisionEvent;
-- a current frozen-v3 BTC/SOL setup must pass every closed-bar, OI, account, cost, governor and
+- a current frozen-v3 BTC/ETH/SOL setup must pass every closed-bar, OI, account, cost, governor and
   reconciliation gate. The installed one-shot service rehearsal passed at 2026-08-21T22:11Z and
   correctly stopped before private preparation because no public signal existed.
 
@@ -68,7 +68,7 @@ requires matching entry intent, native TP/SL algo, opposite fill, direction/size
 history before changing the isolated signed ledger; this proof passed and the ledger is now flat.
 
 The approved second-entry hard exit is also implemented in `@plumb/executor`. At or after
-2026-08-25T03:30:00Z the existing 15-minute worker will close only a still-open exact BTC/SOL
+2026-08-25T03:30:00Z the existing 15-minute worker will close only a still-open exact BTC/ETH/SOL
 DecisionEvent through a persisted deterministic reduce-only Agent Trade Kit intent, then verify its
 order, fill, signed-flat position and ledger. It cannot open or reverse a position.
 
@@ -96,3 +96,8 @@ available, but the current binary already executed and reconciled the successful
 the global binary is also resolved dynamically by protected P8. A deadline-period global upgrade
 would create more regression risk than it removes; upgrade only in an isolated profile/runtime with
 the complete fault suite rerun.
+
+At 2026-08-22T08:30:32Z the operator expanded the second-entry candidate universe to include ETH
+after the first ETH position had reached TP and strict reconciliation proved the account flat. The
+single-additional-entry limit and all damage, timing, publication, protection and no-retry controls
+are unchanged. Evaluation order is BTC, ETH, then SOL; the first fully qualifying event wins.

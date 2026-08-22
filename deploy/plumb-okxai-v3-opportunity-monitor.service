@@ -1,5 +1,5 @@
 [Unit]
-Description=Plumb one-shot authorised BTC/SOL competition entry monitor
+Description=Plumb one-shot authorised BTC/ETH/SOL competition entry monitor
 After=network-online.target
 Wants=network-online.target
 
@@ -13,6 +13,7 @@ EnvironmentFile=/root/.plumb/discord.env
 EnvironmentFile=/root/.plumb/competition-auto.env
 Environment=PLUMB_ASP_AGENT_ID=10746
 ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-second-entry-auto.mjs BTC-USDT-SWAP
+ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-second-entry-auto.mjs ETH-USDT-SWAP
 ExecStart=/usr/bin/node /root/plumb-okxai/scripts/competition-second-entry-auto.mjs SOL-USDT-SWAP
 NoNewPrivileges=true
 PrivateTmp=true

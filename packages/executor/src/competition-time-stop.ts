@@ -44,7 +44,7 @@ export class CompetitionTimeStopExecutor {
         !SECOND_ENTRY_AMENDMENT.instruments.includes(
           event.instrument as (typeof SECOND_ENTRY_AMENDMENT.instruments)[number],
         )) {
-      throw new CompetitionExecutionRejected('time stop is scoped only to the authorised BTC/SOL second entry');
+      throw new CompetitionExecutionRejected('time stop is scoped only to the authorised BTC/ETH/SOL second entry');
     }
     if (input.now < SECOND_ENTRY_AMENDMENT.hardExitAt) {
       return { decisionId: event.decisionId, instrument: event.instrument,

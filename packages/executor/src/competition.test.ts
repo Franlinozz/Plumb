@@ -95,7 +95,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       .rejects.toThrow(/minimum lot/u);
   });
 
-  it('executes exactly one flat BTC/SOL evidence-limited second entry', async () => {
+  it('executes exactly one flat BTC/ETH/SOL evidence-limited second entry', async () => {
     const second = finalizeDecisionEvent({
       ...event,
       decisionId: 'DEC-SECONDENTRY1',
@@ -139,6 +139,25 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       liveConfirmation: '',
       unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt,
     })).resolves.toMatchObject({ decisionId: second.decisionId, contracts: 0.1 });
+
+    const eth = finalizeDecisionEvent({
+      ...second,
+      decisionId: 'DEC-SECONDENTRYE',
+      instrument: 'ETH-USDT-SWAP',
+      entryLow: 2_450,
+      entryHigh: 2_451,
+      stopPrice: 2_400,
+      takeProfit: 2_530,
+      positionPct: 18.195,
+      riskUsd: 1.49985,
+    });
+    class EthSecondEntryVenue extends SecondEntryVenue {
+      override async getLastPrice() { return 2_450.5; }
+    }
+    await expect(executor(new EthSecondEntryVenue(), proof(eth), () => SECOND_NOW).execute({
+      ...input(eth), now: SECOND_NOW, priorLiveEntryCount: 1, liveConfirmation: '',
+      unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt,
+    })).resolves.toMatchObject({ decisionId: eth.decisionId });
     await expect(executor(new SecondEntryVenue(), proof(second), () => SECOND_NOW).execute({
       ...secondInput,
       liveConfirmation: '',

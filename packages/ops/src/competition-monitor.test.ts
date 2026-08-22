@@ -90,6 +90,12 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(autoUnit).toContain('competition-auto.env');
     expect(autoUnit).not.toContain('secrets.env');
     expect(autoUnit).toContain('competition-second-entry-auto.mjs');
+    expect(autoUnit.match(/competition-second-entry-auto\.mjs (?:BTC|ETH|SOL)-USDT-SWAP/gu))
+      .toEqual([
+        'competition-second-entry-auto.mjs BTC-USDT-SWAP',
+        'competition-second-entry-auto.mjs ETH-USDT-SWAP',
+        'competition-second-entry-auto.mjs SOL-USDT-SWAP',
+      ]);
   });
 
   it('routes the pre-authorised hard exit through the executor package', () => {

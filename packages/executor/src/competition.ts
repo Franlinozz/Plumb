@@ -146,7 +146,7 @@ export class AgentTradeKitCompetitionExecutor {
       if (!SECOND_ENTRY_AMENDMENT.instruments.includes(
         event.instrument as (typeof SECOND_ENTRY_AMENDMENT.instruments)[number],
       )) {
-        throw new CompetitionExecutionRejected('second-entry amendment permits BTC or SOL only');
+        throw new CompetitionExecutionRejected('second-entry amendment permits BTC, ETH or SOL only');
       }
       if (input.priorLiveEntryCount !== SECOND_ENTRY_AMENDMENT.priorLiveEntryCount ||
           input.priorLiveEntryCount >= SECOND_ENTRY_AMENDMENT.maxTotalLiveEntries) {

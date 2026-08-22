@@ -30,10 +30,11 @@ describe('operator-authorised evidence-limited second-entry amendment', () => {
     expect(SECOND_ENTRY_AMENDMENT).toMatchObject({
       authorisedAt: Date.parse('2026-08-21T15:24:00Z'),
       unattendedExecutionAuthorisedAt: Date.parse('2026-08-21T21:43:00Z'),
+      universeExpandedAt: Date.parse('2026-08-22T08:30:32Z'),
       latestEntryAt: Date.parse('2026-08-23T16:00:00Z'),
       hardExitAt: Date.parse('2026-08-25T03:30:00Z'),
       competitionEndsAt: Date.parse('2026-08-25T04:00:00Z'),
-      instruments: ['BTC-USDT-SWAP', 'SOL-USDT-SWAP'],
+      instruments: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP'],
       strategyId: 'competition_trend_pullback',
       strategyVersion: '3.0.0',
       approvalBasis: 'operator-evidence-limited-v3',

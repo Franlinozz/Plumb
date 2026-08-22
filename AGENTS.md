@@ -258,7 +258,8 @@ that touches payments, subscriptions or the trade kit.
   window and reversed the sign during the 2026-08-20 qualifying interval. A shared tested helper
   now fails closed without a boundary-reaching sample, and both monitors and preparation use it.
 - **Unattended second entry · the operator explicitly authorised one-shot automation on
-  2026-08-21.** Only a frozen `competition_trend_pullback@3.0.0` BTC-or-SOL DecisionEvent may use
+  2026-08-21, expanding the universe to ETH on 2026-08-22.** Only a frozen
+  `competition_trend_pullback@3.0.0` BTC/ETH/SOL DecisionEvent may use
   it, within the separately recorded second-entry time/damage envelope. The state claim is durable
   before A2A publication; publication must fully acknowledge before Agent Trade Kit execution; any
   crash or uncertainty blocks every automatic retry and raises Discord. All other live writes keep
@@ -269,7 +270,7 @@ that touches payments, subscriptions or the trade kit.
   direction/size and closed-position record; otherwise fail closed. This first occurred when
   `DEC-ydBHBkzgyA` hit TP on 2026-08-21.
 - **The second-entry hard exit is an authorised risk reduction, not a new signal.** At or after
-  2026-08-25T03:30Z, only the exact fully-published BTC/SOL DecisionEvent may be closed. The close
+  2026-08-25T03:30Z, only the exact fully-published BTC/ETH/SOL DecisionEvent may be closed. The close
   uses a separately persisted deterministic intent and an Agent Trade Kit reduce-only market order;
   it must verify order, fill, signed-flat venue and ledger. A pending/uncertain intent is queried,
   never resubmitted blindly.

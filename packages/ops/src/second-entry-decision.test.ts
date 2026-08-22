@@ -67,11 +67,11 @@ describe('evidence-limited second-entry DecisionEvent factory', () => {
     })).toThrow(/projected net target/u);
   });
 
-  it('rejects ETH and any strategy/version substitution', () => {
+  it('accepts ETH under the expanded universe and rejects any strategy/version substitution', () => {
     const candidate = input();
-    expect(() => createSecondEntryDecision({
+    expect(createSecondEntryDecision({
       ...candidate, signal: { ...candidate.signal, instId: 'ETH-USDT-SWAP' },
-    })).toThrow(/authorised frozen v3/u);
+    })).toMatchObject({ instrument: 'ETH-USDT-SWAP' });
     expect(() => createSecondEntryDecision({
       ...candidate, signal: { ...candidate.signal, version: '3.0.1' },
     })).toThrow(/authorised frozen v3/u);

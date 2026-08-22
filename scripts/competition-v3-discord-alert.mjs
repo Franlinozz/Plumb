@@ -40,7 +40,7 @@ async function postDiscord(content) {
 if (process.argv[2] === '--test') {
   await postDiscord([
     '✅ **Plumb alerts connected**',
-    'The VPS can notify this channel when the frozen BTC/SOL public setup becomes ready.',
+    'The VPS can notify this channel when the frozen BTC/ETH/SOL public setup becomes ready.',
     'This was a notification test. No signal was published and no trade was placed.',
   ].join('\n'));
   console.log(JSON.stringify({ event: 'discord_test_delivered', ok: true }));
@@ -48,8 +48,8 @@ if (process.argv[2] === '--test') {
 }
 
 const instrument = process.argv[2];
-if (!['BTC-USDT-SWAP', 'SOL-USDT-SWAP'].includes(instrument)) {
-  throw new Error('usage: competition-v3-discord-alert.mjs <BTC-USDT-SWAP|SOL-USDT-SWAP>');
+if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP'].includes(instrument)) {
+  throw new Error('usage: competition-v3-discord-alert.mjs <BTC-USDT-SWAP|ETH-USDT-SWAP|SOL-USDT-SWAP>');
 }
 
 const { stdout } = await executeFile(process.execPath, [monitorPath, instrument], {

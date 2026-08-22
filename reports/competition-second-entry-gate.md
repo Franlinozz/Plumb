@@ -1,4 +1,4 @@
-# Competition second-entry gate — BTC / SOL
+# Competition second-entry gate — BTC / ETH / SOL
 
 Recorded: 2026-08-21T15:37Z UTC
 Status: **UNATTENDED AUTO-ENTRY ARMED / NOT TRIGGERED / NO SECOND ORDER**
@@ -63,10 +63,10 @@ DecisionEvent and complete A2A acknowledgement remain mandatory. On 2026-08-21 t
 a one-shot unattended authorization for this exact second-entry amendment, replacing only its
 per-decision confirmation step.
 
-- Instruments: BTC-USDT-SWAP or SOL-USDT-SWAP; first qualifying instrument wins.
+- Instruments: BTC-USDT-SWAP, ETH-USDT-SWAP or SOL-USDT-SWAP; first qualifying instrument wins.
 - Strategy: only `competition_trend_pullback@3.0.0`; no discretionary direction.
-- Additional successful entries: one maximum; never BTC and SOL together.
-- Existing ETH position: untouched; no same-instrument add, reversal or stop change.
+- Additional successful entries: one maximum; never open more than one of BTC, ETH or SOL.
+- Every candidate instrument must be signed-flat; no same-instrument add, reversal or stop change.
 - Actual stop risk: at most 1.50 USDT.
 - Stop plus all estimated friction: at most 1.75 USDT.
 - Notional: at most 85 USDT and at most 21% of current equity.
@@ -109,7 +109,7 @@ visibility.
   attached stop/take-profit before it can create a private preparation bundle.
 - Venue tick size is read from current instrument metadata so protective-price reconciliation
   accepts only legitimate exchange rounding.
-- The executor independently rechecks one prior entry, a flat BTC/SOL target, entry freshness,
+- The executor independently rechecks one prior entry, a flat BTC/ETH/SOL target, entry freshness,
   account state, signed reconciliation, costs, live projected target, damage caps and full A2A
   delivery before any Agent Trade Kit write.
 - The unattended worker durably claims the one-shot allowance before publication. A crash or
@@ -123,7 +123,7 @@ visibility.
 - At 2026-08-21T15:37Z both BTC and SOL rehearsals stopped at `frozen v3 strategy emitted no
   signal`. No bundle, signal or order was created. Existing ETH remained signed +0.01 and its
   venue stop 2340.03 / target 2451.10 were verified against the durable intent.
-- A Discord notifier now wraps the public BTC/SOL monitor every 15 minutes. It sends at most one
+- A Discord notifier now wraps the public BTC/ETH/SOL monitor every 15 minutes. It sends at most one
   alert per instrument, direction and closed 1H bar only when the frozen signal and all public OI
   participation gates pass. The webhook is stored outside the repository with mode 0600; the
   notifier has no executor, A2A, account or order path. A delivered alert is not trade authority.
@@ -134,8 +134,17 @@ visibility.
   2026-08-21T21:11:46.319Z, and OKX closed-position history reports +0.067501361 USDT realized
   after fees/funding. Agent Trade Kit verified the OCO, exit fill and signed-flat venue; the
   isolated competition ledger was reconciled to zero. The worker now performs this strict
-  reconciliation before evaluating BTC/SOL, so a venue-native exit cannot leave a stale local
+  reconciliation before evaluating BTC/ETH/SOL, so a venue-native exit cannot leave a stale local
   position or silently unblock on weak evidence.
+
+### Universe amendment — 2026-08-22T08:30:32Z UTC
+
+After the first ETH entry reached its native target and strict venue/ledger reconciliation proved
+the account flat, the operator explicitly added ETH-USDT-SWAP to the unattended second-entry
+candidate universe. This changes only the universe: the worker still permits one additional entry
+total, uses the same frozen v3 strategy, publication-first sequence, one-shot claim and damage/time
+caps. BTC is checked first, then ETH, then SOL; the first fully qualifying event consumes the single
+allowance. Prior ETH profitability is not treated as evidence that the next ETH trade will win.
 
 ## Evidence limitation
 
