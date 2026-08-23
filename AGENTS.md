@@ -522,3 +522,9 @@ that touches payments, subscriptions or the trade kit.
   -166.54/PF 0.924; broad 1H continuation -350.76/PF 0.824; final 4H-trend/1H-reclaim candidate
   -212.12/PF 0.731. None read the protected holdout or competition period, none was armed, and no
   further candidate may be derived from those failures during this competition.
+- **TP-aware v3 prize option · operator explicitly accepted the corrected evidence failure on
+  2026-08-23 at 06:05 UTC.** The written authorization `AUTHORIZE TP-AWARE V3 PRIZE-OPTION` permits
+  re-arming only the existing one-shot BTC/ETH/SOL v3 workflow through its unchanged
+  2026-08-23T16:00:00Z personal cutoff. It does not make v3 evidence-approved, relax any trigger,
+  permit a fallback strategy, or expand the previously authorised $4.00 stop-risk / $4.35 planned-
+  loss / $200 notional / 50% position / $5.50 minimum projected-net envelope.

@@ -127,3 +127,20 @@ forcing more opportunities materially worsens Plumb's expected outcome.
 - New live order placed by this work: no.
 - Verification: 55 test files / 667 tests passed; TypeScript typecheck passed; research candidates
   are exported for explicit evaluation but absent from the default `ALL_STRATEGIES` registry.
+
+## Subsequent operator decision — 2026-08-23 06:05 UTC
+
+After receiving the TP-aware findings and the explicit comparison between preserving capital and a
+bounded contest-risk option, the operator supplied the exact written authorization
+`AUTHORIZE TP-AWARE V3 PRIZE-OPTION`. This supersedes only item 1 of the safe remaining path above:
+the isolated one-shot v3 timer may be re-armed through the existing 2026-08-23T16:00:00Z personal
+entry cutoff. All other findings remain controlling. In particular, v3 remains evidence-limited,
+the market gate may not be relaxed, no failed fallback may be armed, and the existing damage,
+publication, Agent Trade Kit, attached-exit, idempotency and reconciliation constraints remain
+unchanged.
+
+The timer was re-enabled at 2026-08-23 06:09 UTC after the live account preflight passed all eight
+checks and the isolated and full test runs passed (76/76 focused; 667/667 full; TypeScript clean).
+The immediate BTC/ETH/SOL cycle completed successfully with all three gates red, created no durable
+one-shot state, published no signal and placed no order. The timer remains active on its 15-minute
+schedule and the code-level cutoff remains 2026-08-23T16:00:00Z.
