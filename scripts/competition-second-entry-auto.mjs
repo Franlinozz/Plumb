@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import { redactDeliveryDiagnostic } from '@plumb/asp';
 
 const executeFile = promisify(execFile);
 const instrument = process.argv[2];
@@ -50,9 +51,11 @@ async function runNode(script, args) {
       cwd: root, env: environment, timeout: 180_000, maxBuffer: 2 * 1024 * 1024,
     });
   } catch (error) {
-    const stderr = String(error?.stderr ?? '').trim().split(/\r?\n/u).at(-1) ?? '';
-    const stdout = String(error?.stdout ?? '').trim().split(/\r?\n/u).at(-1) ?? '';
-    throw new Error(`${script} failed: ${stderr || stdout || 'no diagnostic'}`);
+    const combined = String(error?.stderr || error?.stdout || '').trim();
+    const lines = combined.split(/\r?\n/u).filter(Boolean);
+    const primary = lines.find((line) => /(?:Error|failed|rejected|invalid|timeout)/iu.test(line)) ??
+      lines.find((line) => !/^\s*at\s/u.test(line) && !/^Node\.js\s/u.test(line)) ?? '';
+    throw new Error(`${script} failed: ${redactDeliveryDiagnostic(primary || 'no diagnostic')}`);
   }
 }
 

@@ -29,6 +29,15 @@ const contingencyAutoSource = readFileSync(
 const contingencyUnit = readFileSync(
   resolve(process.cwd(), 'deploy/plumb-okxai-deadline-contingency.service'), 'utf8',
 );
+const publisherSource = readFileSync(
+  resolve(process.cwd(), 'scripts/asp-push-decision.mjs'), 'utf8',
+);
+const autopilotSource = readFileSync(
+  resolve(process.cwd(), 'scripts/asp-autopilot.mjs'), 'utf8',
+);
+const reconciledResumeSource = readFileSync(
+  resolve(process.cwd(), 'scripts/resume-reconciled-contingency.mjs'), 'utf8',
+);
 
 describe('the automated competition monitor is read-only by construction', () => {
   it('has no executor, A2A, account, credential, child-process, or order path', () => {
@@ -131,6 +140,29 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(contingencyUnit).toContain('competition-auto.env');
     expect(contingencyUnit).not.toContain('secrets.env');
     expect(contingencyUnit).not.toContain('BTC-USDT-SWAP');
+  });
+
+  it('reconciles publication failures and suppresses contradictory no-trade notices', () => {
+    expect(publisherSource).toContain('deliverWithPostcondition');
+    expect(publisherSource).toContain('task-deliverable-list');
+    expect(publisherSource).toContain('exactRemoteDeliveryExists');
+    expect(publisherSource).toContain('error.retryable');
+    expect(publisherSource).toContain('Date.now() + 60_000 < event.validUntil');
+    expect(autopilotSource).toContain('competitionClaimBlocksNoTrade');
+    expect(autopilotSource).toContain('no_trade_suppressed_competition_claim');
+    expect(autopilotSource).toContain("['prepared', 'published', 'executing', 'complete', 'uncertain']");
+  });
+
+  it('makes the incident resume exact, recoverable, and P8-gated', () => {
+    expect(reconciledResumeSource).toContain("EXPECTED_DECISION = 'DEC-ru44MLpWgI'");
+    expect(reconciledResumeSource).toContain("state.status !== 'uncertain'");
+    expect(reconciledResumeSource).toContain("state.failedStage !== 'prepared'");
+    expect(reconciledResumeSource).toContain("publication.delivered_count !== 0");
+    expect(reconciledResumeSource).toContain("run('is-active', 'plumb-runner.service')");
+    expect(reconciledResumeSource).toContain('renameSync(statePath, archivePath)');
+    expect(reconciledResumeSource).toContain("run('restart', 'plumb-okxai-a2a.service')");
+    expect(reconciledResumeSource).toContain("run('start', 'plumb-okxai-deadline-contingency.timer')");
+    expect(reconciledResumeSource).not.toContain('unlinkSync');
   });
 
   it('keeps native-exit reconciliation read-only at the venue and proof-gated', () => {

@@ -90,3 +90,11 @@ export {
   type DecisionPublication,
   type PublicationStatus,
 } from './decision-publication-store.js';
+
+export {
+  describeDeliveryCommandFailure,
+  exactDeliverableMatches,
+  isRetryableDeliveryFailure,
+  redactDeliveryDiagnostic,
+  type DeliverableRecord,
+} from './delivery-reconciliation.js';

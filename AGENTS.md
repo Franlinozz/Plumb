@@ -543,3 +543,11 @@ that touches payments, subscriptions or the trade kit.
   still active/enabled, and the shared one-shot state remained absent. The contingency cannot
   evaluate before 16:00 UTC and retains the frozen one-entry, A2A-first, Agent Trade Kit-only and
   $4.35 maximum-planned-loss bounds.
+- **A green contingency decision is not proof of publication.** On 2026-08-23 SOL decision
+  `DEC-ru44MLpWgI` passed every public/private gate, but the first A2A executable delivery returned
+  a business non-success. The account stayed flat and all three deliverable histories proved zero
+  signal acknowledgements. Repairs preserve structured errors, retry only network/429/5xx once
+  while fresh and only after a timestamp-scoped absence check, never treat persistence alone as an
+  acknowledgement, and suppress routine no-trade notices while any competition claim exists. The
+  guarded resume archives the expired decision rather than replaying it; the uncertain database
+  row remains audit evidence.

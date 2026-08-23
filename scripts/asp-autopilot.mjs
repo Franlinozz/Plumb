@@ -8,7 +8,7 @@
  * exists, new subscribers receive one non-executable Copy-Trading Notice.
  */
 
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -198,10 +198,24 @@ function heartbeat(chainIndex) {
   log('info', 'heartbeat_succeeded', { chainIndex });
 }
 
+function competitionClaimBlocksNoTrade(statePath) {
+  const claimPath = process.env.PLUMB_COMPETITION_CLAIM ??
+    `${dirname(statePath)}/second-entry-auto.json`;
+  if (!existsSync(claimPath)) return false;
+  try {
+    const claim = JSON.parse(readFileSync(claimPath, 'utf8'));
+    return ['prepared', 'published', 'executing', 'complete', 'uncertain'].includes(claim.status);
+  } catch {
+    return true; // A malformed claim is uncertain state: fail closed on contradictory notices.
+  }
+}
+
 function scan(db, options) {
   const active = activeJobIds(options.agentId);
   const subscriptions = providerSubscriptions();
+  const suppressNoTrade = competitionClaimBlocksNoTrade(options.state);
   log('info', 'subscription_scan', { activeCount: active.size, providerCount: subscriptions.size });
+  if (suppressNoTrade) log('info', 'no_trade_suppressed_competition_claim');
   for (const jobId of active) {
     const subscription = subscriptions.get(jobId);
     if (!subscription || subscription.status !== 1) {
@@ -215,6 +229,7 @@ function scan(db, options) {
     }
     ensureSession(db, jobId, buyerAgentId, options.agentId, options.dryRun);
     deliverText(db, jobId, options.agentId, WELCOME_KEY, DEFAULT_NOTICE, options.dryRun);
+    if (suppressNoTrade) continue;
     const noTradeKey = `no-trade:${Math.floor(Date.now() / options.noTradeMs)}`;
     deliverText(db, jobId, options.agentId, noTradeKey, NO_TRADE_NOTICE, options.dryRun);
   }
