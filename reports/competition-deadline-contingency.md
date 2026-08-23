@@ -2,15 +2,20 @@
 
 Generated 2026-08-23 UTC. This is an audit record, not a profit claim.
 
-## Status: RED / PAUSED — implemented, tested, not installed or armed
+## Status: RED-EVIDENCE / ARMED BY EXPLICIT OPERATOR EXCEPTION
 
 The operator supplied `AUTHORIZE DEADLINE CONTINGENCY V1` after receiving the proposed bounds.
 The path was implemented as a distinct post-v3-cutoff strategy and measured once on development
 data before installation. That frozen measurement produced material adverse evidence, so the live
 timer was not installed and no signal, publication or order was created.
 
+After reviewing that evidence, the operator supplied the fresh written decision
+`ACCEPT MEASURED NEGATIVE EXPECTANCY — ARM DEADLINE CONTINGENCY V1` on
+2026-08-23 at 07:49 UTC. The timer was installed and armed under the frozen scope below.
+This records a contest-utility exception; it does not reclassify the strategy as evidence-approved.
+
 The existing v3 timer remains active and retains exclusive authority through
-2026-08-23T16:00:00Z.
+2026-08-23T16:00:00Z. The contingency refuses to evaluate before that instant.
 
 ## Frozen operational scope
 
@@ -68,10 +73,14 @@ this result.
 - Public monitor smoke test: PASS; ETH and SOL both red at 2026-08-23T07:12Z.
 - A latent A2A gate defect was corrected: explicitly authorised zero-edge v3 and contingency
   events now reach the formatter, while ordinary uncalibrated events still fail the cost gate.
-- Systemd contingency service/timer installed: **NO**.
+- Systemd contingency service/timer installed: **YES**; enabled and active (waiting).
+- Pre-cutoff service smoke: **PASS**; both ETH and SOL returned
+  `deadline_contingency_waiting_for_v3_cutoff` with exit status 0.
+- Existing v3 timer after installation: **active and enabled**.
+- Shared one-shot state after installation: **absent**.
 - Live contingency signal published: **NO**.
 - Live contingency order placed: **NO**.
 
 The negative audit was not known when the operator first authorised the contingency. Installation
-therefore requires a fresh written decision explicitly accepting this measured negative expectancy;
-deadline pressure alone does not convert it into evidence.
+was therefore withheld until the operator explicitly accepted the measured negative expectancy.
+The timer became active at 2026-08-23T07:49:53Z without publishing a signal or placing an order.

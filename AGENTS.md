@@ -535,3 +535,11 @@ that touches payments, subscriptions or the trade kit.
   instruments lost. Because that material result was unknown at authorization time, the deploy
   unit remains uninstalled and the contingency cannot trade without a fresh written decision that
   explicitly accepts the measured negative expectancy. V3 remains active through 16:00 UTC.
+- **Deadline contingency v1 · negative expectancy explicitly accepted and timer armed on
+  2026-08-23 at 07:49 UTC.** The operator supplied
+  `ACCEPT MEASURED NEGATIVE EXPECTANCY — ARM DEADLINE CONTINGENCY V1` after receiving the frozen
+  audit. This is a contest-utility exception, not evidence approval. The reviewed systemd timer is
+  enabled, the pre-cutoff smoke returned `waiting_for_v3_cutoff` for ETH and SOL, the v3 timer is
+  still active/enabled, and the shared one-shot state remained absent. The contingency cannot
+  evaluate before 16:00 UTC and retains the frozen one-entry, A2A-first, Agent Trade Kit-only and
+  $4.35 maximum-planned-loss bounds.
