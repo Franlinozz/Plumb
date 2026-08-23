@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent, type DecisionEvent } from '@plumb/core';
+import {
+  DEADLINE_CONTINGENCY_AMENDMENT,
+  SECOND_ENTRY_AMENDMENT,
+  finalizeDecisionEvent,
+  type DecisionEvent,
+} from '@plumb/core';
 
 import type { PlaceOrderRequest, OrderRef, VenueOrder } from './atk.js';
 import {
@@ -167,7 +172,52 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       ...input(event),
       liveConfirmation: '',
       unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt,
-    })).rejects.toThrow(/outside its second-entry scope/u);
+    })).rejects.toThrow(/outside its additional-entry scope/u);
+  });
+
+  it('executes one mutually-exclusive ETH/SOL deadline contingency only after the v3 cutoff', async () => {
+    const contingencyNow = DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt + 3_600_000;
+    const contingency = finalizeDecisionEvent({
+      ...event,
+      decisionId: 'DEC-DEADLINE001',
+      strategyVersion: 'deadline_contingency@1.0.0',
+      createdAt: contingencyNow - 1_000,
+      validUntil: contingencyNow + 60_000,
+      instrument: 'ETH-USDT-SWAP',
+      entryLow: 99.9,
+      entryHigh: 100.1,
+      stopPrice: 98,
+      takeProfit: 103,
+      positionPct: 50,
+      leverage: 1,
+      riskUsd: 4,
+      expectedCostBps: 12,
+      expectedEdgeBps: 0,
+      approvalBasis: 'operator-deadline-contingency-v1',
+    });
+    class ContingencyVenue extends CompetitionMock {
+      override async getInstrumentMetadata() {
+        return { ctVal: 1, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
+      }
+      override async getLastPrice() { return 100; }
+      override async getLeverage() { return 1; }
+    }
+    const candidate = {
+      ...input(contingency),
+      now: contingencyNow,
+      priorLiveEntryCount: 1,
+      liveConfirmation: '',
+      unattendedAuthorizationAt: DEADLINE_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt,
+    };
+    await expect(executor(new ContingencyVenue(), proof(contingency), () => contingencyNow)
+      .execute(candidate)).resolves.toMatchObject({
+      decisionId: contingency.decisionId, contracts: 2, venueSignedPositionAfter: 2,
+    });
+    await expect(executor(new ContingencyVenue(), proof(contingency), () => contingencyNow)
+      .execute({ ...candidate, now: DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt - 1 }))
+      .rejects.toThrow(/future-dated|window/u);
+    await expect(executor(new ContingencyVenue(), proof(contingency), () => contingencyNow)
+      .execute({ ...candidate, priorLiveEntryCount: 2 })).rejects.toThrow(/allowance/u);
   });
 
   it('forbids a second-entry increase or reversal on an occupied instrument', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import { DEADLINE_CONTINGENCY_AMENDMENT, SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
 
 import type { OrderRef, PlaceOrderRequest } from './atk.js';
 import { type CompetitionVenue } from './competition.js';
@@ -40,15 +40,15 @@ class TimeStopVenue extends MockAtk implements CompetitionVenue {
   }
 }
 
-const setup = () => {
+const setup = (candidate = event) => {
   const venue = new TimeStopVenue();
-  venue.setPosition(event.instrument, 0.1, 'net');
+  venue.setPosition(candidate.instrument, 0.1, 'net');
   const ledger = new CompetitionLedgerStore();
-  ledger.set({ instrument: event.instrument, signedPosition: 0.1,
-    decisionId: event.decisionId, orderId: 'ENTRY1', updatedAt: event.createdAt });
+  ledger.set({ instrument: candidate.instrument, signedPosition: 0.1,
+    decisionId: candidate.decisionId, orderId: 'ENTRY1', updatedAt: candidate.createdAt });
   const intents = new IntentStore();
   const executor = new CompetitionTimeStopExecutor({ venue, ledger, intents,
-    publications: { isFullyDelivered: (candidate) => candidate.decisionId === event.decisionId },
+    publications: { isFullyDelivered: (published) => published.decisionId === candidate.decisionId },
     sleep: async () => {} });
   return { venue, ledger, intents, executor };
 };
@@ -82,6 +82,23 @@ describe('CompetitionTimeStopExecutor', () => {
     await expect(executor.execute({ event, expectedUid: 'uid',
       now: SECOND_ENTRY_AMENDMENT.hardExitAt })).rejects.toThrow(/signed ledger disagree/u);
     expect(venue.placed).toHaveLength(0);
+    ledger.close(); intents.close();
+  });
+
+  it('applies the same hard exit to the deadline contingency', async () => {
+    const contingency = finalizeDecisionEvent({
+      ...event,
+      decisionId: 'DEC-DEADLINETS1',
+      strategyVersion: 'deadline_contingency@1.0.0',
+      createdAt: DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt,
+      validUntil: DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000,
+      instrument: 'ETH-USDT-SWAP',
+      approvalBasis: 'operator-deadline-contingency-v1',
+    });
+    const { venue, ledger, intents, executor } = setup(contingency);
+    await expect(executor.execute({ event: contingency, expectedUid: 'uid',
+      now: DEADLINE_CONTINGENCY_AMENDMENT.hardExitAt })).resolves.toMatchObject({ closed: true });
+    expect(venue.placed[0]).toMatchObject({ reduceOnly: true });
     ledger.close(); intents.close();
   });
 });

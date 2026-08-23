@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { COMPETITION_V2_AMENDMENT, SECOND_ENTRY_AMENDMENT } from './competition-amendment.js';
+import {
+  COMPETITION_V2_AMENDMENT,
+  DEADLINE_CONTINGENCY_AMENDMENT,
+  SECOND_ENTRY_AMENDMENT,
+} from './competition-amendment.js';
 
 describe('operator-authorised competition v2 amendment', () => {
   it('pins the one-entry damage envelope and time boundaries against silent drift', () => {
@@ -53,5 +57,31 @@ describe('operator-authorised evidence-limited second-entry amendment', () => {
     });
     expect(SECOND_ENTRY_AMENDMENT.latestEntryAt).toBeLessThan(SECOND_ENTRY_AMENDMENT.hardExitAt);
     expect(SECOND_ENTRY_AMENDMENT.hardExitAt).toBeLessThan(SECOND_ENTRY_AMENDMENT.competitionEndsAt);
+  });
+});
+
+describe('operator-authorised deadline contingency', () => {
+  it('starts only when v3 closes and reuses, rather than expands, the one-entry risk envelope', () => {
+    expect(DEADLINE_CONTINGENCY_AMENDMENT).toMatchObject({
+      authorisedAt: Date.parse('2026-08-23T06:51:33Z'),
+      earliestEntryAt: SECOND_ENTRY_AMENDMENT.latestEntryAt,
+      latestEntryAt: Date.parse('2026-08-24T04:00:00Z'),
+      hardExitAt: SECOND_ENTRY_AMENDMENT.hardExitAt,
+      instruments: ['ETH-USDT-SWAP', 'SOL-USDT-SWAP'],
+      strategyId: 'deadline_contingency',
+      strategyVersion: '1.0.0',
+      approvalBasis: 'operator-deadline-contingency-v1',
+      priorLiveEntryCount: 1,
+      maxTotalLiveEntries: 2,
+      maxStopRiskUsd: 4,
+      maxPlannedLossUsd: 4.35,
+      maxNotionalUsd: 200,
+      maxPositionPct: 50,
+      minProjectedNetTargetUsd: 5.5,
+    });
+    expect(DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt)
+      .toBe(SECOND_ENTRY_AMENDMENT.latestEntryAt);
+    expect(DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt)
+      .toBeLessThan(DEADLINE_CONTINGENCY_AMENDMENT.hardExitAt);
   });
 });

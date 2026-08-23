@@ -1,0 +1,100 @@
+import { DEADLINE_CONTINGENCY_AMENDMENT, type Signal } from '@plumb/core';
+import type { Approval } from '@plumb/risk';
+import { describe, expect, it } from 'vitest';
+
+import { createDeadlineContingencyDecision } from './deadline-contingency-decision.js';
+
+const NOW = DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt + 3_600_000;
+const signal: Signal = {
+  id: 'SIG-DEADLINE001', ts: NOW, instId: 'ETH-USDT-SWAP', side: 'long', intent: 'open',
+  entry: { type: 'market', price: 100 },
+  stop: { price: 98, distancePct: 0.02, basis: 'structure' },
+  takeProfit: [{ price: 103, rMultiple: 1.5 }],
+  timeframe: '1H', strategyId: 'deadline_contingency', regime: 'trending_up',
+  inputs: {
+    fourHourAdx: 40, hourlyClose: 100, hourlyPreviousClose: 99, hourlyEma20: 99.5,
+    hourlyRsi: 55, hourlyMacdHistogram: -0.1, hourlyMacdHistogramPrevious: -0.2,
+    volumeRatio: 1,
+  },
+  invalidation: { maxHoldBars: 24, conditions: ['trend fails'] },
+  expiresAt: NOW + 30 * 60_000, version: '1.0.0',
+};
+const approval: Approval = {
+  approved: true,
+  signalId: signal.id,
+  sizing: {
+    ok: true, instId: signal.instId, contracts: 2, notionalUsdt: 200, leverage: 1,
+    stopDistancePct: 0.02, intendedRiskUsdt: 4, actualRiskUsdt: 4,
+    clampedByLeverage: false,
+  },
+  drawdown: {} as Approval['drawdown'],
+  state: {} as Approval['state'],
+};
+const input = () => ({
+  signal,
+  approval,
+  costs: {
+    entryFeeBps: 5, exitFeeBps: 5, slippageBps: 1, spreadImpactBps: 0.2,
+    expectedFundingBps: 1,
+  },
+  metadata: { ctVal: 1, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' },
+  state: {
+    now: NOW, marketDataAt: NOW, maxMarketAgeMs: 30_000,
+    openInterestAt: NOW, maxOpenInterestAgeMs: 3_600_000,
+    openInterestChangePct1h: -0.005, openInterestChangePct4h: -0.01,
+    openInterestChangePct24h: -0.02, priceChangePct24h: -0.004,
+    spreadBps: 0.5, fundingRate: 0.0001,
+    equityUsd: 400, venueLeverage: 1,
+    venuePositionBefore: 0, ledgerPositionBefore: 0, quantityTolerance: 0.005,
+    reconciliationVersion: 'signed-v2', reconciliationHealthy: true,
+    instrumentMetadataPresent: true, accountCertain: true, duplicateDecision: false,
+    haltFlags: { killSwitch: false }, closedFourHourEmaDirection: 'up' as const,
+    closedFourHourAdx: 40, entryToleranceBps: 10,
+  },
+});
+
+describe('operator-authorised deadline-contingency DecisionEvent factory', () => {
+  it('records zero expected edge and preserves the exact damage/payoff envelope', () => {
+    const event = createDeadlineContingencyDecision(input());
+    expect(event).toMatchObject({
+      approvalBasis: 'operator-deadline-contingency-v1',
+      strategyVersion: 'deadline_contingency@1.0.0',
+      instrument: 'ETH-USDT-SWAP',
+      direction: 'long',
+      riskUsd: 4,
+      positionPct: 50,
+      expectedEdgeBps: 0,
+    });
+    expect(event.validUntil).toBe(NOW + 30 * 60_000);
+  });
+
+  it('fails closed on a forged recovery, severe unwind, occupied instrument, or BTC substitution', () => {
+    const forged = input();
+    expect(() => createDeadlineContingencyDecision({
+      ...forged,
+      signal: { ...forged.signal, inputs: { ...forged.signal.inputs, hourlyClose: 99 } },
+    })).toThrow(/recovery/u);
+    const unwind = input();
+    expect(() => createDeadlineContingencyDecision({
+      ...unwind, state: { ...unwind.state, openInterestChangePct1h: -0.02 },
+    })).toThrow(/OI unwind/u);
+    const occupied = input();
+    expect(() => createDeadlineContingencyDecision({
+      ...occupied, state: { ...occupied.state, venuePositionBefore: 0.1, ledgerPositionBefore: 0.1 },
+    })).toThrow(/flat/u);
+    const btc = input();
+    expect(() => createDeadlineContingencyDecision({
+      ...btc, signal: { ...btc.signal, instId: 'BTC-USDT-SWAP' },
+    })).toThrow(/ETH\/SOL/u);
+  });
+
+  it('does not allow the contingency to overlap v3 or the hard exit', () => {
+    const candidate = input();
+    expect(() => createDeadlineContingencyDecision({
+      ...candidate, state: { ...candidate.state, now: DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt - 1 },
+    })).toThrow(/window/u);
+    expect(() => createDeadlineContingencyDecision({
+      ...candidate, state: { ...candidate.state, now: DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt },
+    })).toThrow(/window/u);
+  });
+});

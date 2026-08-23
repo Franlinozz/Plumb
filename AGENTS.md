@@ -528,3 +528,10 @@ that touches payments, subscriptions or the trade kit.
   2026-08-23T16:00:00Z personal cutoff. It does not make v3 evidence-approved, relax any trigger,
   permit a fallback strategy, or expand the previously authorised $4.00 stop-risk / $4.35 planned-
   loss / $200 notional / 50% position / $5.50 minimum projected-net envelope.
+- **Deadline contingency v1 · authorised, implemented, then paused on new adverse evidence on
+  2026-08-23.** The operator authorised a separate ETH/SOL post-v3-cutoff contest-risk path with
+  the same one-additional-entry and damage envelope. Its exact frozen development-only audit then
+  produced 722 OOS trades, -244.77 USDT, PF 0.846, 42.94% wins and 19/47 profitable windows; both
+  instruments lost. Because that material result was unknown at authorization time, the deploy
+  unit remains uninstalled and the contingency cannot trade without a fresh written decision that
+  explicitly accepts the measured negative expectancy. V3 remains active through 16:00 UTC.

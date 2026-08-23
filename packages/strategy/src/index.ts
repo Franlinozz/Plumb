@@ -105,6 +105,8 @@ export {
   COMPETITION_TREND_RECLAIM_ID,
   COMPETITION_TREND_RECLAIM_SETTINGS,
   type CompetitionTrendReclaimSettings,
+  deadlineContingency,
+  DEADLINE_CONTINGENCY_ID,
   type OiState,
 } from './strategies/index.js';
 

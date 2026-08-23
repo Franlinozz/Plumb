@@ -20,6 +20,15 @@ const exitReconcilerSource = readFileSync(
 const timeStopScriptSource = readFileSync(
   resolve(process.cwd(), 'scripts/competition-time-stop.mjs'), 'utf8',
 );
+const contingencyMonitorSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-deadline-contingency-monitor.mjs'), 'utf8',
+);
+const contingencyAutoSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-deadline-contingency-auto.mjs'), 'utf8',
+);
+const contingencyUnit = readFileSync(
+  resolve(process.cwd(), 'deploy/plumb-okxai-deadline-contingency.service'), 'utf8',
+);
 
 describe('the automated competition monitor is read-only by construction', () => {
   it('has no executor, A2A, account, credential, child-process, or order path', () => {
@@ -103,6 +112,25 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(timeStopScriptSource).toContain('SECOND_ENTRY_AMENDMENT.hardExitAt');
     expect(timeStopScriptSource).not.toContain('.placeOrder(');
     expect(timeStopScriptSource).not.toContain('.closePosition(');
+  });
+
+  it('keeps the deadline contingency mutually exclusive, time-gated and publication-first', () => {
+    for (const forbidden of ['@plumb/executor', '@plumb/asp', 'child_process', 'process.env', 'placeOrder']) {
+      expect(contingencyMonitorSource, forbidden).not.toContain(forbidden);
+    }
+    expect(contingencyMonitorSource).toContain('executionEligible: false');
+    expect(contingencyAutoSource).toContain("statePath = `${stateDir}/second-entry-auto.json`");
+    expect(contingencyAutoSource.indexOf('now < DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt'))
+      .toBeLessThan(contingencyAutoSource.indexOf("runNode('competition-deadline-contingency-monitor.mjs'"));
+    expect(contingencyAutoSource.indexOf('save(state); // Durable shared one-shot claim'))
+      .toBeLessThan(contingencyAutoSource.indexOf("runNode('asp-push-decision.mjs'"));
+    expect(contingencyAutoSource.indexOf("runNode('asp-push-decision.mjs'"))
+      .toBeLessThan(contingencyAutoSource.indexOf("runNode('competition-execute-decision.mjs'"));
+    expect(contingencyAutoSource).toContain("'--unattended-deadline-contingency'");
+    expect(contingencyAutoSource).toContain("status: 'uncertain'");
+    expect(contingencyUnit).toContain('competition-auto.env');
+    expect(contingencyUnit).not.toContain('secrets.env');
+    expect(contingencyUnit).not.toContain('BTC-USDT-SWAP');
   });
 
   it('keeps native-exit reconciliation read-only at the venue and proof-gated', () => {

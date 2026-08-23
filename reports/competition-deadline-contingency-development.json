@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-08-23T07:11:45.690Z",
+  "scope": "development-only",
+  "developmentTo": 1778544000000,
+  "holdoutRead": false,
+  "competitionPeriodRead": false,
+  "frozenAfterOperatorAuthorization": true,
+  "strategyId": "deadline_contingency",
+  "strategyVersion": "1.0.0",
+  "verdict": "CONTEST_RISK_ONLY_NOT_EVIDENCE_APPROVED",
+  "metrics": {
+    "trades": 722,
+    "signalsEmitted": 734,
+    "cycles": 22607,
+    "netPnlUsdt": -244.77147911970798,
+    "profitFactor": 0.8455332896059405,
+    "winRate": 42.93628808864266,
+    "profitableWindows": 19,
+    "totalWindows": 47
+  },
+  "byInstrument": {
+    "ETH-USDT-SWAP": {
+      "trades": 308,
+      "netPnlUsdt": -117.42264183272849,
+      "profitFactor": 0.8208625612899342
+    },
+    "SOL-USDT-SWAP": {
+      "trades": 414,
+      "netPnlUsdt": -127.34883728697945,
+      "profitFactor": 0.8629380973192419
+    }
+  }
+}

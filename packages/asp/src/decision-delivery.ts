@@ -46,7 +46,10 @@ export function formatDecisionEventForDelivery(event: DecisionEvent, gate: Execu
   }
   if (!gate.instrumentMetadataPresent) throw new ExecutableSignalRejected('instrument metadata is missing');
   if (!gate.sizingValid) throw new ExecutableSignalRejected('position sizing is invalid');
-  if (event.approvalBasis !== 'operator-emergency-participation' &&
+  const operatorEvidenceException = event.approvalBasis === 'operator-emergency-participation' ||
+    event.approvalBasis === 'operator-evidence-limited-v3' ||
+    event.approvalBasis === 'operator-deadline-contingency-v1';
+  if (!operatorEvidenceException &&
       event.expectedEdgeBps < event.expectedCostBps * MIN_EXPECTED_EDGE_COST_MULTIPLE) {
     throw new ExecutableSignalRejected('cost gate failed');
   }

@@ -1,4 +1,10 @@
-import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent, type DecisionEvent, type Instrument } from '@plumb/core';
+import {
+  DEADLINE_CONTINGENCY_AMENDMENT,
+  SECOND_ENTRY_AMENDMENT,
+  finalizeDecisionEvent,
+  type DecisionEvent,
+  type Instrument,
+} from '@plumb/core';
 
 import type { CompetitionLedgerStore } from './competition-ledger.js';
 import { CompetitionExecutionRejected, type CompetitionPublicationProof, type CompetitionVenue } from './competition.js';
@@ -40,11 +46,16 @@ export class CompetitionTimeStopExecutor {
   async execute(input: { readonly event: DecisionEvent; readonly expectedUid: string;
     readonly now: number }): Promise<CompetitionTimeStopResult> {
     const event = finalizeDecisionEvent(input.event);
-    if (event.approvalBasis !== SECOND_ENTRY_AMENDMENT.approvalBasis ||
-        !SECOND_ENTRY_AMENDMENT.instruments.includes(
-          event.instrument as (typeof SECOND_ENTRY_AMENDMENT.instruments)[number],
-        )) {
-      throw new CompetitionExecutionRejected('time stop is scoped only to the authorised BTC/ETH/SOL second entry');
+    const secondEntry = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis &&
+      SECOND_ENTRY_AMENDMENT.instruments.includes(
+        event.instrument as (typeof SECOND_ENTRY_AMENDMENT.instruments)[number],
+      );
+    const deadlineContingency = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis &&
+      DEADLINE_CONTINGENCY_AMENDMENT.instruments.includes(
+        event.instrument as (typeof DEADLINE_CONTINGENCY_AMENDMENT.instruments)[number],
+      );
+    if (!secondEntry && !deadlineContingency) {
+      throw new CompetitionExecutionRejected('time stop is scoped only to the authorised additional entry');
     }
     if (input.now < SECOND_ENTRY_AMENDMENT.hardExitAt) {
       return { decisionId: event.decisionId, instrument: event.instrument,

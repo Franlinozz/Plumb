@@ -79,3 +79,46 @@ export const SECOND_ENTRY_AMENDMENT = Object.freeze({
   minOpenInterestChangePct: 0.001,
   maxEntryToleranceBps: 10,
 });
+
+/**
+ * Operator-authorised post-cutoff contest contingency — 2026-08-23.
+ *
+ * This does not claim a measured edge and never races the frozen v3 path. It can use the same
+ * single additional-entry allowance only after v3's personal cutoff, on ETH or SOL, under a
+ * deterministic closed-bar trend/recovery rule and the unchanged maximum-normal-risk envelope.
+ */
+export const DEADLINE_CONTINGENCY_AMENDMENT = Object.freeze({
+  authorisedAt: Date.parse('2026-08-23T06:51:33Z'),
+  unattendedExecutionAuthorisedAt: Date.parse('2026-08-23T06:51:33Z'),
+  earliestEntryAt: SECOND_ENTRY_AMENDMENT.latestEntryAt,
+  latestEntryAt: Date.parse('2026-08-24T04:00:00Z'),
+  hardExitAt: SECOND_ENTRY_AMENDMENT.hardExitAt,
+  competitionEndsAt: SECOND_ENTRY_AMENDMENT.competitionEndsAt,
+  instruments: Object.freeze(['ETH-USDT-SWAP', 'SOL-USDT-SWAP'] as const),
+  strategyId: 'deadline_contingency',
+  strategyVersion: '1.0.0',
+  approvalBasis: 'operator-deadline-contingency-v1' as const,
+  priorLiveEntryCount: SECOND_ENTRY_AMENDMENT.priorLiveEntryCount,
+  maxTotalLiveEntries: SECOND_ENTRY_AMENDMENT.maxTotalLiveEntries,
+  maxStopRiskUsd: SECOND_ENTRY_AMENDMENT.maxStopRiskUsd,
+  maxPlannedLossUsd: SECOND_ENTRY_AMENDMENT.maxPlannedLossUsd,
+  maxNotionalUsd: SECOND_ENTRY_AMENDMENT.maxNotionalUsd,
+  maxPositionPct: SECOND_ENTRY_AMENDMENT.maxPositionPct,
+  minProjectedNetTargetUsd: SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd,
+  maxValidityMs: SECOND_ENTRY_AMENDMENT.maxValidityMs,
+  maxEntryToleranceBps: SECOND_ENTRY_AMENDMENT.maxEntryToleranceBps,
+  stopDistancePct: 0.02,
+  takeProfitR: 1.5,
+  minClosedFourHourAdx: 25,
+  minVolumeRatio: 0.8,
+  longRsiMin: 45,
+  longRsiMax: 68,
+  shortRsiMin: 32,
+  shortRsiMax: 55,
+  minOneHourOiChangePct: -0.01,
+  minFourHourOiChangePct: -0.03,
+  minTwentyFourHourOiChangePct: -0.05,
+  maxOpposingPriceChangePct24h: 0.005,
+  maxSpreadBps: 2,
+  maxAbsFundingRate: 0.001,
+});

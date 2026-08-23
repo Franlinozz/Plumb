@@ -69,6 +69,19 @@ describe('DecisionEvent A2A delivery gate', () => {
     expect(emergency.expectedEdgeBps).toBe(0);
   });
 
+  it('formats both explicitly authorised zero-edge additional-entry bases', () => {
+    const v3 = finalizeDecisionEvent({
+      ...event(), strategyVersion: 'competition_trend_pullback@3.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-evidence-limited-v3',
+    });
+    const contingency = finalizeDecisionEvent({
+      ...event(), strategyVersion: 'deadline_contingency@1.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-deadline-contingency-v1',
+    });
+    expect(formatDecisionEventForDelivery(v3, gate())).toMatch(/^【Futures】/u);
+    expect(formatDecisionEventForDelivery(contingency, gate())).toMatch(/^【Futures】/u);
+  });
+
   it.each([
     ['halt', { haltFlags: { manual: true } }],
     ['stale market', { marketDataAt: NOW - 60_001 }],

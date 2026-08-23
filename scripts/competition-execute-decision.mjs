@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 
 import { DecisionPublicationStore } from '@plumb/asp';
-import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import { DEADLINE_CONTINGENCY_AMENDMENT, SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
 import {
   AgentTradeKitCompetitionExecutor,
   CliAtkClient,
@@ -15,6 +15,8 @@ import {
 const args = process.argv.slice(2);
 const execute = args.includes('--execute');
 const unattended = args.includes('--unattended-second-entry');
+const unattendedDeadlineContingency = args.includes('--unattended-deadline-contingency');
+const anyUnattended = unattended || unattendedDeadlineContingency;
 const inputPath = args.find((arg) => !arg.startsWith('--'));
 if (inputPath === undefined) throw new Error('usage: competition-execute-decision.mjs <bundle.json> [--execute]');
 
@@ -36,11 +38,18 @@ if (!execute) {
 }
 
 if (!/^\d+$/u.test(expectedUid)) throw new Error('PLUMB_COMPETITION_UID is required outside the repository');
-if (!unattended && confirmation !== `CONFIRM LIVE ${event.decisionId}`) {
+if (!anyUnattended && confirmation !== `CONFIRM LIVE ${event.decisionId}`) {
   throw new Error(`PLUMB_LIVE_CONFIRMATION must equal CONFIRM LIVE ${event.decisionId}`);
 }
 if (unattended && event.approvalBasis !== SECOND_ENTRY_AMENDMENT.approvalBasis) {
   throw new Error('unattended execution is authorised only for the evidence-limited second entry');
+}
+if (unattendedDeadlineContingency &&
+    event.approvalBasis !== DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis) {
+  throw new Error('unattended contingency execution is authorised only for the deadline contingency');
+}
+if (unattended && unattendedDeadlineContingency) {
+  throw new Error('only one unattended authorization scope may be selected');
 }
 if (bundle.risk === undefined) throw new Error('bundle.risk is required');
 
@@ -58,6 +67,9 @@ try {
     event, expectedUid, ledgerSignedPosition: recorded?.signedPosition ?? 0,
     risk: bundle.risk, priorLiveEntryCount, liveConfirmation: confirmation,
     ...(unattended ? { unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt } : {}),
+    ...(unattendedDeadlineContingency
+      ? { unattendedAuthorizationAt: DEADLINE_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt }
+      : {}),
     now: Date.now(),
   });
   ledger.set({ instrument: event.instrument, signedPosition: result.venueSignedPositionAfter,

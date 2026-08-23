@@ -70,6 +70,18 @@ describe('canonical DecisionEvent', () => {
     })).toThrow(/malformed/u);
   });
 
+  it('records the deadline contingency without fabricating expected edge', () => {
+    const event = finalizeDecisionEvent({
+      ...base(), strategyVersion: 'deadline_contingency@1.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-deadline-contingency-v1',
+    });
+    expect(event.expectedEdgeBps).toBe(0);
+    expect(() => finalizeDecisionEvent({
+      ...base(), strategyVersion: 'deadline_contingency@1.0.1', expectedEdgeBps: 0,
+      approvalBasis: 'operator-deadline-contingency-v1',
+    })).toThrow(/malformed/u);
+  });
+
   it('rejects stale-at-creation and malformed price geometry', () => {
     expect(() => finalizeDecisionEvent({ ...base(), validUntil: 1_000 })).toThrow();
     expect(() => finalizeDecisionEvent({ ...base(), stopPrice: 65_000 })).toThrow();

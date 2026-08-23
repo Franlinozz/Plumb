@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate the post-cutoff Plumb deadline contingency every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=25
+Unit=plumb-okxai-deadline-contingency.service
+
+[Install]
+WantedBy=timers.target

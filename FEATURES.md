@@ -90,6 +90,7 @@ Rules for this table:
 | Venue-native competition TP/SL exit reconciliation — exact entry intent + algo execution + fill + closed-position proof before signed ledger update | script + competition ledger | `competition-reconcile-exits.mjs` | live Agent Trade Kit proof + `ops/src/competition-monitor.test.ts` |
 | Authorised competition hard time-stop — idempotent reduce-only Agent Trade Kit close at 2026-08-25T03:30Z with fill/flat/ledger proof | `@plumb/executor` + armed timer | `CompetitionTimeStopExecutor` | `competition-time-stop.test.ts` + `competition-monitor.test.ts` |
 | Idempotent Discord readiness/result alerts | script + isolated timer | `competition-v3-discord-alert.mjs` | `ops/src/competition-monitor.test.ts` |
+| Deadline contingency v1 — distinct zero-edge approval basis, shared one-shot claim, ETH/SOL only; **implemented but deliberately NOT installed/armed after negative frozen audit** | `@plumb/core`, `@plumb/strategy`, `@plumb/ops`, `@plumb/asp`, `@plumb/executor` | dormant competition path | `deadline-contingency-decision.test.ts` + `deadline_contingency.test.ts` + executor/time-stop/monitor tests |
 | Hash-chained append-only published feed; tampering detected | `@plumb/asp` | internal | `asp.test.ts` › the published feed |
 | Claude rationale with schema validation + deterministic template fallback | `@plumb/asp` | internal | `asp.test.ts` › rationale |
 | No model output reaches the signal object (signal frozen first) | `@plumb/asp` | internal | `asp.test.ts` › guardrail 4 |

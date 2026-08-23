@@ -99,3 +99,9 @@ export {
   type SecondEntryInput,
   type SecondEntryMetadata,
 } from './second-entry-decision.js';
+
+export {
+  createDeadlineContingencyDecision,
+  type DeadlineContingencyInput,
+  type DeadlineContingencyMetadata,
+} from './deadline-contingency-decision.js';

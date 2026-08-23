@@ -1,5 +1,6 @@
 import {
   COMPETITION_V2_AMENDMENT,
+  DEADLINE_CONTINGENCY_AMENDMENT,
   EMERGENCY_PARTICIPATION_AMENDMENT,
   SECOND_ENTRY_AMENDMENT,
   finalizeDecisionEvent,
@@ -121,10 +122,15 @@ export class AgentTradeKitCompetitionExecutor {
   async execute(input: CompetitionExecutionInput): Promise<CompetitionExecutionResult> {
     const event = finalizeDecisionEvent(input.event);
     const secondEntry = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis;
+    const deadlineContingency = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis;
+    const additionalEntry = secondEntry || deadlineContingency;
+    const additionalAmendment = deadlineContingency
+      ? DEADLINE_CONTINGENCY_AMENDMENT
+      : SECOND_ENTRY_AMENDMENT;
     const unattended = input.unattendedAuthorizationAt !== undefined;
-    if (unattended && (!secondEntry || input.unattendedAuthorizationAt !==
-        SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt)) {
-      throw new CompetitionExecutionRejected('unattended authorization is absent, mismatched, or outside its second-entry scope');
+    if (unattended && (!additionalEntry || input.unattendedAuthorizationAt !==
+        additionalAmendment.unattendedExecutionAuthorisedAt)) {
+      throw new CompetitionExecutionRejected('unattended authorization is absent, mismatched, or outside its additional-entry scope');
     }
     if (!unattended && input.liveConfirmation !== `CONFIRM LIVE ${event.decisionId}`) {
       throw new CompetitionExecutionRejected('missing decision-specific live-money confirmation');
@@ -134,22 +140,25 @@ export class AgentTradeKitCompetitionExecutor {
     if (!Number.isInteger(input.priorLiveEntryCount) || input.priorLiveEntryCount < 0) {
       throw new CompetitionExecutionRejected('prior live-entry count is invalid or uncertain');
     }
-    if (secondEntry) {
-      if (input.now < SECOND_ENTRY_AMENDMENT.authorisedAt || input.now >= SECOND_ENTRY_AMENDMENT.latestEntryAt) {
-        throw new CompetitionExecutionRejected('outside the authorised second-entry window');
+    if (additionalEntry) {
+      const earliest = deadlineContingency
+        ? DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt
+        : SECOND_ENTRY_AMENDMENT.authorisedAt;
+      if (input.now < earliest || input.now >= additionalAmendment.latestEntryAt) {
+        throw new CompetitionExecutionRejected('outside the authorised additional-entry window');
       }
       if (event.strategyVersion !==
-          `${SECOND_ENTRY_AMENDMENT.strategyId}@${SECOND_ENTRY_AMENDMENT.strategyVersion}` ||
+          `${additionalAmendment.strategyId}@${additionalAmendment.strategyVersion}` ||
           event.expectedEdgeBps !== 0) {
-        throw new CompetitionExecutionRejected('second-entry event does not preserve the frozen strategy and evidence limitation');
+        throw new CompetitionExecutionRejected('additional-entry event does not preserve its authorised strategy and evidence limitation');
       }
-      if (!SECOND_ENTRY_AMENDMENT.instruments.includes(
-        event.instrument as (typeof SECOND_ENTRY_AMENDMENT.instruments)[number],
+      if (!(additionalAmendment.instruments as readonly string[]).includes(
+        event.instrument,
       )) {
-        throw new CompetitionExecutionRejected('second-entry amendment permits BTC, ETH or SOL only');
+        throw new CompetitionExecutionRejected('additional-entry amendment does not permit this instrument');
       }
-      if (input.priorLiveEntryCount !== SECOND_ENTRY_AMENDMENT.priorLiveEntryCount ||
-          input.priorLiveEntryCount >= SECOND_ENTRY_AMENDMENT.maxTotalLiveEntries) {
+      if (input.priorLiveEntryCount !== additionalAmendment.priorLiveEntryCount ||
+          input.priorLiveEntryCount >= additionalAmendment.maxTotalLiveEntries) {
         throw new CompetitionExecutionRejected('the one-additional-entry allowance is unavailable or exhausted');
       }
     } else {
@@ -211,8 +220,8 @@ export class AgentTradeKitCompetitionExecutor {
         Math.abs(input.ledgerSignedPosition - event.ledgerPositionBefore) > metadata.lotSz / 2) {
       throw new CompetitionExecutionRejected('signed venue, ledger, and DecisionEvent positions disagree');
     }
-    if (secondEntry && Math.abs(venueSigned) > metadata.lotSz / 2) {
-      throw new CompetitionExecutionRejected('second-entry instrument must be flat; reversal or increase is forbidden');
+    if (additionalEntry && Math.abs(venueSigned) > metadata.lotSz / 2) {
+      throw new CompetitionExecutionRejected('additional-entry instrument must be flat; reversal or increase is forbidden');
     }
 
     const intendedSign = event.direction === 'long' ? 1 : -1;
@@ -275,9 +284,11 @@ export class AgentTradeKitCompetitionExecutor {
   }
 
   private assertRisk(risk: CompetitionRiskState, event: DecisionEvent, liveReferencePrice: number): void {
-    const caps = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis
-      ? SECOND_ENTRY_AMENDMENT
-      : COMPETITION_V2_AMENDMENT;
+    const caps = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
+      ? DEADLINE_CONTINGENCY_AMENDMENT
+      : event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis
+        ? SECOND_ENTRY_AMENDMENT
+        : COMPETITION_V2_AMENDMENT;
     if (risk.equityUsd <= 0 || risk.availableMarginUsd < 0) throw new CompetitionExecutionRejected('invalid account equity');
     if (event.riskUsd / risk.equityUsd > 0.01) throw new CompetitionExecutionRejected('risk per trade exceeds 1%');
     if (event.riskUsd > caps.maxStopRiskUsd + 1e-9 ||
@@ -291,12 +302,16 @@ export class AgentTradeKitCompetitionExecutor {
         plannedLossUsd > caps.maxPlannedLossUsd + 1e-9) {
       throw new CompetitionExecutionRejected('event exceeds the authorised notional or planned-loss cap');
     }
-    if (event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis) {
+    if (event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis ||
+        event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis) {
+      const minProjectedNetTargetUsd = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
+        ? DEADLINE_CONTINGENCY_AMENDMENT.minProjectedNetTargetUsd
+        : SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd;
       const targetDistancePct = Math.abs(event.takeProfit - liveReferencePrice) / liveReferencePrice;
       const projectedNetTargetUsd = notional * targetDistancePct -
         notional * event.expectedCostBps / 10_000;
       if (!Number.isFinite(projectedNetTargetUsd) ||
-          projectedNetTargetUsd + 1e-9 < SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd) {
+          projectedNetTargetUsd + 1e-9 < minProjectedNetTargetUsd) {
         throw new CompetitionExecutionRejected('live projected net target is below the authorised minimum');
       }
     }
