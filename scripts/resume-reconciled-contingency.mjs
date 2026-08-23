@@ -1,47 +1,64 @@
 #!/usr/bin/env node
-/** Incident-specific, guarded resume after DEC-ru44MLpWgI was proven unpublished and unexecuted. */
+/** Guarded resume for individually reconciled, zero-acknowledgement contingency incidents. */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
+import { existsSync, globSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs';
 
 import Database from 'better-sqlite3';
 
-const EXPECTED_DECISION = 'DEC-ru44MLpWgI';
+const RECONCILED_INCIDENTS = Object.freeze({
+  'DEC-ru44MLpWgI': Object.freeze({
+    instrument: 'SOL-USDT-SWAP',
+    archiveName: 'second-entry-auto.DEC-ru44MLpWgI.20260823T1600Z.json',
+  }),
+  'DEC-POXps1ql_X': Object.freeze({
+    instrument: 'ETH-USDT-SWAP',
+    archiveName: 'second-entry-auto.DEC-POXps1ql_X.20260823T2200Z.json',
+  }),
+});
 const stateDir = '/var/lib/plumb-okxai';
 const statePath = `${stateDir}/second-entry-auto.json`;
 const archiveDir = `${stateDir}/incidents`;
-const archivePath = `${archiveDir}/second-entry-auto.${EXPECTED_DECISION}.20260823T1600Z.json`;
 const execute = process.argv.includes('--execute');
 
 if (!existsSync(statePath)) throw new Error('shared claim is absent; refusing an ambiguous resume');
-if (existsSync(archivePath)) throw new Error('incident archive already exists; refusing a second resume');
 const state = JSON.parse(readFileSync(statePath, 'utf8'));
-if (state.decisionId !== EXPECTED_DECISION || state.status !== 'uncertain' ||
-    state.failedStage !== 'prepared' || state.instrument !== 'SOL-USDT-SWAP') {
+const incident = RECONCILED_INCIDENTS[state.decisionId];
+if (incident === undefined || state.status !== 'uncertain' ||
+    state.failedStage !== 'prepared' || state.instrument !== incident.instrument) {
   throw new Error('shared claim no longer matches the reconciled incident');
 }
+const expectedDecision = state.decisionId;
+const archivePath = `${archiveDir}/${incident.archiveName}`;
+if (existsSync(archivePath)) throw new Error('incident archive already exists; refusing a second resume');
 const bundle = JSON.parse(readFileSync(state.bundlePath, 'utf8'));
-if (bundle.event?.decisionId !== EXPECTED_DECISION || Date.now() <= bundle.event.validUntil) {
+if (bundle.event?.decisionId !== expectedDecision || Date.now() <= bundle.event.validUntil) {
   throw new Error('incident bundle mismatch or old decision is not yet expired');
 }
 
 const db = new Database(`${stateDir}/asp-delivery.db`, { readonly: true, fileMustExist: true });
-const publication = db.prepare('SELECT status,active_count,delivered_count FROM decision_publications WHERE decision_id=?')
-  .get(EXPECTED_DECISION);
+const publication = db.prepare('SELECT status,active_count,delivered_count,created_at,signal_text FROM decision_publications WHERE decision_id=?')
+  .get(expectedDecision);
 const deliveryRows = db.prepare('SELECT status FROM deliveries WHERE delivery_key=?')
-  .all(`decision:${EXPECTED_DECISION}`);
+  .all(`decision:${expectedDecision}`);
 db.close();
 if (publication?.status !== 'uncertain' || publication.active_count !== 3 ||
     publication.delivered_count !== 0 || deliveryRows.length !== 1 ||
     deliveryRows[0]?.status !== 'uncertain') {
   throw new Error('publication ledger no longer matches the proven zero-acknowledgement incident');
 }
+const exactLocalCopies = globSync('/root/.onchainos/deliverables/asp/**/*.txt')
+  .filter((path) => statSync(path).mtimeMs >= Date.parse(publication.created_at) - 5_000)
+  .filter((path) => readFileSync(path, 'utf8') === publication.signal_text);
+if (exactLocalCopies.length !== 0) {
+  throw new Error('an exact executable deliverable exists locally; automatic incident clearance is forbidden');
+}
 
 const run = (...args) => execFileSync('systemctl', args, { encoding: 'utf8' }).trim();
 if (!execute) {
   console.log(JSON.stringify({
     event: 'reconciled_contingency_resume_check_passed',
-    decisionId: EXPECTED_DECISION,
+    decisionId: expectedDecision,
     publicationAcknowledgements: 0,
     action: 'rerun with --execute to archive the expired claim and resume the repaired services',
   }));
@@ -68,7 +85,7 @@ try {
   }
   console.log(JSON.stringify({
     event: 'reconciled_contingency_resumed',
-    decisionId: EXPECTED_DECISION,
+    decisionId: expectedDecision,
     archivedClaim: archivePath,
     a2a: 'active',
     timer: 'active',

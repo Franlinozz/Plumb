@@ -148,16 +148,22 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(publisherSource).toContain('exactRemoteDeliveryExists');
     expect(publisherSource).toContain('error.retryable');
     expect(publisherSource).toContain('Date.now() + 60_000 < event.validUntil');
+    expect(publisherSource).toContain('acquireDeliveryLock');
     expect(autopilotSource).toContain('competitionClaimBlocksNoTrade');
+    expect(autopilotSource).toContain('acquireDeliveryLock');
+    expect(autopilotSource.match(/competitionClaimBlocksNoTrade\(options\.state\)/gu)?.length)
+      .toBeGreaterThanOrEqual(2);
     expect(autopilotSource).toContain('no_trade_suppressed_competition_claim');
     expect(autopilotSource).toContain("['prepared', 'published', 'executing', 'complete', 'uncertain']");
   });
 
   it('makes the incident resume exact, recoverable, and P8-gated', () => {
-    expect(reconciledResumeSource).toContain("EXPECTED_DECISION = 'DEC-ru44MLpWgI'");
+    expect(reconciledResumeSource).toContain("'DEC-ru44MLpWgI'");
+    expect(reconciledResumeSource).toContain("'DEC-POXps1ql_X'");
     expect(reconciledResumeSource).toContain("state.status !== 'uncertain'");
     expect(reconciledResumeSource).toContain("state.failedStage !== 'prepared'");
     expect(reconciledResumeSource).toContain("publication.delivered_count !== 0");
+    expect(reconciledResumeSource).toContain('exactLocalCopies.length !== 0');
     expect(reconciledResumeSource).toContain("run('is-active', 'plumb-runner.service')");
     expect(reconciledResumeSource).toContain('renameSync(statePath, archivePath)');
     expect(reconciledResumeSource).toContain("run('restart', 'plumb-okxai-a2a.service')");

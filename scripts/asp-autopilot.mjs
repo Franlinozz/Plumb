@@ -13,6 +13,7 @@ import { dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import Database from 'better-sqlite3';
+import { acquireDeliveryLock } from '@plumb/asp';
 
 const DEFAULT_NOTICE =
   '[Copy-Trading Notice] Plumb Perpetual Signals: No new position is recommended for this period. Stay on the sidelines and manage position size carefully.';
@@ -211,6 +212,10 @@ function competitionClaimBlocksNoTrade(statePath) {
 }
 
 function scan(db, options) {
+  const releaseDeliveryLock = acquireDeliveryLock(
+    process.env.PLUMB_A2A_DELIVERY_LOCK ?? `${dirname(options.state)}/a2a-delivery.lock`,
+  );
+  try {
   const active = activeJobIds(options.agentId);
   const subscriptions = providerSubscriptions();
   const suppressNoTrade = competitionClaimBlocksNoTrade(options.state);
@@ -229,9 +234,14 @@ function scan(db, options) {
     }
     ensureSession(db, jobId, buyerAgentId, options.agentId, options.dryRun);
     deliverText(db, jobId, options.agentId, WELCOME_KEY, DEFAULT_NOTICE, options.dryRun);
-    if (suppressNoTrade) continue;
+    // Re-check after acquiring the cross-process lock and immediately before each notice. A
+    // competition claim may have been durably written while this daemon was waiting.
+    if (suppressNoTrade || competitionClaimBlocksNoTrade(options.state)) continue;
     const noTradeKey = `no-trade:${Math.floor(Date.now() / options.noTradeMs)}`;
     deliverText(db, jobId, options.agentId, noTradeKey, NO_TRADE_NOTICE, options.dryRun);
+  }
+  } finally {
+    releaseDeliveryLock();
   }
 }
 

@@ -98,3 +98,8 @@ export {
   redactDeliveryDiagnostic,
   type DeliverableRecord,
 } from './delivery-reconciliation.js';
+
+export {
+  acquireDeliveryLock,
+  type DeliveryLockOptions,
+} from './delivery-lock.js';

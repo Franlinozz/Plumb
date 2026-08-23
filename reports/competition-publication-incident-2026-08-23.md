@@ -55,3 +55,22 @@ the contingency timer. It cannot replay the expired decision.
 
 Automated service-control execution was blocked by the hosting environment's approval quota, so
 the guarded command requires one root invocation on the VPS.
+
+## Follow-up incident — `DEC-POXps1ql_X`
+
+At `2026-08-23T22:00:27Z`, the contingency rule produced an ETH long candidate. The executable
+publisher again stopped before execution: its first delivery process overlapped the scheduled
+four-hour no-trade batch. The platform persisted the three no-trade notices while the executable
+call returned exit status zero with no JSON response.
+
+Reconciliation at `2026-08-23T22:47Z` established:
+
+- zero executable-signal acknowledgements and zero exact executable deliverables;
+- zero competition positions and zero pending orders;
+- `409.967501361 USDT` still available;
+- the event expired at `2026-08-23T22:30:27Z` and is not replayable.
+
+The follow-up repair adds one atomic cross-process delivery lock shared by the scheduled A2A
+daemon and the on-demand executable publisher. The daemon also re-checks the durable competition
+claim after obtaining that lock and immediately before any no-trade notice. This closes the
+boundary race without weakening the publication-first or fail-closed gates.

@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 
 import {
   DecisionPublicationStore,
+  acquireDeliveryLock,
   describeDeliveryCommandFailure,
   exactDeliverableMatches,
   formatDecisionEventForDelivery,
@@ -21,6 +22,8 @@ const dryRun = args.includes('--dry-run');
 const inputPath = args.find((arg) => !arg.startsWith('--'));
 const agentId = process.env.PLUMB_ASP_AGENT_ID ?? '';
 const statePath = process.env.PLUMB_A2A_STATE ?? '/var/lib/plumb-okxai/asp-delivery.db';
+const deliveryLockPath = process.env.PLUMB_A2A_DELIVERY_LOCK ??
+  '/var/lib/plumb-okxai/a2a-delivery.lock';
 
 if (inputPath === undefined) throw new Error('usage: asp-push-decision.mjs <decision-bundle.json> [--dry-run]');
 if (!/^\d+$/u.test(agentId)) throw new Error('PLUMB_ASP_AGENT_ID is required');
@@ -112,6 +115,8 @@ function deliverWithPostcondition(jobId, signal, event) {
   throw new CommandFailure('delivery retry loop ended without an acknowledgement');
 }
 
+const releaseDeliveryLock = acquireDeliveryLock(deliveryLockPath);
+try {
 const activePayload = runJson('onchainos', ['agent', 'subscribe-active', '--agent-id', agentId]);
 const active = (Array.isArray(activePayload.data) ? activePayload.data : [])
   .filter((subscription) => subscription?.status === 1)
@@ -200,4 +205,7 @@ try {
 } finally {
   store.close();
   runtime.close();
+}
+} finally {
+  releaseDeliveryLock();
 }
