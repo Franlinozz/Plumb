@@ -43,6 +43,10 @@ import {
   deadlineContingency,
   DEADLINE_CONTINGENCY_ID,
 } from './deadline_contingency.js';
+import {
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
+} from './final_window_contingency.js';
 
 /**
  * The four candidates. **No edge is claimed for any of them.** P4's backtest decides which, if
@@ -108,6 +112,8 @@ export {
   type CompetitionTrendReclaimSettings,
   deadlineContingency,
   DEADLINE_CONTINGENCY_ID,
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
 };
 export { SURVIVING_HOURS } from './session_bias.js';
 export { classifyOiState, TRADED_STATES, type OiState } from './oi_divergence.js';

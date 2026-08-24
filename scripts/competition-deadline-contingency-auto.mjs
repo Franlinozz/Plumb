@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-/** One-shot unattended ETH/SOL contingency; inactive until the frozen v3 cutoff. */
+/** One-shot unattended ETH/SOL final-window contingency V2. */
 
 import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 
-import { DEADLINE_CONTINGENCY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import { FINAL_WINDOW_CONTINGENCY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
 import { redactDeliveryDiagnostic } from '@plumb/asp';
 
 const executeFile = promisify(execFile);
 const instrument = process.argv[2];
 const dryRun = process.argv.includes('--dry-run');
-if (!DEADLINE_CONTINGENCY_AMENDMENT.instruments.includes(instrument)) {
+if (!FINAL_WINDOW_CONTINGENCY_AMENDMENT.instruments.includes(instrument)) {
   throw new Error('usage: competition-deadline-contingency-auto.mjs <ETH-USDT-SWAP|SOL-USDT-SWAP> [--dry-run]');
 }
 const expectedUid = process.env.OKX_UID?.trim() ?? '';
@@ -70,7 +70,7 @@ async function notify(content) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        username: 'Plumb Deadline Contingency',
+      username: 'Plumb Final Window V2',
         content,
         allowed_mentions: { parse: [] },
       }),
@@ -98,15 +98,15 @@ if (existsSync(statePath)) {
   process.exit(0);
 }
 const now = Date.now();
-if (now < DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt) {
+if (now < FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt) {
   console.log(JSON.stringify({
-    event: 'deadline_contingency_waiting_for_v3_cutoff',
-    opensAt: new Date(DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt).toISOString(),
+    event: 'final_window_contingency_waiting_to_open',
+    opensAt: new Date(FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt).toISOString(),
   }));
   process.exit(0);
 }
-if (now >= DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt) {
-  console.log(JSON.stringify({ event: 'deadline_contingency_window_closed' }));
+if (now >= FINAL_WINDOW_CONTINGENCY_AMENDMENT.latestEntryAt) {
+  console.log(JSON.stringify({ event: 'final_window_contingency_window_closed' }));
   process.exit(0);
 }
 
@@ -138,18 +138,18 @@ try {
   const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
   const event = finalizeDecisionEvent(bundle.event);
   if (event.instrument !== instrument || event.direction !== publicResult.strategyProbe.side ||
-      event.approvalBasis !== DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis) {
+      event.approvalBasis !== FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis) {
     throw new Error('public monitor and private contingency DecisionEvent disagree');
   }
   state = {
     status: 'prepared',
-    workflow: 'deadline-contingency-v1',
+    workflow: 'final-window-contingency-v2',
     decisionId: event.decisionId,
     instrument,
     direction: event.direction,
     bundlePath,
     closedAt: publicResult.closedBars.oneHourAt,
-    authorisedAt: new Date(DEADLINE_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt).toISOString(),
+    authorisedAt: new Date(FINAL_WINDOW_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt).toISOString(),
     updatedAt: new Date().toISOString(),
   };
   if (dryRun) {
@@ -158,7 +158,7 @@ try {
   }
   save(state); // Durable shared one-shot claim BEFORE publication or order writes.
   await notify([
-    '🟡 **PLUMB DEADLINE CONTINGENCY STARTED**',
+    '🟡 **PLUMB FINAL WINDOW V2 STARTED**',
     `${instrument} ${event.direction.toUpperCase()} · Decision ${event.decisionId}`,
     `Entry ${event.entryLow.toFixed(2)}–${event.entryHigh.toFixed(2)} · SL ${event.stopPrice.toFixed(2)} · TP ${event.takeProfit.toFixed(2)}`,
     `Maximum stop risk ${event.riskUsd.toFixed(2)} USDT. This is an operator-authorised contest-risk event with expected edge recorded as zero.`,
@@ -170,7 +170,7 @@ try {
   state = { ...state, status: 'executing', updatedAt: new Date().toISOString() };
   save(state);
   const execution = await runNode('competition-execute-decision.mjs', [
-    bundlePath, '--execute', '--unattended-deadline-contingency',
+    bundlePath, '--execute', '--unattended-final-window-contingency',
   ]);
   const result = parseLastJson(execution.stdout);
   if (result.event !== 'competition_execution_complete' || result.decisionId !== event.decisionId) {
@@ -186,7 +186,7 @@ try {
   };
   save(state);
   await notify([
-    '✅ **PLUMB DEADLINE CONTINGENCY EXECUTED AND RECONCILED**',
+    '✅ **PLUMB FINAL WINDOW V2 EXECUTED AND RECONCILED**',
     `${instrument} ${event.direction.toUpperCase()} · Decision ${event.decisionId}`,
     `Contracts ${result.contracts} · SL ${event.stopPrice.toFixed(2)} · TP ${event.takeProfit.toFixed(2)}`,
     `Order ${result.orderId} used Agent Trade Kit after complete A2A acknowledgement.`,

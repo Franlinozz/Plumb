@@ -2,6 +2,7 @@ import {
   COMPETITION_V2_AMENDMENT,
   DEADLINE_CONTINGENCY_AMENDMENT,
   EMERGENCY_PARTICIPATION_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
   SECOND_ENTRY_AMENDMENT,
   finalizeDecisionEvent,
   type DecisionEvent,
@@ -123,10 +124,12 @@ export class AgentTradeKitCompetitionExecutor {
     const event = finalizeDecisionEvent(input.event);
     const secondEntry = event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis;
     const deadlineContingency = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis;
-    const additionalEntry = secondEntry || deadlineContingency;
-    const additionalAmendment = deadlineContingency
-      ? DEADLINE_CONTINGENCY_AMENDMENT
-      : SECOND_ENTRY_AMENDMENT;
+    const finalWindowContingency =
+      event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis;
+    const additionalEntry = secondEntry || deadlineContingency || finalWindowContingency;
+    const additionalAmendment = finalWindowContingency
+      ? FINAL_WINDOW_CONTINGENCY_AMENDMENT
+      : deadlineContingency ? DEADLINE_CONTINGENCY_AMENDMENT : SECOND_ENTRY_AMENDMENT;
     const unattended = input.unattendedAuthorizationAt !== undefined;
     if (unattended && (!additionalEntry || input.unattendedAuthorizationAt !==
         additionalAmendment.unattendedExecutionAuthorisedAt)) {
@@ -141,9 +144,9 @@ export class AgentTradeKitCompetitionExecutor {
       throw new CompetitionExecutionRejected('prior live-entry count is invalid or uncertain');
     }
     if (additionalEntry) {
-      const earliest = deadlineContingency
-        ? DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt
-        : SECOND_ENTRY_AMENDMENT.authorisedAt;
+      const earliest = secondEntry ? SECOND_ENTRY_AMENDMENT.authorisedAt
+        : deadlineContingency ? DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt
+          : FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt;
       if (input.now < earliest || input.now >= additionalAmendment.latestEntryAt) {
         throw new CompetitionExecutionRejected('outside the authorised additional-entry window');
       }
@@ -284,8 +287,10 @@ export class AgentTradeKitCompetitionExecutor {
   }
 
   private assertRisk(risk: CompetitionRiskState, event: DecisionEvent, liveReferencePrice: number): void {
-    const caps = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
-      ? DEADLINE_CONTINGENCY_AMENDMENT
+    const caps = event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis
+      ? FINAL_WINDOW_CONTINGENCY_AMENDMENT
+      : event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
+        ? DEADLINE_CONTINGENCY_AMENDMENT
       : event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis
         ? SECOND_ENTRY_AMENDMENT
         : COMPETITION_V2_AMENDMENT;
@@ -303,10 +308,13 @@ export class AgentTradeKitCompetitionExecutor {
       throw new CompetitionExecutionRejected('event exceeds the authorised notional or planned-loss cap');
     }
     if (event.approvalBasis === SECOND_ENTRY_AMENDMENT.approvalBasis ||
-        event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis) {
-      const minProjectedNetTargetUsd = event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
-        ? DEADLINE_CONTINGENCY_AMENDMENT.minProjectedNetTargetUsd
-        : SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd;
+        event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis ||
+        event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis) {
+      const minProjectedNetTargetUsd = event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis
+        ? FINAL_WINDOW_CONTINGENCY_AMENDMENT.minProjectedNetTargetUsd
+        : event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
+          ? DEADLINE_CONTINGENCY_AMENDMENT.minProjectedNetTargetUsd
+          : SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd;
       const targetDistancePct = Math.abs(event.takeProfit - liveReferencePrice) / liveReferencePrice;
       const projectedNetTargetUsd = notional * targetDistancePct -
         notional * event.expectedCostBps / 10_000;

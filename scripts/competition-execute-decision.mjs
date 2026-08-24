@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 
 import { DecisionPublicationStore } from '@plumb/asp';
-import { DEADLINE_CONTINGENCY_AMENDMENT, SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import { DEADLINE_CONTINGENCY_AMENDMENT, FINAL_WINDOW_CONTINGENCY_AMENDMENT, SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
 import {
   AgentTradeKitCompetitionExecutor,
   CliAtkClient,
@@ -16,7 +16,8 @@ const args = process.argv.slice(2);
 const execute = args.includes('--execute');
 const unattended = args.includes('--unattended-second-entry');
 const unattendedDeadlineContingency = args.includes('--unattended-deadline-contingency');
-const anyUnattended = unattended || unattendedDeadlineContingency;
+const unattendedFinalWindowContingency = args.includes('--unattended-final-window-contingency');
+const anyUnattended = unattended || unattendedDeadlineContingency || unattendedFinalWindowContingency;
 const inputPath = args.find((arg) => !arg.startsWith('--'));
 if (inputPath === undefined) throw new Error('usage: competition-execute-decision.mjs <bundle.json> [--execute]');
 
@@ -48,7 +49,12 @@ if (unattendedDeadlineContingency &&
     event.approvalBasis !== DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis) {
   throw new Error('unattended contingency execution is authorised only for the deadline contingency');
 }
-if (unattended && unattendedDeadlineContingency) {
+if (unattendedFinalWindowContingency &&
+    event.approvalBasis !== FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis) {
+  throw new Error('unattended final-window execution is authorised only for final-window contingency V2');
+}
+if ([unattended, unattendedDeadlineContingency, unattendedFinalWindowContingency]
+  .filter(Boolean).length > 1) {
   throw new Error('only one unattended authorization scope may be selected');
 }
 if (bundle.risk === undefined) throw new Error('bundle.risk is required');
@@ -69,6 +75,9 @@ try {
     ...(unattended ? { unattendedAuthorizationAt: SECOND_ENTRY_AMENDMENT.unattendedExecutionAuthorisedAt } : {}),
     ...(unattendedDeadlineContingency
       ? { unattendedAuthorizationAt: DEADLINE_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt }
+      : {}),
+    ...(unattendedFinalWindowContingency
+      ? { unattendedAuthorizationAt: FINAL_WINDOW_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt }
       : {}),
     now: Date.now(),
   });

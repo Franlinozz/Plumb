@@ -1,5 +1,6 @@
 import {
   DEADLINE_CONTINGENCY_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
   SECOND_ENTRY_AMENDMENT,
   finalizeDecisionEvent,
   type DecisionEvent,
@@ -54,7 +55,12 @@ export class CompetitionTimeStopExecutor {
       DEADLINE_CONTINGENCY_AMENDMENT.instruments.includes(
         event.instrument as (typeof DEADLINE_CONTINGENCY_AMENDMENT.instruments)[number],
       );
-    if (!secondEntry && !deadlineContingency) {
+    const finalWindowContingency =
+      event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis &&
+      FINAL_WINDOW_CONTINGENCY_AMENDMENT.instruments.includes(
+        event.instrument as (typeof FINAL_WINDOW_CONTINGENCY_AMENDMENT.instruments)[number],
+      );
+    if (!secondEntry && !deadlineContingency && !finalWindowContingency) {
       throw new CompetitionExecutionRejected('time stop is scoped only to the authorised additional entry');
     }
     if (input.now < SECOND_ENTRY_AMENDMENT.hardExitAt) {

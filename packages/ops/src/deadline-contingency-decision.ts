@@ -1,5 +1,6 @@
 import {
   DEADLINE_CONTINGENCY_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
   finalizeDecisionEvent,
   type DecisionEvent,
   type Signal,
@@ -54,9 +55,11 @@ const floorToStep = (value: number, step: number): number => {
  * The factory independently rechecks the easier closed-bar rule, venue state and damage envelope;
  * expected edge remains zero because the strategy has no independent validation.
  */
-export function createDeadlineContingencyDecision(input: DeadlineContingencyInput): DecisionEvent {
+function createContingencyDecision(
+  input: DeadlineContingencyInput,
+  amendment: typeof DEADLINE_CONTINGENCY_AMENDMENT | typeof FINAL_WINDOW_CONTINGENCY_AMENDMENT,
+): DecisionEvent {
   const { signal, approval, state, metadata } = input;
-  const amendment = DEADLINE_CONTINGENCY_AMENDMENT;
   if (state.now < amendment.earliestEntryAt || state.now >= amendment.latestEntryAt) {
     throw new CompetitionDecisionRejected('outside the deadline-contingency window');
   }
@@ -206,4 +209,12 @@ export function createDeadlineContingencyDecision(input: DeadlineContingencyInpu
     ledgerPositionBefore: state.ledgerPositionBefore,
     reconciliationVersion: state.reconciliationVersion,
   });
+}
+
+export function createDeadlineContingencyDecision(input: DeadlineContingencyInput): DecisionEvent {
+  return createContingencyDecision(input, DEADLINE_CONTINGENCY_AMENDMENT);
+}
+
+export function createFinalWindowContingencyDecision(input: DeadlineContingencyInput): DecisionEvent {
+  return createContingencyDecision(input, FINAL_WINDOW_CONTINGENCY_AMENDMENT);
 }

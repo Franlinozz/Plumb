@@ -1,8 +1,8 @@
-import { DEADLINE_CONTINGENCY_AMENDMENT, type Signal } from '@plumb/core';
+import { DEADLINE_CONTINGENCY_AMENDMENT, FINAL_WINDOW_CONTINGENCY_AMENDMENT, type Signal } from '@plumb/core';
 import type { Approval } from '@plumb/risk';
 import { describe, expect, it } from 'vitest';
 
-import { createDeadlineContingencyDecision } from './deadline-contingency-decision.js';
+import { createDeadlineContingencyDecision, createFinalWindowContingencyDecision } from './deadline-contingency-decision.js';
 
 const NOW = DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt + 3_600_000;
 const signal: Signal = {
@@ -96,5 +96,29 @@ describe('operator-authorised deadline-contingency DecisionEvent factory', () =>
     expect(() => createDeadlineContingencyDecision({
       ...candidate, state: { ...candidate.state, now: DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt },
     })).toThrow(/window/u);
+  });
+});
+
+describe('operator-authorised final-window-contingency V2 DecisionEvent factory', () => {
+  it('uses the distinct V2 identity without changing the damage envelope', () => {
+    const candidate = input();
+    const finalNow = FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000;
+    const finalSignal = { ...candidate.signal, ts: finalNow,
+      strategyId: FINAL_WINDOW_CONTINGENCY_AMENDMENT.strategyId,
+      version: FINAL_WINDOW_CONTINGENCY_AMENDMENT.strategyVersion,
+      expiresAt: finalNow + FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxValidityMs };
+    const event = createFinalWindowContingencyDecision({
+      ...candidate,
+      signal: finalSignal,
+      approval: { ...candidate.approval, signalId: finalSignal.id },
+      state: { ...candidate.state, now: finalNow, marketDataAt: finalNow, openInterestAt: finalNow },
+    });
+    expect(event).toMatchObject({
+      approvalBasis: 'operator-final-window-contingency-v2',
+      strategyVersion: 'final_window_contingency@2.0.0',
+      riskUsd: 4,
+      positionPct: 50,
+      expectedEdgeBps: 0,
+    });
   });
 });

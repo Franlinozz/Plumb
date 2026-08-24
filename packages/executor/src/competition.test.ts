@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DEADLINE_CONTINGENCY_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
   SECOND_ENTRY_AMENDMENT,
   finalizeDecisionEvent,
   type DecisionEvent,
@@ -218,6 +219,32 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       .rejects.toThrow(/future-dated|window/u);
     await expect(executor(new ContingencyVenue(), proof(contingency), () => contingencyNow)
       .execute({ ...candidate, priorLiveEntryCount: 2 })).rejects.toThrow(/allowance/u);
+  });
+
+  it('executes final-window V2 only under its distinct unattended authorization', async () => {
+    const finalNow = FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000;
+    const finalEvent = finalizeDecisionEvent({ ...event, decisionId: 'DEC-FINALWINDOW1',
+      strategyVersion: 'final_window_contingency@2.0.0', createdAt: finalNow - 1_000,
+      validUntil: finalNow + 60_000, instrument: 'ETH-USDT-SWAP', entryLow: 99.9,
+      entryHigh: 100.1, stopPrice: 98, takeProfit: 103, positionPct: 50, leverage: 1,
+      riskUsd: 4, expectedCostBps: 12, expectedEdgeBps: 0,
+      approvalBasis: 'operator-final-window-contingency-v2' });
+    class FinalVenue extends CompetitionMock {
+      override async getInstrumentMetadata() {
+        return { ctVal: 1, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
+      }
+      override async getLastPrice() { return 100; }
+      override async getLeverage() { return 1; }
+    }
+    const candidate = { ...input(finalEvent), now: finalNow, priorLiveEntryCount: 1,
+      liveConfirmation: '', unattendedAuthorizationAt:
+        FINAL_WINDOW_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt };
+    await expect(executor(new FinalVenue(), proof(finalEvent), () => finalNow).execute(candidate))
+      .resolves.toMatchObject({ decisionId: finalEvent.decisionId, contracts: 2 });
+    await expect(executor(new FinalVenue(), proof(finalEvent), () => finalNow).execute({
+      ...candidate,
+      unattendedAuthorizationAt: DEADLINE_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt,
+    })).rejects.toThrow(/authorization/u);
   });
 
   it('forbids a second-entry increase or reversal on an occupied instrument', async () => {

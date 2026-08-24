@@ -551,3 +551,10 @@ that touches payments, subscriptions or the trade kit.
   acknowledgement, and suppress routine no-trade notices while any competition claim exists. The
   guarded resume archives the expired decision rather than replaying it; the uncertain database
   row remains audit evidence.
+- **Final-window contingency V2 · separately authorised on 2026-08-24 at 06:42 UTC.** The written
+  authorization `AUTHORIZE FINAL-WINDOW CONTINGENCY V2` reopens only the existing ETH/SOL,
+  one-additional-entry contest-risk path through 2026-08-25T00:00:00Z. V1 remains closed and
+  immutable. V2 changes no closed-bar/OI/funding/spread gate, claims zero expected edge, retains
+  the $4.00 stop-risk / $4.35 planned-loss / $200 notional / 50% position / $5.50 projected-net
+  envelope, requires complete A2A acknowledgement before Agent Trade Kit execution, and keeps the
+  existing 2026-08-25T03:30:00Z hard exit.

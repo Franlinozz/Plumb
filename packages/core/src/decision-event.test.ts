@@ -82,6 +82,18 @@ describe('canonical DecisionEvent', () => {
     })).toThrow(/malformed/u);
   });
 
+  it('records final-window V2 without mutating the V1 identity', () => {
+    const event = finalizeDecisionEvent({
+      ...base(), strategyVersion: 'final_window_contingency@2.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-final-window-contingency-v2',
+    });
+    expect(event.expectedEdgeBps).toBe(0);
+    expect(() => finalizeDecisionEvent({
+      ...base(), strategyVersion: 'deadline_contingency@1.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-final-window-contingency-v2',
+    })).toThrow(/malformed/u);
+  });
+
   it('rejects stale-at-creation and malformed price geometry', () => {
     expect(() => finalizeDecisionEvent({ ...base(), validUntil: 1_000 })).toThrow();
     expect(() => finalizeDecisionEvent({ ...base(), stopPrice: 65_000 })).toThrow();

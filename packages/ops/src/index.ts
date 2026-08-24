@@ -102,6 +102,7 @@ export {
 
 export {
   createDeadlineContingencyDecision,
+  createFinalWindowContingencyDecision,
   type DeadlineContingencyInput,
   type DeadlineContingencyMetadata,
 } from './deadline-contingency-decision.js';

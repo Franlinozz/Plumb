@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   COMPETITION_V2_AMENDMENT,
   DEADLINE_CONTINGENCY_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
   SECOND_ENTRY_AMENDMENT,
 } from './competition-amendment.js';
 
@@ -83,5 +84,31 @@ describe('operator-authorised deadline contingency', () => {
       .toBe(SECOND_ENTRY_AMENDMENT.latestEntryAt);
     expect(DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt)
       .toBeLessThan(DEADLINE_CONTINGENCY_AMENDMENT.hardExitAt);
+  });
+});
+
+describe('operator-authorised final-window contingency V2', () => {
+  it('preserves V1 while reopening only its bounded allowance before the hard exit', () => {
+    expect(DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt)
+      .toBe(Date.parse('2026-08-24T04:00:00Z'));
+    expect(FINAL_WINDOW_CONTINGENCY_AMENDMENT).toMatchObject({
+      authorisedAt: Date.parse('2026-08-24T06:42:00Z'),
+      earliestEntryAt: Date.parse('2026-08-24T06:42:00Z'),
+      latestEntryAt: Date.parse('2026-08-25T00:00:00Z'),
+      hardExitAt: Date.parse('2026-08-25T03:30:00Z'),
+      instruments: ['ETH-USDT-SWAP', 'SOL-USDT-SWAP'],
+      strategyId: 'final_window_contingency',
+      strategyVersion: '2.0.0',
+      approvalBasis: 'operator-final-window-contingency-v2',
+      priorLiveEntryCount: 1,
+      maxTotalLiveEntries: 2,
+      maxStopRiskUsd: 4,
+      maxPlannedLossUsd: 4.35,
+      maxNotionalUsd: 200,
+      maxPositionPct: 50,
+      minProjectedNetTargetUsd: 5.5,
+    });
+    expect(FINAL_WINDOW_CONTINGENCY_AMENDMENT.latestEntryAt)
+      .toBeLessThan(FINAL_WINDOW_CONTINGENCY_AMENDMENT.hardExitAt);
   });
 });

@@ -135,7 +135,9 @@ describe('the automated competition monitor is read-only by construction', () =>
       .toBeLessThan(contingencyAutoSource.indexOf("runNode('asp-push-decision.mjs'"));
     expect(contingencyAutoSource.indexOf("runNode('asp-push-decision.mjs'"))
       .toBeLessThan(contingencyAutoSource.indexOf("runNode('competition-execute-decision.mjs'"));
-    expect(contingencyAutoSource).toContain("'--unattended-deadline-contingency'");
+    expect(contingencyAutoSource).toContain("'--unattended-final-window-contingency'");
+    expect(contingencyAutoSource).toContain("workflow: 'final-window-contingency-v2'");
+    expect(contingencyAutoSource).toContain('FINAL_WINDOW_CONTINGENCY_AMENDMENT');
     expect(contingencyAutoSource).toContain("status: 'uncertain'");
     expect(contingencyUnit).toContain('competition-auto.env');
     expect(contingencyUnit).not.toContain('secrets.env');

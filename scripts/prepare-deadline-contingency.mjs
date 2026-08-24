@@ -4,25 +4,25 @@
 import { randomInt } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 
-import { createEntropyIdFactory, DEADLINE_CONTINGENCY_AMENDMENT } from '@plumb/core';
+import { createEntropyIdFactory, FINAL_WINDOW_CONTINGENCY_AMENDMENT } from '@plumb/core';
 import { buildSnapshot, OkxPublicClient, openInterestChangeOverWindow } from '@plumb/market';
 import {
   DEFAULT_STRATEGY_CONFIG,
   STRATEGY_IDS,
   aggregateClosedFourHour,
   classifyFourHourTrend,
-  deadlineContingency,
-  DEADLINE_CONTINGENCY_ID,
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
   runCycle,
 } from '@plumb/strategy';
 import { createGovernor, initialState } from '@plumb/risk';
-import { createDeadlineContingencyDecision } from '@plumb/ops';
+import { createFinalWindowContingencyDecision } from '@plumb/ops';
 import { CliAtkClient, CompetitionLedgerStore, IntentStore } from '@plumb/executor';
 
 const expectedUid = process.env.PLUMB_COMPETITION_UID?.trim() ?? '';
 if (!/^\d+$/u.test(expectedUid)) throw new Error('PLUMB_COMPETITION_UID is required outside the repository');
 const instrument = process.argv[2];
-if (!DEADLINE_CONTINGENCY_AMENDMENT.instruments.includes(instrument)) {
+if (!FINAL_WINDOW_CONTINGENCY_AMENDMENT.instruments.includes(instrument)) {
   throw new Error('usage: prepare-deadline-contingency.mjs <ETH-USDT-SWAP|SOL-USDT-SWAP> [output.json]');
 }
 const output = process.argv[3] ?? `.tmp/deadline-contingency-${instrument}.json`;
@@ -52,7 +52,7 @@ const [oneHour, ticker, markPrice, funding, fundingHistory, openInterest, rawOiH
     venue.getBalance(),
   ]);
 const now = Date.now();
-const amendment = DEADLINE_CONTINGENCY_AMENDMENT;
+const amendment = FINAL_WINDOW_CONTINGENCY_AMENDMENT;
 if (now < amendment.earliestEntryAt || now >= amendment.latestEntryAt) {
   throw new Error('outside the authorised deadline-contingency window');
 }
@@ -167,7 +167,7 @@ const snapshot = buildSnapshot({
 });
 const enabled = Object.fromEntries([
   ...STRATEGY_IDS.map((id) => [id, false]),
-  [DEADLINE_CONTINGENCY_ID, true],
+  [FINAL_WINDOW_CONTINGENCY_ID, true],
 ]);
 const config = {
   ...DEFAULT_STRATEGY_CONFIG,
@@ -178,7 +178,7 @@ const cycle = runCycle(snapshot, {
   now,
   newId: createEntropyIdFactory(() => randomInt(0, 2 ** 32)),
   config,
-  modules: [deadlineContingency],
+    modules: [finalWindowContingency],
   regimeTimeframe: '4H',
 });
 const signal = cycle.signals[0];
@@ -209,7 +209,7 @@ const costs = {
   expectedFundingBps: Math.abs(funding.fundingRate) * 10_000,
 };
 const fourHourTrend = classifyFourHourTrend(aggregatedFourHour);
-const event = createDeadlineContingencyDecision({
+const event = createFinalWindowContingencyDecision({
   signal,
   approval: verdict,
   costs,

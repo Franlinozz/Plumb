@@ -32,6 +32,7 @@ export const DecisionEventSchema = z
     approvalBasis: z.enum([
       'calibrated-edge',
       'operator-deadline-contingency-v1',
+      'operator-final-window-contingency-v2',
       'operator-emergency-participation',
       'operator-evidence-limited-v3',
     ]).optional(),
@@ -75,6 +76,7 @@ export function finalizeDecisionEvent(candidate: unknown): DecisionEvent {
   if (event.governorApproved !== true) throw new DecisionEventRejected('governorApproved is not true');
   const emergency = event.approvalBasis === 'operator-emergency-participation';
   const deadlineContingency = event.approvalBasis === 'operator-deadline-contingency-v1';
+  const finalWindowContingency = event.approvalBasis === 'operator-final-window-contingency-v2';
   const evidenceLimitedV3 = event.approvalBasis === 'operator-evidence-limited-v3';
   if (emergency) {
     if (event.strategyVersion !== 'emergency_participation@1.0.0' || event.expectedEdgeBps !== 0) {
@@ -83,6 +85,10 @@ export function finalizeDecisionEvent(candidate: unknown): DecisionEvent {
   } else if (deadlineContingency) {
     if (event.strategyVersion !== 'deadline_contingency@1.0.0' || event.expectedEdgeBps !== 0) {
       throw new DecisionEventRejected('deadline contingency basis is malformed or overstates expected edge');
+    }
+  } else if (finalWindowContingency) {
+    if (event.strategyVersion !== 'final_window_contingency@2.0.0' || event.expectedEdgeBps !== 0) {
+      throw new DecisionEventRejected('final-window contingency basis is malformed or overstates expected edge');
     }
   } else if (evidenceLimitedV3) {
     if (event.strategyVersion !== 'competition_trend_pullback@3.0.0' || event.expectedEdgeBps !== 0) {

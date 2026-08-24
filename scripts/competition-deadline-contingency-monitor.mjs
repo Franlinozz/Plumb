@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Read-only public-data monitor for the operator-authorised post-cutoff contingency. */
 
-import { createSeededIdFactory, DEADLINE_CONTINGENCY_AMENDMENT } from '@plumb/core';
+import { createSeededIdFactory, FINAL_WINDOW_CONTINGENCY_AMENDMENT } from '@plumb/core';
 import {
   buildSnapshot,
   closes,
@@ -17,13 +17,13 @@ import {
   STRATEGY_IDS,
   aggregateClosedFourHour,
   classifyFourHourTrend,
-  deadlineContingency,
-  DEADLINE_CONTINGENCY_ID,
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
   runCycle,
 } from '@plumb/strategy';
 
 const instrument = process.argv[2];
-if (!DEADLINE_CONTINGENCY_AMENDMENT.instruments.includes(instrument)) {
+if (!FINAL_WINDOW_CONTINGENCY_AMENDMENT.instruments.includes(instrument)) {
   throw new Error('usage: competition-deadline-contingency-monitor.mjs <ETH-USDT-SWAP|SOL-USDT-SWAP>');
 }
 const now = Date.now();
@@ -59,7 +59,7 @@ const snapshot = buildSnapshot({
 });
 const enabled = Object.fromEntries([
   ...STRATEGY_IDS.map((id) => [id, false]),
-  [DEADLINE_CONTINGENCY_ID, true],
+  [FINAL_WINDOW_CONTINGENCY_ID, true],
 ]);
 const config = {
   ...DEFAULT_STRATEGY_CONFIG,
@@ -70,7 +70,7 @@ const cycle = runCycle(snapshot, {
   now,
   newId: createSeededIdFactory(Math.floor(now / 3_600_000)),
   config,
-  modules: [deadlineContingency],
+  modules: [finalWindowContingency],
   regimeTimeframe: '4H',
 });
 
@@ -84,14 +84,14 @@ const price24h = ticker.open24h === 0 ? Number.NaN : ticker.last / ticker.open24
 const spreadBps = (ticker.askPx - ticker.bidPx) / ticker.last * 10_000;
 const signal = cycle.signals[0];
 const priceNotOpposed = signal === undefined ? false : signal.side === 'long'
-  ? price24h >= -DEADLINE_CONTINGENCY_AMENDMENT.maxOpposingPriceChangePct24h
-  : price24h <= DEADLINE_CONTINGENCY_AMENDMENT.maxOpposingPriceChangePct24h;
+  ? price24h >= -FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxOpposingPriceChangePct24h
+  : price24h <= FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxOpposingPriceChangePct24h;
 const liveVetoesClear = signal !== undefined &&
-  oi1h >= DEADLINE_CONTINGENCY_AMENDMENT.minOneHourOiChangePct &&
-  oi4h >= DEADLINE_CONTINGENCY_AMENDMENT.minFourHourOiChangePct &&
-  oi24h >= DEADLINE_CONTINGENCY_AMENDMENT.minTwentyFourHourOiChangePct &&
-  spreadBps <= DEADLINE_CONTINGENCY_AMENDMENT.maxSpreadBps &&
-  Math.abs(funding.fundingRate) <= DEADLINE_CONTINGENCY_AMENDMENT.maxAbsFundingRate &&
+  oi1h >= FINAL_WINDOW_CONTINGENCY_AMENDMENT.minOneHourOiChangePct &&
+  oi4h >= FINAL_WINDOW_CONTINGENCY_AMENDMENT.minFourHourOiChangePct &&
+  oi24h >= FINAL_WINDOW_CONTINGENCY_AMENDMENT.minTwentyFourHourOiChangePct &&
+  spreadBps <= FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxSpreadBps &&
+  Math.abs(funding.fundingRate) <= FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxAbsFundingRate &&
   priceNotOpposed;
 const publicPreparationReady = signal !== undefined && liveVetoesClear;
 
@@ -128,10 +128,10 @@ console.log(JSON.stringify({
   event: 'deadline_contingency_read_only_monitor',
   instrument,
   window: {
-    open: now >= DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt &&
-      now < DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt,
-    opensAt: new Date(DEADLINE_CONTINGENCY_AMENDMENT.earliestEntryAt).toISOString(),
-    closesAt: new Date(DEADLINE_CONTINGENCY_AMENDMENT.latestEntryAt).toISOString(),
+    open: now >= FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt &&
+      now < FINAL_WINDOW_CONTINGENCY_AMENDMENT.latestEntryAt,
+    opensAt: new Date(FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt).toISOString(),
+    closesAt: new Date(FINAL_WINDOW_CONTINGENCY_AMENDMENT.latestEntryAt).toISOString(),
   },
   market: {
     last: ticker.last,

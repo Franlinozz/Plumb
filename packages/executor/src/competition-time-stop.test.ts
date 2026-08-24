@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEADLINE_CONTINGENCY_AMENDMENT, SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import { DEADLINE_CONTINGENCY_AMENDMENT, FINAL_WINDOW_CONTINGENCY_AMENDMENT, SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
 
 import type { OrderRef, PlaceOrderRequest } from './atk.js';
 import { type CompetitionVenue } from './competition.js';
@@ -98,6 +98,19 @@ describe('CompetitionTimeStopExecutor', () => {
     const { venue, ledger, intents, executor } = setup(contingency);
     await expect(executor.execute({ event: contingency, expectedUid: 'uid',
       now: DEADLINE_CONTINGENCY_AMENDMENT.hardExitAt })).resolves.toMatchObject({ closed: true });
+    expect(venue.placed[0]).toMatchObject({ reduceOnly: true });
+    ledger.close(); intents.close();
+  });
+
+  it('applies the unchanged hard exit to final-window V2', async () => {
+    const finalEvent = finalizeDecisionEvent({ ...event, decisionId: 'DEC-FINALTS001',
+      strategyVersion: 'final_window_contingency@2.0.0',
+      createdAt: FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt,
+      validUntil: FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000,
+      instrument: 'ETH-USDT-SWAP', approvalBasis: 'operator-final-window-contingency-v2' });
+    const { venue, ledger, intents, executor } = setup(finalEvent);
+    await expect(executor.execute({ event: finalEvent, expectedUid: 'uid',
+      now: FINAL_WINDOW_CONTINGENCY_AMENDMENT.hardExitAt })).resolves.toMatchObject({ closed: true });
     expect(venue.placed[0]).toMatchObject({ reduceOnly: true });
     ledger.close(); intents.close();
   });

@@ -122,3 +122,21 @@ export const DEADLINE_CONTINGENCY_AMENDMENT = Object.freeze({
   maxSpreadBps: 2,
   maxAbsFundingRate: 0.001,
 });
+
+/**
+ * Operator-authorised final-window contingency V2 — 2026-08-24.
+ *
+ * V1 remains immutable and closed. V2 reopens only its existing ETH/SOL, one-additional-entry
+ * allowance through 00:00 UTC on the final competition day. It changes no signal, OI, cost,
+ * publication, execution, reconciliation, stop, target, notional or loss gate.
+ */
+export const FINAL_WINDOW_CONTINGENCY_AMENDMENT = Object.freeze({
+  ...DEADLINE_CONTINGENCY_AMENDMENT,
+  authorisedAt: Date.parse('2026-08-24T06:42:00Z'),
+  unattendedExecutionAuthorisedAt: Date.parse('2026-08-24T06:42:00Z'),
+  earliestEntryAt: Date.parse('2026-08-24T06:42:00Z'),
+  latestEntryAt: Date.parse('2026-08-25T00:00:00Z'),
+  strategyId: 'final_window_contingency',
+  strategyVersion: '2.0.0',
+  approvalBasis: 'operator-final-window-contingency-v2' as const,
+});

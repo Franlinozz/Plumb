@@ -107,6 +107,8 @@ export {
   type CompetitionTrendReclaimSettings,
   deadlineContingency,
   DEADLINE_CONTINGENCY_ID,
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
   type OiState,
 } from './strategies/index.js';
 
