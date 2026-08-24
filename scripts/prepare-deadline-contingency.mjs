@@ -216,6 +216,7 @@ const event = createFinalWindowContingencyDecision({
   metadata,
   state: {
     now,
+    livePrice: venueLast,
     marketDataAt: Math.min(ticker.ts, markPrice.ts),
     maxMarketAgeMs: 30_000,
     openInterestAt: openInterest.ts,

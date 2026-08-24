@@ -39,7 +39,7 @@ const input = () => ({
   },
   metadata: { ctVal: 1, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' },
   state: {
-    now: NOW, marketDataAt: NOW, maxMarketAgeMs: 30_000,
+    now: NOW, livePrice: 100, marketDataAt: NOW, maxMarketAgeMs: 30_000,
     openInterestAt: NOW, maxOpenInterestAgeMs: 3_600_000,
     openInterestChangePct1h: -0.005, openInterestChangePct4h: -0.01,
     openInterestChangePct24h: -0.02, priceChangePct24h: -0.004,
@@ -120,5 +120,24 @@ describe('operator-authorised final-window-contingency V2 DecisionEvent factory'
       positionPct: 50,
       expectedEdgeBps: 0,
     });
+    expect(event.entryLow).toBeGreaterThan(99.9);
+    expect(event.entryHigh).toBeLessThan(100.1);
+    expect((event.entryLow + event.entryHigh) / 2).toBeCloseTo(100, 10);
+  });
+
+  it('rejects a live price that is inside the advertised tolerance but outside executor sizing', () => {
+    const candidate = input();
+    const finalNow = FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000;
+    const finalSignal = { ...candidate.signal, ts: finalNow,
+      strategyId: FINAL_WINDOW_CONTINGENCY_AMENDMENT.strategyId,
+      version: FINAL_WINDOW_CONTINGENCY_AMENDMENT.strategyVersion,
+      expiresAt: finalNow + FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxValidityMs };
+    expect(() => createFinalWindowContingencyDecision({
+      ...candidate,
+      signal: finalSignal,
+      approval: { ...candidate.approval, signalId: finalSignal.id },
+      state: { ...candidate.state, now: finalNow, livePrice: 100.08,
+        marketDataAt: finalNow, openInterestAt: finalNow },
+    })).toThrow(/executor-compatible entry range/u);
   });
 });

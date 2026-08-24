@@ -268,12 +268,20 @@ export class CliAtkClient implements AtkClient {
       if (instId === '' || !['long', 'short', 'net'].includes(posSide)) {
         throw new AtkError('malformed', 'position response is missing instrument or position side');
       }
+      const position = requiredNum(row['pos'], 'position size');
+      // OKX may retain a zero-size instrument row after a position closes and represent
+      // avgPx/upl as empty strings. That row is still unambiguously flat. Empty metrics remain
+      // malformed for any non-zero position, where accepting them would hide real exposure.
+      const flatMetric = (value: unknown, field: string): number =>
+        position === 0 && (value === undefined || value === null || value === '')
+          ? 0
+          : requiredNum(value, field);
       return {
         instId,
         posSide: posSide as VenuePosition['posSide'],
-        pos: requiredNum(row['pos'], 'position size'),
-        avgPx: requiredNum(row['avgPx'] ?? 0, 'position average price'),
-        upl: requiredNum(row['upl'] ?? 0, 'position unrealised PnL'),
+        pos: position,
+        avgPx: flatMetric(row['avgPx'], 'position average price'),
+        upl: flatMetric(row['upl'], 'position unrealised PnL'),
       };
     });
   }

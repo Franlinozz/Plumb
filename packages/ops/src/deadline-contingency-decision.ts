@@ -26,6 +26,7 @@ export interface DeadlineContingencyInput {
   readonly approval: Approval;
   readonly costs: CompetitionCostEstimate;
   readonly state: CompetitionDecisionState & {
+    readonly livePrice: number;
     readonly openInterestChangePct1h: number;
     readonly openInterestChangePct4h: number;
     readonly spreadBps: number;
@@ -48,6 +49,50 @@ const inputNumber = (signal: Signal, name: string): number => {
 const floorToStep = (value: number, step: number): number => {
   const decimals = Math.max(0, (step.toString().split('.')[1] ?? '').length);
   return Number((Math.floor(value / step) * step).toFixed(decimals));
+};
+
+const liveExecutionChecksPass = (input: {
+  readonly price: number;
+  readonly stopPrice: number;
+  readonly takeProfit: number;
+  readonly riskUsd: number;
+  readonly expectedCostBps: number;
+  readonly equityUsd: number;
+  readonly approvedPositionPct: number;
+  readonly maxNotionalUsd: number;
+  readonly maxPlannedLossUsd: number;
+  readonly minProjectedNetTargetUsd: number;
+}): boolean => {
+  const stopDistancePct = Math.abs(input.price - input.stopPrice) / input.price;
+  const notional = input.riskUsd / stopDistancePct;
+  const positionPct = notional / input.equityUsd * 100;
+  const plannedLossUsd = input.riskUsd + notional * input.expectedCostBps / 10_000;
+  const targetDistancePct = Math.abs(input.takeProfit - input.price) / input.price;
+  const projectedNetTargetUsd = notional * targetDistancePct -
+    notional * input.expectedCostBps / 10_000;
+  return Number.isFinite(notional) && notional > 0 &&
+    notional <= input.maxNotionalUsd + 1e-9 &&
+    plannedLossUsd <= input.maxPlannedLossUsd + 1e-9 &&
+    projectedNetTargetUsd + 1e-9 >= input.minProjectedNetTargetUsd &&
+    Math.abs(positionPct - input.approvedPositionPct) <= 0.25 + 1e-9;
+};
+
+const executableSymmetricDrift = (
+  entry: number,
+  requestedDrift: number,
+  checks: (price: number) => boolean,
+): number => {
+  if (!checks(entry)) {
+    throw new CompetitionDecisionRejected('reference price cannot pass the executor live-risk gates');
+  }
+  let low = 0;
+  let high = requestedDrift;
+  for (let iteration = 0; iteration < 64; iteration += 1) {
+    const candidate = (low + high) / 2;
+    if (checks(entry - candidate) && checks(entry + candidate)) low = candidate;
+    else high = candidate;
+  }
+  return low;
 };
 
 /**
@@ -183,7 +228,26 @@ function createContingencyDecision(
       state.entryToleranceBps > amendment.maxEntryToleranceBps) {
     throw new CompetitionDecisionRejected('entry tolerance is outside the authorised range');
   }
-  const drift = entry * state.entryToleranceBps / 10_000;
+  if (!Number.isFinite(state.livePrice) || state.livePrice <= 0) {
+    throw new CompetitionDecisionRejected('live execution price is invalid');
+  }
+  const requestedDrift = entry * state.entryToleranceBps / 10_000;
+  const drift = executableSymmetricDrift(entry, requestedDrift, (price) =>
+    liveExecutionChecksPass({
+      price,
+      stopPrice: signal.stop.price,
+      takeProfit,
+      riskUsd,
+      expectedCostBps,
+      equityUsd: state.equityUsd,
+      approvedPositionPct: positionPct,
+      maxNotionalUsd: amendment.maxNotionalUsd,
+      maxPlannedLossUsd: amendment.maxPlannedLossUsd,
+      minProjectedNetTargetUsd: amendment.minProjectedNetTargetUsd,
+    }));
+  if (state.livePrice < entry - drift || state.livePrice > entry + drift) {
+    throw new CompetitionDecisionRejected('live price is outside the executor-compatible entry range');
+  }
   const validUntil = Math.min(signal.expiresAt, state.now + amendment.maxValidityMs, amendment.latestEntryAt);
   if (validUntil <= state.now) throw new CompetitionDecisionRejected('contingency event has no valid execution window');
 

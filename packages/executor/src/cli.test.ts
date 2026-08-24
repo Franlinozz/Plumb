@@ -206,6 +206,21 @@ describe('CLI argument construction', () => {
     await expect(malformed.client.getPositions('BTC-USDT-SWAP')).rejects.toThrow(/position size/u);
   });
 
+  it('accepts empty venue metrics only for an explicitly zero signed position', async () => {
+    const flat = recording({ positions: [{
+      instId: 'ETH-USDT-SWAP', posSide: 'net', pos: '0', avgPx: '', upl: '',
+    }] });
+    await expect(flat.client.getPositions('ETH-USDT-SWAP')).resolves.toEqual([{
+      instId: 'ETH-USDT-SWAP', posSide: 'net', pos: 0, avgPx: 0, upl: 0,
+    }]);
+
+    const exposed = recording({ positions: [{
+      instId: 'ETH-USDT-SWAP', posSide: 'net', pos: '1', avgPx: '', upl: '',
+    }] });
+    await expect(exposed.client.getPositions('ETH-USDT-SWAP'))
+      .rejects.toThrow(/position average price/u);
+  });
+
   it('rejects malformed orders, fills, balances, fees, and size limits instead of inventing zeros', async () => {
     const malformedOrder = recording({ get: [{ ordId: 'ORD1', instId: 'BTC-USDT-SWAP',
       state: 'mystery', side: 'buy', sz: '1', cTime: '1' }] });
