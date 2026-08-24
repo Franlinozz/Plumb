@@ -55,44 +55,51 @@ const liveExecutionChecksPass = (input: {
   readonly price: number;
   readonly stopPrice: number;
   readonly takeProfit: number;
-  readonly riskUsd: number;
+  readonly contracts: number;
+  readonly contractUnit: number;
+  readonly maxRiskUsd: number;
   readonly expectedCostBps: number;
   readonly equityUsd: number;
-  readonly approvedPositionPct: number;
   readonly maxNotionalUsd: number;
+  readonly maxPositionPct: number;
   readonly maxPlannedLossUsd: number;
   readonly minProjectedNetTargetUsd: number;
 }): boolean => {
-  const stopDistancePct = Math.abs(input.price - input.stopPrice) / input.price;
-  const notional = input.riskUsd / stopDistancePct;
+  const notional = input.contracts * input.contractUnit * input.price;
+  const stopRiskUsd = input.contracts * input.contractUnit * Math.abs(input.price - input.stopPrice);
   const positionPct = notional / input.equityUsd * 100;
-  const plannedLossUsd = input.riskUsd + notional * input.expectedCostBps / 10_000;
-  const targetDistancePct = Math.abs(input.takeProfit - input.price) / input.price;
-  const projectedNetTargetUsd = notional * targetDistancePct -
+  const plannedLossUsd = stopRiskUsd + notional * input.expectedCostBps / 10_000;
+  const projectedNetTargetUsd = input.contracts * input.contractUnit *
+    Math.abs(input.takeProfit - input.price) -
     notional * input.expectedCostBps / 10_000;
   return Number.isFinite(notional) && notional > 0 &&
+    stopRiskUsd <= input.maxRiskUsd + 1e-9 &&
     notional <= input.maxNotionalUsd + 1e-9 &&
+    positionPct <= input.maxPositionPct + 1e-9 &&
     plannedLossUsd <= input.maxPlannedLossUsd + 1e-9 &&
-    projectedNetTargetUsd + 1e-9 >= input.minProjectedNetTargetUsd &&
-    Math.abs(positionPct - input.approvedPositionPct) <= 0.25 + 1e-9;
+    projectedNetTargetUsd + 1e-9 >= input.minProjectedNetTargetUsd;
 };
 
-const executableSymmetricDrift = (
+const executableBounds = (
   entry: number,
   requestedDrift: number,
   checks: (price: number) => boolean,
-): number => {
+): readonly [number, number] => {
   if (!checks(entry)) {
     throw new CompetitionDecisionRejected('reference price cannot pass the executor live-risk gates');
   }
-  let low = 0;
-  let high = requestedDrift;
-  for (let iteration = 0; iteration < 64; iteration += 1) {
-    const candidate = (low + high) / 2;
-    if (checks(entry - candidate) && checks(entry + candidate)) low = candidate;
-    else high = candidate;
-  }
-  return low;
+  const passingDistance = (sign: -1 | 1): number => {
+    if (checks(entry + sign * requestedDrift)) return requestedDrift;
+    let passing = 0;
+    let failing = requestedDrift;
+    for (let iteration = 0; iteration < 64; iteration += 1) {
+      const candidate = (passing + failing) / 2;
+      if (checks(entry + sign * candidate)) passing = candidate;
+      else failing = candidate;
+    }
+    return passing;
+  };
+  return [entry - passingDistance(-1), entry + passingDistance(1)];
 };
 
 /**
@@ -232,20 +239,23 @@ function createContingencyDecision(
     throw new CompetitionDecisionRejected('live execution price is invalid');
   }
   const requestedDrift = entry * state.entryToleranceBps / 10_000;
-  const drift = executableSymmetricDrift(entry, requestedDrift, (price) =>
+  const contractUnit = metadata.ctVal * metadata.ctMult;
+  const [entryLow, entryHigh] = executableBounds(entry, requestedDrift, (price) =>
     liveExecutionChecksPass({
       price,
       stopPrice: signal.stop.price,
       takeProfit,
-      riskUsd,
+      contracts,
+      contractUnit,
+      maxRiskUsd: riskUsd,
       expectedCostBps,
       equityUsd: state.equityUsd,
-      approvedPositionPct: positionPct,
       maxNotionalUsd: amendment.maxNotionalUsd,
+      maxPositionPct: amendment.maxPositionPct,
       maxPlannedLossUsd: amendment.maxPlannedLossUsd,
       minProjectedNetTargetUsd: amendment.minProjectedNetTargetUsd,
     }));
-  if (state.livePrice < entry - drift || state.livePrice > entry + drift) {
+  if (state.livePrice < entryLow || state.livePrice > entryHigh) {
     throw new CompetitionDecisionRejected('live price is outside the executor-compatible entry range');
   }
   const validUntil = Math.min(signal.expiresAt, state.now + amendment.maxValidityMs, amendment.latestEntryAt);
@@ -258,13 +268,16 @@ function createContingencyDecision(
     validUntil,
     instrument: signal.instId,
     direction: signal.side,
-    entryLow: entry - drift,
-    entryHigh: entry + drift,
+    entryLow,
+    entryHigh,
+    referencePrice: entry,
     stopPrice: signal.stop.price,
     takeProfit,
     positionPct,
     leverage: state.venueLeverage,
     riskUsd,
+    approvedContracts: contracts,
+    approvedNotionalUsd: notional,
     expectedCostBps,
     expectedEdgeBps: 0,
     approvalBasis: amendment.approvalBasis,

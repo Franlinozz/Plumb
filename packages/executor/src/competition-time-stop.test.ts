@@ -107,7 +107,9 @@ describe('CompetitionTimeStopExecutor', () => {
       strategyVersion: 'final_window_contingency@2.0.0',
       createdAt: FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt,
       validUntil: FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000,
-      instrument: 'ETH-USDT-SWAP', approvalBasis: 'operator-final-window-contingency-v2' });
+      instrument: 'ETH-USDT-SWAP', referencePrice: 76_000,
+      approvedContracts: 0.1, approvedNotionalUsd: 76,
+      approvalBasis: 'operator-final-window-contingency-v2' });
     const { venue, ledger, intents, executor } = setup(finalEvent);
     await expect(executor.execute({ event: finalEvent, expectedUid: 'uid',
       now: FINAL_WINDOW_CONTINGENCY_AMENDMENT.hardExitAt })).resolves.toMatchObject({ closed: true });

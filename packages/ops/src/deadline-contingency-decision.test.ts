@@ -63,6 +63,9 @@ describe('operator-authorised deadline-contingency DecisionEvent factory', () =>
       direction: 'long',
       riskUsd: 4,
       positionPct: 50,
+      referencePrice: 100,
+      approvedContracts: 2,
+      approvedNotionalUsd: 200,
       expectedEdgeBps: 0,
     });
     expect(event.validUntil).toBe(NOW + 30 * 60_000);
@@ -120,12 +123,30 @@ describe('operator-authorised final-window-contingency V2 DecisionEvent factory'
       positionPct: 50,
       expectedEdgeBps: 0,
     });
-    expect(event.entryLow).toBeGreaterThan(99.9);
-    expect(event.entryHigh).toBeLessThan(100.1);
-    expect((event.entryLow + event.entryHigh) / 2).toBeCloseTo(100, 10);
+    expect(event.entryLow).toBeCloseTo(99.9, 10);
+    expect(event.entryHigh).toBeCloseTo(100, 8);
+    expect(event.referencePrice).toBe(100);
   });
 
-  it('rejects a live price that is inside the advertised tolerance but outside executor sizing', () => {
+  it('accepts the favorable half of the published tolerance with frozen contracts', () => {
+    const candidate = input();
+    const finalNow = FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000;
+    const finalSignal = { ...candidate.signal, ts: finalNow,
+      strategyId: FINAL_WINDOW_CONTINGENCY_AMENDMENT.strategyId,
+      version: FINAL_WINDOW_CONTINGENCY_AMENDMENT.strategyVersion,
+      expiresAt: finalNow + FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxValidityMs };
+    const event = createFinalWindowContingencyDecision({
+      ...candidate,
+      signal: finalSignal,
+      approval: { ...candidate.approval, signalId: finalSignal.id },
+      state: { ...candidate.state, now: finalNow, livePrice: 99.92,
+        marketDataAt: finalNow, openInterestAt: finalNow },
+    });
+    expect(event.approvedContracts).toBe(2);
+    expect(event.entryLow).toBeCloseTo(99.9, 10);
+  });
+
+  it('rejects the adverse side when fixed-size stop risk would exceed its immutable ceiling', () => {
     const candidate = input();
     const finalNow = FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000;
     const finalSignal = { ...candidate.signal, ts: finalNow,

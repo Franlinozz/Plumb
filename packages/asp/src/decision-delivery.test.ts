@@ -55,6 +55,13 @@ describe('DecisionEvent A2A delivery gate', () => {
     expect(text.length).toBeLessThanOrEqual(200);
   });
 
+  it('preserves the closed-bar reference when the safe entry band is asymmetric', () => {
+    const text = formatDecisionEventForDelivery(finalizeDecisionEvent({
+      ...event(), entryLow: 64_000, entryHigh: 64_050, referencePrice: 64_000,
+    }), gate());
+    expect(text).toContain('Reference Price 64000');
+  });
+
   it('never overstates sub-hour validity', () => {
     const expiring = finalizeDecisionEvent({ ...event(), validUntil: NOW + 5 * 60_000 });
     expect(formatDecisionEventForDelivery(expiring, gate())).toMatch(/Valid for 5min$/u);
@@ -80,6 +87,7 @@ describe('DecisionEvent A2A delivery gate', () => {
     });
     const finalWindow = finalizeDecisionEvent({
       ...event(), strategyVersion: 'final_window_contingency@2.0.0', expectedEdgeBps: 0,
+      referencePrice: 64_050, approvedContracts: 0.01, approvedNotionalUsd: 64.05,
       approvalBasis: 'operator-final-window-contingency-v2',
     });
     expect(formatDecisionEventForDelivery(v3, gate())).toMatch(/^【Futures】/u);

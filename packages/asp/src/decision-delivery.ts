@@ -61,7 +61,7 @@ export function formatDecisionEventForDelivery(event: DecisionEvent, gate: Execu
   const validity = remainingMs < 3_600_000
     ? `${Math.max(1, Math.floor(remainingMs / 60_000))}min`
     : `${Math.floor(remainingMs / 3_600_000)}h`;
-  const referencePrice = (event.entryLow + event.entryHigh) / 2;
+  const referencePrice = event.referencePrice ?? (event.entryLow + event.entryHigh) / 2;
   const text =
     `【Futures】${instrument(event.instrument)} | ${event.direction.toUpperCase()} ${number(event.leverage)}x | ` +
     `Market | Reference Price ${number(referencePrice)} | Stop Loss ${number(event.stopPrice)} | ` +

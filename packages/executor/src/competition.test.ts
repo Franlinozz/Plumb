@@ -228,6 +228,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       validUntil: finalNow + 60_000, instrument: 'ETH-USDT-SWAP', entryLow: 99.9,
       entryHigh: 100.1, stopPrice: 98, takeProfit: 103, positionPct: 50, leverage: 1,
       riskUsd: 4, expectedCostBps: 12, expectedEdgeBps: 0,
+      referencePrice: 100, approvedContracts: 2, approvedNotionalUsd: 200,
       approvalBasis: 'operator-final-window-contingency-v2' });
     class FinalVenue extends CompetitionMock {
       override async getInstrumentMetadata() {
@@ -245,6 +246,29 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       ...candidate,
       unattendedAuthorizationAt: DEADLINE_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt,
     })).rejects.toThrow(/authorization/u);
+  });
+
+  it('uses immutable final-window contracts at a favorable live price instead of rescaling', async () => {
+    const finalNow = FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt + 60_000;
+    const finalEvent = finalizeDecisionEvent({ ...event, decisionId: 'DEC-FINALFIXED01',
+      strategyVersion: 'final_window_contingency@2.0.0', createdAt: finalNow - 1_000,
+      validUntil: finalNow + 60_000, instrument: 'ETH-USDT-SWAP', entryLow: 99.9,
+      entryHigh: 100, referencePrice: 100, stopPrice: 98, takeProfit: 103,
+      positionPct: 50, leverage: 1, riskUsd: 4, approvedContracts: 2,
+      approvedNotionalUsd: 200, expectedCostBps: 12, expectedEdgeBps: 0,
+      approvalBasis: 'operator-final-window-contingency-v2' });
+    class FavorableFinalVenue extends CompetitionMock {
+      override async getInstrumentMetadata() {
+        return { ctVal: 1, ctMult: 1, minSz: 0.01, lotSz: 0.01, state: 'live' };
+      }
+      override async getLastPrice() { return 99.92; }
+      override async getLeverage() { return 1; }
+    }
+    const candidate = { ...input(finalEvent), now: finalNow, priorLiveEntryCount: 1,
+      liveConfirmation: '', unattendedAuthorizationAt:
+        FINAL_WINDOW_CONTINGENCY_AMENDMENT.unattendedExecutionAuthorisedAt };
+    await expect(executor(new FavorableFinalVenue(), proof(finalEvent), () => finalNow).execute(candidate))
+      .resolves.toMatchObject({ decisionId: finalEvent.decisionId, contracts: 2 });
   });
 
   it('forbids a second-entry increase or reversal on an occupied instrument', async () => {

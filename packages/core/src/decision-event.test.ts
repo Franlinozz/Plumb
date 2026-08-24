@@ -85,11 +85,13 @@ describe('canonical DecisionEvent', () => {
   it('records final-window V2 without mutating the V1 identity', () => {
     const event = finalizeDecisionEvent({
       ...base(), strategyVersion: 'final_window_contingency@2.0.0', expectedEdgeBps: 0,
+      referencePrice: 64_050, approvedContracts: 0.01, approvedNotionalUsd: 64.05,
       approvalBasis: 'operator-final-window-contingency-v2',
     });
     expect(event.expectedEdgeBps).toBe(0);
     expect(() => finalizeDecisionEvent({
       ...base(), strategyVersion: 'deadline_contingency@1.0.0', expectedEdgeBps: 0,
+      referencePrice: 64_050, approvedContracts: 0.01, approvedNotionalUsd: 64.05,
       approvalBasis: 'operator-final-window-contingency-v2',
     })).toThrow(/malformed/u);
   });

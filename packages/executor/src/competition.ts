@@ -210,7 +210,8 @@ export class AgentTradeKitCompetitionExecutor {
     }
     const verifiedRisk = { ...input.risk, equityUsd: venueEquity,
       availableMarginUsd: Math.min(input.risk.availableMarginUsd, venueAvailable) };
-    this.assertRisk(verifiedRisk, event, lastPrice);
+    const contracts = this.contractsFor(event, verifiedRisk, metadata, lastPrice);
+    this.assertRisk(verifiedRisk, event, metadata, contracts, lastPrice);
 
     const roundTripFeeBps = Math.max(fees.maker, fees.taker) * 2 * 10_000;
     if (event.expectedCostBps < roundTripFeeBps) {
@@ -232,7 +233,6 @@ export class AgentTradeKitCompetitionExecutor {
       throw new CompetitionExecutionRejected('same-direction increases require a separately approved event type');
     }
 
-    const contracts = this.contractsFor(event, verifiedRisk, metadata, lastPrice);
     if (event.approvalBasis === EMERGENCY_PARTICIPATION_AMENDMENT.approvalBasis &&
         Math.abs(contracts - metadata.minSz) > metadata.lotSz / 2) {
       throw new CompetitionExecutionRejected('emergency participation event must use exactly the venue minimum lot');
@@ -301,7 +301,13 @@ export class AgentTradeKitCompetitionExecutor {
       venueSignedPositionAfter: after, reversed };
   }
 
-  private assertRisk(risk: CompetitionRiskState, event: DecisionEvent, liveReferencePrice: number): void {
+  private assertRisk(
+    risk: CompetitionRiskState,
+    event: DecisionEvent,
+    metadata: CompetitionInstrumentMetadata,
+    contracts: number,
+    liveReferencePrice: number,
+  ): void {
     const caps = event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis
       ? FINAL_WINDOW_CONTINGENCY_AMENDMENT
       : event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
@@ -310,14 +316,23 @@ export class AgentTradeKitCompetitionExecutor {
         ? SECOND_ENTRY_AMENDMENT
         : COMPETITION_V2_AMENDMENT;
     if (risk.equityUsd <= 0 || risk.availableMarginUsd < 0) throw new CompetitionExecutionRejected('invalid account equity');
-    if (event.riskUsd / risk.equityUsd > 0.01) throw new CompetitionExecutionRejected('risk per trade exceeds 1%');
+    const fixedSize = event.approvedContracts !== undefined;
+    const contractUnit = metadata.ctVal * metadata.ctMult;
+    const notional = fixedSize
+      ? contracts * contractUnit * liveReferencePrice
+      : event.riskUsd / (Math.abs(liveReferencePrice - event.stopPrice) / liveReferencePrice);
+    const liveStopRiskUsd = fixedSize
+      ? contracts * contractUnit * Math.abs(liveReferencePrice - event.stopPrice)
+      : event.riskUsd;
+    const livePositionPct = notional / risk.equityUsd * 100;
+    if (liveStopRiskUsd / risk.equityUsd > 0.01) throw new CompetitionExecutionRejected('risk per trade exceeds 1%');
     if (event.riskUsd > caps.maxStopRiskUsd + 1e-9 ||
-        event.positionPct > caps.maxPositionPct + 1e-9) {
+        liveStopRiskUsd > event.riskUsd + 1e-9 ||
+        event.positionPct > caps.maxPositionPct + 1e-9 ||
+        livePositionPct > caps.maxPositionPct + 1e-9) {
       throw new CompetitionExecutionRejected('event exceeds the operator-authorised trade caps');
     }
-    const stopDistancePct = Math.abs(liveReferencePrice - event.stopPrice) / liveReferencePrice;
-    const notional = event.riskUsd / stopDistancePct;
-    const plannedLossUsd = event.riskUsd + notional * event.expectedCostBps / 10_000;
+    const plannedLossUsd = liveStopRiskUsd + notional * event.expectedCostBps / 10_000;
     if (!Number.isFinite(notional) || notional > caps.maxNotionalUsd + 1e-9 ||
         plannedLossUsd > caps.maxPlannedLossUsd + 1e-9) {
       throw new CompetitionExecutionRejected('event exceeds the authorised notional or planned-loss cap');
@@ -330,8 +345,8 @@ export class AgentTradeKitCompetitionExecutor {
         : event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
           ? DEADLINE_CONTINGENCY_AMENDMENT.minProjectedNetTargetUsd
           : SECOND_ENTRY_AMENDMENT.minProjectedNetTargetUsd;
-      const targetDistancePct = Math.abs(event.takeProfit - liveReferencePrice) / liveReferencePrice;
-      const projectedNetTargetUsd = notional * targetDistancePct -
+      const projectedNetTargetUsd = contracts * contractUnit *
+        Math.abs(event.takeProfit - liveReferencePrice) -
         notional * event.expectedCostBps / 10_000;
       if (!Number.isFinite(projectedNetTargetUsd) ||
           projectedNetTargetUsd + 1e-9 < minProjectedNetTargetUsd) {
@@ -340,13 +355,36 @@ export class AgentTradeKitCompetitionExecutor {
     }
     if (-risk.realisedPnlTodayUsd / risk.equityUsd >= 0.03) throw new CompetitionExecutionRejected('soft daily loss reached');
     if (risk.drawdownUsd >= 24) throw new CompetitionExecutionRejected('competition drawdown stop reached');
-    if (risk.drawdownUsd + event.riskUsd > 30) throw new CompetitionExecutionRejected('30 USDT loss budget would be exceeded');
-    if ((risk.concurrentStopRiskUsd + event.riskUsd) / risk.equityUsd > 0.02) {
+    if (risk.drawdownUsd + liveStopRiskUsd > 30) throw new CompetitionExecutionRejected('30 USDT loss budget would be exceeded');
+    if ((risk.concurrentStopRiskUsd + liveStopRiskUsd) / risk.equityUsd > 0.02) {
       throw new CompetitionExecutionRejected('concurrent stop-risk cap reached');
     }
   }
 
   private contractsFor(event: DecisionEvent, risk: CompetitionRiskState, metadata: CompetitionInstrumentMetadata, price: number): number {
+    if (event.approvedContracts !== undefined || event.approvedNotionalUsd !== undefined) {
+      if (event.approvedContracts === undefined || event.approvedNotionalUsd === undefined ||
+          event.referencePrice === undefined) {
+        throw new CompetitionExecutionRejected('immutable approved size is incomplete');
+      }
+      const steps = event.approvedContracts / metadata.lotSz;
+      if (event.approvedContracts < metadata.minSz || Math.abs(steps - Math.round(steps)) > 1e-8) {
+        throw new CompetitionExecutionRejected('immutable approved contracts violate venue size metadata');
+      }
+      const referenceNotional = event.approvedContracts * event.referencePrice * metadata.ctVal * metadata.ctMult;
+      if (Math.abs(referenceNotional - event.approvedNotionalUsd) > Math.max(0.01, referenceNotional * 1e-8)) {
+        throw new CompetitionExecutionRejected('immutable approved notional disagrees with venue metadata');
+      }
+      const referencePositionPct = referenceNotional / risk.equityUsd * 100;
+      if (Math.abs(referencePositionPct - event.positionPct) > 0.25) {
+        throw new CompetitionExecutionRejected('immutable approved size and position percentage disagree');
+      }
+      const liveNotional = event.approvedContracts * price * metadata.ctVal * metadata.ctMult;
+      if (liveNotional / event.leverage > risk.availableMarginUsd) {
+        throw new CompetitionExecutionRejected('insufficient available margin');
+      }
+      return event.approvedContracts;
+    }
     const stopDistancePct = Math.abs(price - event.stopPrice) / price;
     const notional = event.riskUsd / stopDistancePct;
     const positionPct = (notional / risk.equityUsd) * 100;

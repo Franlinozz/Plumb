@@ -22,11 +22,16 @@ export const DecisionEventSchema = z
     direction: z.enum(['long', 'short']),
     entryLow: positive,
     entryHigh: positive,
+    /** Closed-bar strategy reference; entry bands may be intentionally asymmetric. */
+    referencePrice: positive.optional(),
     stopPrice: positive,
     takeProfit: positive,
     positionPct: positive.max(100),
     leverage: positive.min(1).max(3),
     riskUsd: positive,
+    /** Immutable venue quantity/notional approved before publication. */
+    approvedContracts: positive.optional(),
+    approvedNotionalUsd: positive.optional(),
     expectedCostBps: finite.nonnegative(),
     expectedEdgeBps: finite.nonnegative(),
     approvalBasis: z.enum([
@@ -48,6 +53,14 @@ export const DecisionEventSchema = z
     }
     if (event.entryHigh < event.entryLow) {
       ctx.addIssue({ code: 'custom', path: ['entryHigh'], message: 'must be at least entryLow' });
+    }
+    if (event.referencePrice !== undefined &&
+        (event.referencePrice < event.entryLow || event.referencePrice > event.entryHigh)) {
+      ctx.addIssue({ code: 'custom', path: ['referencePrice'], message: 'must be inside the entry range' });
+    }
+    if ((event.approvedContracts === undefined) !== (event.approvedNotionalUsd === undefined)) {
+      ctx.addIssue({ code: 'custom', path: ['approvedContracts'],
+        message: 'approved contracts and notional must be present together' });
     }
     const stopCorrect =
       event.direction === 'long' ? event.stopPrice < event.entryLow : event.stopPrice > event.entryHigh;
@@ -89,6 +102,10 @@ export function finalizeDecisionEvent(candidate: unknown): DecisionEvent {
   } else if (finalWindowContingency) {
     if (event.strategyVersion !== 'final_window_contingency@2.0.0' || event.expectedEdgeBps !== 0) {
       throw new DecisionEventRejected('final-window contingency basis is malformed or overstates expected edge');
+    }
+    if (event.referencePrice === undefined || event.approvedContracts === undefined ||
+        event.approvedNotionalUsd === undefined) {
+      throw new DecisionEventRejected('final-window contingency lacks immutable reference and size');
     }
   } else if (evidenceLimitedV3) {
     if (event.strategyVersion !== 'competition_trend_pullback@3.0.0' || event.expectedEdgeBps !== 0) {
