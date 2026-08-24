@@ -3,7 +3,6 @@
 
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { resolve, sep } from 'node:path';
 
 import Database from 'better-sqlite3';
 
@@ -11,7 +10,6 @@ import {
   DecisionPublicationStore,
   acquireDeliveryLock,
   describeDeliveryCommandFailure,
-  exactDeliverableMatches,
   formatDecisionEventForDelivery,
   isRetryableDeliveryFailure,
 } from '@plumb/asp';
@@ -70,49 +68,26 @@ function runJson(command, commandArgs) {
   return payload;
 }
 
-const deliverableRoot = resolve('/root/.onchainos/deliverables/asp');
-function exactRemoteDeliveryExists(jobId, expectedText, minimumSavedAt) {
-  const payload = runJson('onchainos', [
-    'agent', 'task-deliverable-list', '--job-id', jobId, '--role', 'asp',
-  ]);
-  const records = Array.isArray(payload.data?.deliverables) ? payload.data.deliverables : [];
-  return exactDeliverableMatches(records, expectedText, (candidate) => {
-    const path = resolve(candidate);
-    if (path !== deliverableRoot && !path.startsWith(`${deliverableRoot}${sep}`)) return undefined;
-    try { return readFileSync(path, 'utf8'); } catch { return undefined; }
-  }, minimumSavedAt);
-}
-
-function deliverWithPostcondition(jobId, signal, event) {
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const attemptStartedAt = Date.now();
-    try {
-      const payload = runJson('onchainos', [
-        'agent', 'deliver', jobId, '--deliverable-text', signal, '--agent-id', agentId,
-      ]);
-      if (payload.delivered !== true) {
-        throw new CommandFailure(`delivery not acknowledged for active subscription ${jobId}`);
-      }
-      return { attempt };
-    } catch (error) {
-      let exists;
-      try { exists = exactRemoteDeliveryExists(jobId, signal, attemptStartedAt - 5_000); }
-      catch (reconcileError) {
-        throw new CommandFailure(
-          `delivery failed and its postcondition could not be checked: ${String(reconcileError).slice(0, 300)}`,
-        );
-      }
-      if (exists) {
-        throw new CommandFailure(
-          `exact deliverable persisted for ${jobId}, but subscriber acknowledgement is uncertain`,
-        );
-      }
-      const freshForRetry = Date.now() + 60_000 < event.validUntil;
-      if (attempt === 1 && error instanceof CommandFailure && error.retryable && freshForRetry) continue;
-      throw error;
-    }
+function deliverWithOfficialExitContract(jobId, signal) {
+  const result = spawnSync('onchainos', [
+    'agent', 'deliver', jobId, '--deliverable-text', signal, '--agent-id', agentId,
+  ], {
+    encoding: 'utf8', timeout: 30_000, env: process.env, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (result.error) {
+    throw new CommandFailure(`delivery command failed: ${String(result.error.message).slice(0, 300)}`);
   }
-  throw new CommandFailure('delivery retry loop ended without an acknowledgement');
+  let payload;
+  try { payload = lastJson(result.stdout); } catch { /* current CLI may emit no JSON on success */ }
+  if (result.status !== 0 || payload?.ok === false || payload?.delivered === false) {
+    throw new CommandFailure(describeDeliveryCommandFailure({
+      command: 'onchainos agent deliver', status: result.status, payload, stderr: result.stderr,
+    }));
+  }
+  // The current official ASP reference defines delivery success as exit code 0
+  // when no JSON acknowledgement is emitted. Never retry this write: its remote
+  // outcome cannot be disproved by inspecting the local deliverable inventory.
+  return { acknowledgement: payload?.delivered === true ? 'business_response' : 'official_exit_status' };
 }
 
 const releaseDeliveryLock = acquireDeliveryLock(deliveryLockPath);
@@ -176,7 +151,7 @@ try {
       .run(jobId, deliveryKey, deliveryAt, deliveryAt);
     let payload;
     try {
-      payload = deliverWithPostcondition(jobId, signalText, event);
+      payload = deliverWithOfficialExitContract(jobId, signalText);
       runtime.prepare("UPDATE deliveries SET status='delivered',updated_at=?,error=NULL WHERE job_id=? AND delivery_key=?")
         .run(new Date().toISOString(), jobId, deliveryKey);
     } catch (error) {
@@ -188,8 +163,7 @@ try {
     console.log(JSON.stringify({
       ts: new Date().toISOString(), event: 'decision_delivery_succeeded',
       decisionId: event.decisionId, deliveryKey, jobId,
-      acknowledgement: 'business_response',
-      attempt: payload.attempt,
+      acknowledgement: payload.acknowledgement,
     }));
   }
   store.finish(event.decisionId, delivered, new Date().toISOString());

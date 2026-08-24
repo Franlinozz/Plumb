@@ -147,11 +147,10 @@ describe('the automated competition monitor is read-only by construction', () =>
   });
 
   it('reconciles publication failures and suppresses contradictory no-trade notices', () => {
-    expect(publisherSource).toContain('deliverWithPostcondition');
-    expect(publisherSource).toContain('task-deliverable-list');
-    expect(publisherSource).toContain('exactRemoteDeliveryExists');
-    expect(publisherSource).toContain('error.retryable');
-    expect(publisherSource).toContain('Date.now() + 60_000 < event.validUntil');
+    expect(publisherSource).toContain('deliverWithOfficialExitContract');
+    expect(publisherSource).toContain("'official_exit_status'");
+    expect(publisherSource).not.toContain('task-deliverable-list');
+    expect(publisherSource).not.toContain('error.retryable');
     expect(publisherSource).toContain('acquireDeliveryLock');
     expect(autopilotSource).toContain('competitionClaimBlocksNoTrade');
     expect(autopilotSource).toContain('acquireDeliveryLock');
@@ -165,13 +164,11 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(reconciledResumeSource).toContain("'DEC-ru44MLpWgI'");
     expect(reconciledResumeSource).toContain("'DEC-POXps1ql_X'");
     expect(reconciledResumeSource).toContain("'DEC-Omp1dGoo3Y'");
-    expect(reconciledResumeSource).toContain("'DEC-aQGU5WD8of'");
+    expect(reconciledResumeSource).toContain("'DEC-TtgchqATot'");
     expect(reconciledResumeSource).toContain('state.status !== expectedStatus');
     expect(reconciledResumeSource).toContain("state.failedStage !== 'prepared'");
     expect(reconciledResumeSource).toContain("publication.delivered_count !== 0");
     expect(reconciledResumeSource).toContain('exactLocalCopies.length !== 0');
-    expect(reconciledResumeSource).toContain("'task-deliverable-list'");
-    expect(reconciledResumeSource).toContain('exactRemoteCopies.length !== 0');
     expect(reconciledResumeSource).toContain("run('is-active', 'plumb-runner.service')");
     expect(reconciledResumeSource).toContain('renameSync(statePath, archivePath)');
     expect(reconciledResumeSource).toContain('bundleArchiveName');
