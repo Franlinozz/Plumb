@@ -48,7 +48,8 @@ export function formatDecisionEventForDelivery(event: DecisionEvent, gate: Execu
   if (!gate.sizingValid) throw new ExecutableSignalRejected('position sizing is invalid');
   const operatorEvidenceException = event.approvalBasis === 'operator-emergency-participation' ||
     event.approvalBasis === 'operator-evidence-limited-v3' ||
-    event.approvalBasis === 'operator-deadline-contingency-v1';
+    event.approvalBasis === 'operator-deadline-contingency-v1' ||
+    event.approvalBasis === 'operator-final-window-contingency-v2';
   if (!operatorEvidenceException &&
       event.expectedEdgeBps < event.expectedCostBps * MIN_EXPECTED_EDGE_COST_MULTIPLE) {
     throw new ExecutableSignalRejected('cost gate failed');

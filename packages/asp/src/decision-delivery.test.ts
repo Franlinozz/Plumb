@@ -69,7 +69,7 @@ describe('DecisionEvent A2A delivery gate', () => {
     expect(emergency.expectedEdgeBps).toBe(0);
   });
 
-  it('formats both explicitly authorised zero-edge additional-entry bases', () => {
+  it('formats every explicitly authorised zero-edge additional-entry basis', () => {
     const v3 = finalizeDecisionEvent({
       ...event(), strategyVersion: 'competition_trend_pullback@3.0.0', expectedEdgeBps: 0,
       approvalBasis: 'operator-evidence-limited-v3',
@@ -78,8 +78,13 @@ describe('DecisionEvent A2A delivery gate', () => {
       ...event(), strategyVersion: 'deadline_contingency@1.0.0', expectedEdgeBps: 0,
       approvalBasis: 'operator-deadline-contingency-v1',
     });
+    const finalWindow = finalizeDecisionEvent({
+      ...event(), strategyVersion: 'final_window_contingency@2.0.0', expectedEdgeBps: 0,
+      approvalBasis: 'operator-final-window-contingency-v2',
+    });
     expect(formatDecisionEventForDelivery(v3, gate())).toMatch(/^【Futures】/u);
     expect(formatDecisionEventForDelivery(contingency, gate())).toMatch(/^【Futures】/u);
+    expect(formatDecisionEventForDelivery(finalWindow, gate())).toMatch(/^【Futures】/u);
   });
 
   it.each([
