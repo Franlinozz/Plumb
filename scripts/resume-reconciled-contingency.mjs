@@ -3,6 +3,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs';
+import { resolve, sep } from 'node:path';
 
 import Database from 'better-sqlite3';
 
@@ -22,6 +23,13 @@ const RECONCILED_INCIDENTS = Object.freeze({
     status: 'prepared',
     workflow: 'final-window-contingency-v2',
     publicationAbsent: true,
+  }),
+  'DEC-aQGU5WD8of': Object.freeze({
+    instrument: 'SOL-USDT-SWAP',
+    archiveName: 'second-entry-auto.DEC-aQGU5WD8of.20260824T1055Z.json',
+    bundleArchiveName: 'deadline-contingency.DEC-aQGU5WD8of.20260824T1055Z.json',
+    workflow: 'final-window-contingency-v2',
+    verifyRemoteZero: true,
   }),
 });
 const stateDir = '/var/lib/plumb-okxai';
@@ -44,14 +52,14 @@ const archivePath = `${archiveDir}/${incident.archiveName}`;
 if (existsSync(archivePath)) throw new Error('incident archive already exists; refusing a second resume');
 const bundle = JSON.parse(readFileSync(state.bundlePath, 'utf8'));
 if (bundle.event?.decisionId !== expectedDecision ||
-    (!incident.publicationAbsent && Date.now() <= bundle.event.validUntil)) {
+    (!incident.publicationAbsent && !incident.verifyRemoteZero && Date.now() <= bundle.event.validUntil)) {
   throw new Error('incident bundle mismatch or old decision is not yet expired');
 }
 
 const db = new Database(`${stateDir}/asp-delivery.db`, { readonly: true, fileMustExist: true });
 const publication = db.prepare('SELECT status,active_count,delivered_count,created_at,signal_text FROM decision_publications WHERE decision_id=?')
   .get(expectedDecision);
-const deliveryRows = db.prepare('SELECT status FROM deliveries WHERE delivery_key=?')
+const deliveryRows = db.prepare('SELECT job_id,status FROM deliveries WHERE delivery_key=?')
   .all(`decision:${expectedDecision}`);
 db.close();
 if (incident.publicationAbsent) {
@@ -68,6 +76,31 @@ const exactLocalCopies = publication === undefined ? [] : globSync('/root/.oncha
   .filter((path) => readFileSync(path, 'utf8') === publication.signal_text);
 if (exactLocalCopies.length !== 0) {
   throw new Error('an exact executable deliverable exists locally; automatic incident clearance is forbidden');
+}
+if (incident.verifyRemoteZero) {
+  const output = execFileSync('onchainos', [
+    'agent', 'task-deliverable-list', '--job-id', deliveryRows[0].job_id, '--role', 'asp',
+  ], { encoding: 'utf8', timeout: 30_000 });
+  let remote;
+  for (const line of output.trim().split(/\r?\n/u).reverse()) {
+    try { remote = JSON.parse(line); break; } catch { /* progress line */ }
+  }
+  if (remote?.ok !== true || !Array.isArray(remote.data?.deliverables)) {
+    throw new Error('official remote publication state could not be verified');
+  }
+  const root = resolve('/root/.onchainos/deliverables/asp');
+  const exactRemoteCopies = remote.data.deliverables.filter((record) => {
+    if (typeof record.path !== 'string') return false;
+    const path = resolve(record.path);
+    if (path !== root && !path.startsWith(`${root}${sep}`)) return false;
+    const savedAt = Date.parse(record.savedAt);
+    if (!Number.isFinite(savedAt) || savedAt < Date.parse(publication.created_at) - 5_000) return false;
+    try { return readFileSync(path, 'utf8').trim() === publication.signal_text.trim(); }
+    catch { return false; }
+  });
+  if (exactRemoteCopies.length !== 0) {
+    throw new Error('an exact executable deliverable exists remotely; incident clearance is forbidden');
+  }
 }
 
 const run = (...args) => execFileSync('systemctl', args, { encoding: 'utf8' }).trim();

@@ -165,10 +165,13 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(reconciledResumeSource).toContain("'DEC-ru44MLpWgI'");
     expect(reconciledResumeSource).toContain("'DEC-POXps1ql_X'");
     expect(reconciledResumeSource).toContain("'DEC-Omp1dGoo3Y'");
+    expect(reconciledResumeSource).toContain("'DEC-aQGU5WD8of'");
     expect(reconciledResumeSource).toContain('state.status !== expectedStatus');
     expect(reconciledResumeSource).toContain("state.failedStage !== 'prepared'");
     expect(reconciledResumeSource).toContain("publication.delivered_count !== 0");
     expect(reconciledResumeSource).toContain('exactLocalCopies.length !== 0');
+    expect(reconciledResumeSource).toContain("'task-deliverable-list'");
+    expect(reconciledResumeSource).toContain('exactRemoteCopies.length !== 0');
     expect(reconciledResumeSource).toContain("run('is-active', 'plumb-runner.service')");
     expect(reconciledResumeSource).toContain('renameSync(statePath, archivePath)');
     expect(reconciledResumeSource).toContain('bundleArchiveName');

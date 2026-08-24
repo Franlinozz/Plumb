@@ -17,9 +17,10 @@ describe('A2A delivery failure reconciliation', () => {
     })).toContain('service unavailable');
   });
 
-  it('retries only network, rate-limit, and server failures', () => {
+  it('retries only transport, empty-success, rate-limit, and server failures', () => {
     expect(isRetryableDeliveryFailure({ status: 1, payload: { error: { code: 503 } } })).toBe(true);
     expect(isRetryableDeliveryFailure({ status: 1, stderr: 'connection reset by peer' })).toBe(true);
+    expect(isRetryableDeliveryFailure({ status: 0, stderr: '' })).toBe(true);
     expect(isRetryableDeliveryFailure({ status: 1, payload: { error: { code: 422, message: 'invalid signal' } } })).toBe(false);
   });
 

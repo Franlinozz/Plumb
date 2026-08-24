@@ -48,6 +48,12 @@ export function isRetryableDeliveryFailure(input: {
   readonly payload?: unknown;
   readonly stderr?: string;
 }): boolean {
+  // The current CLI can occasionally exit successfully without emitting its
+  // required JSON acknowledgement. This is retryable only by callers that
+  // first prove the exact deliverable is absent via the remote postcondition.
+  if (input.status === 0 && input.payload === undefined && (input.stderr ?? '').trim() === '') {
+    return true;
+  }
   const codes = nestedNumbers(input.payload);
   if (codes.some((code) => code === 429 || code >= 500)) return true;
   const text = redactDeliveryDiagnostic([input.payload, input.stderr].filter(Boolean), 2_000).toLowerCase();
