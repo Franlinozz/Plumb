@@ -83,6 +83,11 @@ const oi24h = changeFrom(24);
 const price24h = ticker.open24h === 0 ? Number.NaN : ticker.last / ticker.open24h - 1;
 const spreadBps = (ticker.askPx - ticker.bidPx) / ticker.last * 10_000;
 const signal = cycle.signals[0];
+const entryTolerance = signal === undefined ? 0 :
+  signal.entry.price * FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxEntryToleranceBps / 10_000;
+const liveEntryInRange = signal !== undefined &&
+  ticker.last >= signal.entry.price - entryTolerance &&
+  ticker.last <= signal.entry.price + entryTolerance;
 const priceNotOpposed = signal === undefined ? false : signal.side === 'long'
   ? price24h >= -FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxOpposingPriceChangePct24h
   : price24h <= FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxOpposingPriceChangePct24h;
@@ -92,7 +97,7 @@ const liveVetoesClear = signal !== undefined &&
   oi24h >= FINAL_WINDOW_CONTINGENCY_AMENDMENT.minTwentyFourHourOiChangePct &&
   spreadBps <= FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxSpreadBps &&
   Math.abs(funding.fundingRate) <= FINAL_WINDOW_CONTINGENCY_AMENDMENT.maxAbsFundingRate &&
-  priceNotOpposed;
+  priceNotOpposed && liveEntryInRange;
 const publicPreparationReady = signal !== undefined && liveVetoesClear;
 
 const hourly = seriesFor(snapshot, '1H') ?? [];
@@ -154,6 +159,7 @@ console.log(JSON.stringify({
     entry: signal?.entry.price ?? null,
     stop: signal?.stop.price ?? null,
     takeProfit: signal?.takeProfit?.[0]?.price ?? null,
+    liveEntryInRange,
     liveVetoesClear,
   },
   triggerDiagnostics: { values },

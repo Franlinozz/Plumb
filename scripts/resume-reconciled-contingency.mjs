@@ -15,6 +15,14 @@ const RECONCILED_INCIDENTS = Object.freeze({
     instrument: 'ETH-USDT-SWAP',
     archiveName: 'second-entry-auto.DEC-POXps1ql_X.20260823T2200Z.json',
   }),
+  'DEC-Omp1dGoo3Y': Object.freeze({
+    instrument: 'SOL-USDT-SWAP',
+    archiveName: 'second-entry-auto.DEC-Omp1dGoo3Y.20260824T1000Z.json',
+    bundleArchiveName: 'deadline-contingency.DEC-Omp1dGoo3Y.20260824T1000Z.json',
+    status: 'prepared',
+    workflow: 'final-window-contingency-v2',
+    publicationAbsent: true,
+  }),
 });
 const stateDir = '/var/lib/plumb-okxai';
 const statePath = `${stateDir}/second-entry-auto.json`;
@@ -24,15 +32,19 @@ const execute = process.argv.includes('--execute');
 if (!existsSync(statePath)) throw new Error('shared claim is absent; refusing an ambiguous resume');
 const state = JSON.parse(readFileSync(statePath, 'utf8'));
 const incident = RECONCILED_INCIDENTS[state.decisionId];
-if (incident === undefined || state.status !== 'uncertain' ||
-    state.failedStage !== 'prepared' || state.instrument !== incident.instrument) {
+const expectedStatus = incident?.status ?? 'uncertain';
+if (incident === undefined || state.status !== expectedStatus ||
+    (!incident.publicationAbsent && state.failedStage !== 'prepared') ||
+    (incident.workflow !== undefined && state.workflow !== incident.workflow) ||
+    state.instrument !== incident.instrument) {
   throw new Error('shared claim no longer matches the reconciled incident');
 }
 const expectedDecision = state.decisionId;
 const archivePath = `${archiveDir}/${incident.archiveName}`;
 if (existsSync(archivePath)) throw new Error('incident archive already exists; refusing a second resume');
 const bundle = JSON.parse(readFileSync(state.bundlePath, 'utf8'));
-if (bundle.event?.decisionId !== expectedDecision || Date.now() <= bundle.event.validUntil) {
+if (bundle.event?.decisionId !== expectedDecision ||
+    (!incident.publicationAbsent && Date.now() <= bundle.event.validUntil)) {
   throw new Error('incident bundle mismatch or old decision is not yet expired');
 }
 
@@ -42,12 +54,16 @@ const publication = db.prepare('SELECT status,active_count,delivered_count,creat
 const deliveryRows = db.prepare('SELECT status FROM deliveries WHERE delivery_key=?')
   .all(`decision:${expectedDecision}`);
 db.close();
-if (publication?.status !== 'uncertain' || publication.active_count !== 3 ||
-    publication.delivered_count !== 0 || deliveryRows.length !== 1 ||
-    deliveryRows[0]?.status !== 'uncertain') {
+if (incident.publicationAbsent) {
+  if (publication !== undefined || deliveryRows.length !== 0) {
+    throw new Error('expected a pre-publication incident but found A2A publication state');
+  }
+} else if (publication?.status !== 'uncertain' || publication.active_count !== 3 ||
+           publication.delivered_count !== 0 || deliveryRows.length !== 1 ||
+           deliveryRows[0]?.status !== 'uncertain') {
   throw new Error('publication ledger no longer matches the proven zero-acknowledgement incident');
 }
-const exactLocalCopies = globSync('/root/.onchainos/deliverables/asp/**/*.txt')
+const exactLocalCopies = publication === undefined ? [] : globSync('/root/.onchainos/deliverables/asp/**/*.txt')
   .filter((path) => statSync(path).mtimeMs >= Date.parse(publication.created_at) - 5_000)
   .filter((path) => readFileSync(path, 'utf8') === publication.signal_text);
 if (exactLocalCopies.length !== 0) {
@@ -72,17 +88,22 @@ try {
   }
   run('stop', 'plumb-okxai-deadline-contingency.timer');
   timerStopped = true;
+  run('disable', '--now', 'plumb-okxai-v2-monitor.timer', 'plumb-okxai-v3-opportunity-monitor.timer');
   run('restart', 'plumb-okxai-a2a.service');
   if (run('is-active', 'plumb-okxai-a2a.service') !== 'active') {
     throw new Error('repaired A2A service did not become active');
   }
   mkdirSync(archiveDir, { recursive: true, mode: 0o700 });
   renameSync(statePath, archivePath);
+  if (incident.bundleArchiveName !== undefined) {
+    renameSync(state.bundlePath, `${archiveDir}/${incident.bundleArchiveName}`);
+  }
   run('start', 'plumb-okxai-deadline-contingency.timer');
   timerStopped = false;
   if (run('is-active', 'plumb-okxai-deadline-contingency.timer') !== 'active') {
     throw new Error('contingency timer did not resume');
   }
+  run('start', 'plumb-okxai-deadline-contingency.service');
   console.log(JSON.stringify({
     event: 'reconciled_contingency_resumed',
     decisionId: expectedDecision,
