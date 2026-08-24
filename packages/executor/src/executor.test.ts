@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { signEligibility, type EligibilitySummary } from '@plumb/core';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { AtkError, assertDemo, classifyError, withRetry, type PlaceOrderRequest } from './atk.js';
+import { AtkError, assertDemo, classifyError, withRetry, type OrderRef, type PlaceOrderRequest } from './atk.js';
 import { NakedPositionError, entrySide, placeBracket } from './bracket.js';
 import { matchesSignal, resolveSignalId, toClOrdId, toCloseClOrdId } from './clord.js';
 import { EXECUTOR_PACKAGE } from './index.js';
@@ -196,6 +196,32 @@ describe('bracketed placement', () => {
     const intent = store.get(toClOrdId(SIGNAL));
     expect(intent).toBeDefined();
     expect(intent?.status).toBe('failed');
+    store.close();
+  });
+
+  it('adopts an order that landed despite an ambiguous write response', async () => {
+    class LandedThenTimedOut extends MockAtk {
+      override async placeOrder(request: Parameters<MockAtk['placeOrder']>[0]): Promise<OrderRef> {
+        await super.placeOrder(request);
+        throw new AtkError('timeout', 'response timed out after venue acceptance');
+      }
+    }
+    const client = new LandedThenTimedOut();
+    const store = new IntentStore();
+    const result = await placeBracket(bracketRequest(), { client, store, now: NOW });
+    expect(result.note).toContain('recovered by clOrdId');
+    expect(client.placed).toHaveLength(1);
+    expect(store.get(toClOrdId(SIGNAL))?.status).toBe('placed');
+    store.close();
+  });
+
+  it('keeps an ambiguous write pending when the venue outcome cannot be observed', async () => {
+    const client = new MockAtk({ rejectPlaceFor: () => new AtkError('transport', 'connection reset') });
+    const store = new IntentStore();
+    await expect(placeBracket(bracketRequest(), { client, store, now: NOW }))
+      .rejects.toThrow(/connection reset/u);
+    expect(store.get(toClOrdId(SIGNAL))?.status).toBe('pending');
+    expect(store.ledger().some((entry) => entry.kind === 'order_outcome_uncertain')).toBe(true);
     store.close();
   });
 

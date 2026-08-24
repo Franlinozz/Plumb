@@ -4,6 +4,7 @@ import {
   describeDeliveryCommandFailure,
   exactDeliverableMatches,
   isRetryableDeliveryFailure,
+  requireExplicitDeliverySuccess,
   redactDeliveryDiagnostic,
 } from './delivery-reconciliation.js';
 
@@ -22,6 +23,19 @@ describe('A2A delivery failure reconciliation', () => {
     expect(isRetryableDeliveryFailure({ status: 1, stderr: 'connection reset by peer' })).toBe(true);
     expect(isRetryableDeliveryFailure({ status: 0, stderr: '' })).toBe(false);
     expect(isRetryableDeliveryFailure({ status: 1, payload: { error: { code: 422, message: 'invalid signal' } } })).toBe(false);
+  });
+
+  it('requires the explicit delivery business acknowledgement', () => {
+    expect(requireExplicitDeliverySuccess({
+      status: 0, payload: { ok: true, delivered: true }, stderr: '',
+    })).toBe('business_response');
+    expect(() => requireExplicitDeliverySuccess({ status: 0, stderr: '' }))
+      .toThrow(/exited 0/u);
+    expect(() => requireExplicitDeliverySuccess({ status: 0, payload: { ok: true } }))
+      .toThrow();
+    expect(() => requireExplicitDeliverySuccess({
+      status: 0, payload: { ok: false, delivered: false, error: 'not delivered' },
+    })).toThrow(/not delivered/u);
   });
 
   it('accepts only an exact persisted signal as the postcondition', () => {

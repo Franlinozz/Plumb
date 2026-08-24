@@ -66,6 +66,9 @@ const venue = new CliAtkClient({ demo: false, allowLive: true, profile: 'competi
 const recorded = ledger.get(event.instrument);
 
 try {
+  if (intents.pending().length > 0) {
+    throw new Error('unresolved pending order intent exists; manual venue reconciliation is required');
+  }
   const executor = new AgentTradeKitCompetitionExecutor({ venue, publications, intents });
   const priorLiveEntryCount = intents.all()
     .filter((intent) => intent.status === 'placed' && intent.signalId !== event.decisionId).length;

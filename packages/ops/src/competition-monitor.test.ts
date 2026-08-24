@@ -32,6 +32,9 @@ const contingencyUnit = readFileSync(
 const publisherSource = readFileSync(
   resolve(process.cwd(), 'scripts/asp-push-decision.mjs'), 'utf8',
 );
+const competitionExecutorSource = readFileSync(
+  resolve(process.cwd(), 'scripts/competition-execute-decision.mjs'), 'utf8',
+);
 const autopilotSource = readFileSync(
   resolve(process.cwd(), 'scripts/asp-autopilot.mjs'), 'utf8',
 );
@@ -105,6 +108,8 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(autoSource.indexOf("runNode('competition-reconcile-exits.mjs'"))
       .toBeLessThan(autoSource.indexOf("runNode('competition-v3-monitor.mjs'"));
     expect(autoSource).not.toContain('direct REST');
+    expect(competitionExecutorSource).toContain('intents.pending().length > 0');
+    expect(competitionExecutorSource).toContain('manual venue reconciliation is required');
     expect(autoUnit).toContain('competition-auto.env');
     expect(autoUnit).not.toContain('secrets.env');
     expect(autoUnit).toContain('competition-second-entry-auto.mjs');
@@ -118,7 +123,10 @@ describe('the automated competition monitor is read-only by construction', () =>
 
   it('routes the pre-authorised hard exit through the executor package', () => {
     expect(timeStopScriptSource).toContain('CompetitionTimeStopExecutor');
-    expect(timeStopScriptSource).toContain('SECOND_ENTRY_AMENDMENT.hardExitAt');
+    expect(timeStopScriptSource).toContain('FINAL_WINDOW_CONTINGENCY_AMENDMENT');
+    expect(timeStopScriptSource).toContain('DEADLINE_CONTINGENCY_AMENDMENT');
+    expect(timeStopScriptSource).toContain('SECOND_ENTRY_AMENDMENT');
+    expect(timeStopScriptSource).toContain('amendment.hardExitAt');
     expect(timeStopScriptSource).not.toContain('.placeOrder(');
     expect(timeStopScriptSource).not.toContain('.closePosition(');
   });
@@ -141,14 +149,21 @@ describe('the automated competition monitor is read-only by construction', () =>
     expect(contingencyAutoSource).toContain("workflow: 'final-window-contingency-v2'");
     expect(contingencyAutoSource).toContain('FINAL_WINDOW_CONTINGENCY_AMENDMENT');
     expect(contingencyAutoSource).toContain("status: 'uncertain'");
+    expect(contingencyAutoSource).toContain("runNode('competition-reconcile-exits.mjs'");
+    expect(contingencyAutoSource).toContain("runNode('competition-time-stop.mjs'");
+    expect(contingencyAutoSource.indexOf("runNode('competition-reconcile-exits.mjs'"))
+      .toBeLessThan(contingencyAutoSource.indexOf("runNode('competition-deadline-contingency-monitor.mjs'"));
+    expect(contingencyAutoSource).toContain('incidentAlertedAt');
+    expect(contingencyAutoSource).toContain('No automatic retry will occur');
     expect(contingencyUnit).toContain('competition-auto.env');
     expect(contingencyUnit).not.toContain('secrets.env');
     expect(contingencyUnit).not.toContain('BTC-USDT-SWAP');
   });
 
   it('reconciles publication failures and suppresses contradictory no-trade notices', () => {
-    expect(publisherSource).toContain('deliverWithOfficialExitContract');
-    expect(publisherSource).toContain("'official_exit_status'");
+    expect(publisherSource).toContain('deliverOnceWithExplicitAcknowledgement');
+    expect(publisherSource).toContain('requireExplicitDeliverySuccess');
+    expect(publisherSource).not.toContain("'official_exit_status'");
     expect(publisherSource).not.toContain('task-deliverable-list');
     expect(publisherSource).not.toContain('error.retryable');
     expect(publisherSource).toContain('acquireDeliveryLock');

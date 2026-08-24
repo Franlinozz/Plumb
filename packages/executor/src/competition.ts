@@ -265,22 +265,37 @@ export class AgentTradeKitCompetitionExecutor {
     if (!result.placed || result.order === undefined) {
       throw new CompetitionExecutionRejected('entry was not newly placed');
     }
-    const order = await this.deps.venue.getOrder(event.instrument, { ordId: result.order.ordId });
-    if (order === undefined) throw new CompetitionExecutionRejected('entry order cannot be verified after write');
-    const stopObserved = order.slTriggerPx !== undefined || order.attachAlgoId !== undefined;
-    const takeProfitObserved = order.tpTriggerPx !== undefined;
-    if (!stopObserved || !takeProfitObserved) {
-      await this.emergencyReduce(event);
-      throw new CompetitionExecutionRejected('attached stop or take-profit absent after entry; emergency reduce submitted');
+    const order = await this.waitForOrder(event.instrument, result.order.ordId);
+    if (order === undefined) {
+      await this.emergencyReduce(event, metadata.lotSz / 2);
+      throw new CompetitionExecutionRejected('entry order cannot be verified after write; any observed exposure was reduced');
+    }
+    const expectedSide = event.direction === 'long' ? 'buy' : 'sell';
+    const identityMatches = order.ordId === result.order.ordId && order.clOrdId === result.clOrdId &&
+      order.instId === event.instrument && order.side === expectedSide &&
+      Math.abs(order.sz - contracts) <= metadata.lotSz / 2;
+    const priceTolerance = (metadata.tickSz ?? 0) / 2 + 1e-9;
+    const stopObserved = order.slTriggerPx !== undefined &&
+      Math.abs(order.slTriggerPx - event.stopPrice) <= priceTolerance;
+    const takeProfitObserved = order.tpTriggerPx !== undefined &&
+      Math.abs(order.tpTriggerPx - event.takeProfit) <= priceTolerance;
+    if (!identityMatches || !stopObserved || !takeProfitObserved) {
+      await this.emergencyReduce(event, metadata.lotSz / 2);
+      throw new CompetitionExecutionRejected('entry identity or exact attached protection does not match; emergency reduce submitted');
     }
 
     const after = await this.waitForSignedPosition(event.instrument, intendedSign * contracts, metadata.lotSz / 2);
     if (Math.abs(after - intendedSign * contracts) > metadata.lotSz / 2) {
-      throw new CompetitionExecutionRejected('entry is partial or signed position does not match the approved size');
+      await this.emergencyReduce(event, metadata.lotSz / 2);
+      throw new CompetitionExecutionRejected('entry is partial or signed position does not match the approved size; exposure reduced');
     }
-    const fills = await this.deps.venue.getFills(event.instrument);
-    if (!fills.some((fill) => fill.ordId === result.order?.ordId && fill.clOrdId === result.clOrdId)) {
-      throw new CompetitionExecutionRejected('no attributable fill found after entry');
+    const filledOrder = await this.waitForOrder(event.instrument, result.order.ordId, 'filled');
+    const fillObserved = await this.waitForFill(
+      event.instrument, result.order.ordId, result.clOrdId, contracts, expectedSide, metadata.lotSz / 2,
+    );
+    if (filledOrder?.state !== 'filled' || !fillObserved) {
+      await this.emergencyReduce(event, metadata.lotSz / 2);
+      throw new CompetitionExecutionRejected('entry lacks a final order/fill acknowledgement; exposure reduced');
     }
     return { decisionId: event.decisionId, orderId: result.order.ordId, contracts,
       venueSignedPositionAfter: after, reversed };
@@ -345,32 +360,82 @@ export class AgentTradeKitCompetitionExecutor {
   }
 
   private async reduceToZero(event: DecisionEvent, venueSigned: number): Promise<import('./atk.js').OrderRef> {
-    return this.deps.venue.placeOrder({
+    const clOrdId = toCloseClOrdId(event.decisionId);
+    const request = {
       instId: event.instrument, side: venueSigned > 0 ? 'sell' : 'buy',
       posSide: venueSigned > 0 ? 'long' : 'short', ordType: 'market', sz: Math.abs(venueSigned),
-      tdMode: 'cross', clOrdId: toCloseClOrdId(event.decisionId), reduceOnly: true,
-    });
+      tdMode: 'cross', clOrdId, reduceOnly: true,
+    } as const;
+    try {
+      return await this.deps.venue.placeOrder(request);
+    } catch (error) {
+      if (!(error instanceof AtkError) || !['timeout', 'transport', 'malformed'].includes(error.kind)) throw error;
+      const observed = await this.deps.venue.getOrder(event.instrument, { clOrdId });
+      if (observed === undefined) throw error;
+      return { ordId: observed.ordId, clOrdId, instId: event.instrument };
+    }
   }
 
-  private async emergencyReduce(event: DecisionEvent): Promise<void> {
+  private async emergencyReduce(event: DecisionEvent, tolerance = 1e-9): Promise<void> {
     const actual = signed(await this.deps.venue.getPositions(event.instrument), event.instrument);
     if (Math.abs(actual) <= 1e-9) return;
-    const close = await this.deps.venue.placeOrder({
+    const clOrdId = toCloseClOrdId(`E${event.decisionId}`);
+    const request = {
       instId: event.instrument, side: actual > 0 ? 'sell' : 'buy',
       posSide: actual > 0 ? 'long' : 'short', ordType: 'market', sz: Math.abs(actual), tdMode: 'cross',
-      clOrdId: toCloseClOrdId(`E${event.decisionId}`), reduceOnly: true,
-    }).catch((error: unknown) => {
-      throw new AtkError('rejected', `protective stop absent and emergency reduce failed: ${String(error)}`);
-    });
-    const flat = await this.waitForSignedPosition(event.instrument, 0, 1e-9);
+      clOrdId, reduceOnly: true,
+    } as const;
+    let close: import('./atk.js').OrderRef;
+    try {
+      close = await this.deps.venue.placeOrder(request);
+    } catch (error) {
+      if (!(error instanceof AtkError) || !['timeout', 'transport', 'malformed'].includes(error.kind)) {
+        throw new AtkError('rejected', `protective stop absent and emergency reduce failed: ${String(error)}`);
+      }
+      const observed = await this.deps.venue.getOrder(event.instrument, { clOrdId });
+      if (observed === undefined) {
+        throw new AtkError('rejected', 'emergency reduce outcome is uncertain and no matching order is observable');
+      }
+      close = { ordId: observed.ordId, clOrdId, instId: event.instrument };
+    }
+    const flat = await this.waitForSignedPosition(event.instrument, 0, tolerance);
     const [order, fills] = await Promise.all([
       this.deps.venue.getOrder(event.instrument, { ordId: close.ordId }),
       this.deps.venue.getFills(event.instrument),
     ]);
-    if (Math.abs(flat) > 1e-9 || order === undefined ||
-        !fills.some((fill) => fill.ordId === close.ordId && fill.clOrdId === close.clOrdId)) {
+    const expectedSide = actual > 0 ? 'sell' : 'buy';
+    if (Math.abs(flat) > tolerance || order === undefined ||
+        !fills.some((fill) => fill.ordId === close.ordId && fill.clOrdId === close.clOrdId &&
+          fill.instId === event.instrument && fill.side === expectedSide &&
+          Math.abs(fill.fillSz - Math.abs(actual)) <= tolerance)) {
       throw new AtkError('rejected', 'emergency reduce could not be fully verified');
     }
+  }
+
+  private async waitForOrder(
+    instId: Instrument,
+    ordId: string,
+    expectedState?: import('./atk.js').VenueOrder['state'],
+  ): Promise<import('./atk.js').VenueOrder | undefined> {
+    let order: import('./atk.js').VenueOrder | undefined;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      order = await this.deps.venue.getOrder(instId, { ordId });
+      if (order !== undefined && (expectedState === undefined || order.state === expectedState)) return order;
+      await this.sleep(500);
+    }
+    return order;
+  }
+
+  private async waitForFill(instId: Instrument, ordId: string, clOrdId: string, expectedSize: number,
+    expectedSide: 'buy' | 'sell', tolerance: number): Promise<boolean> {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const fills = await this.deps.venue.getFills(instId);
+      if (fills.some((fill) => fill.ordId === ordId && fill.clOrdId === clOrdId &&
+          fill.instId === instId && fill.side === expectedSide &&
+          Math.abs(fill.fillSz - expectedSize) <= tolerance)) return true;
+      await this.sleep(500);
+    }
+    return false;
   }
 
   private async waitForSignedPosition(instId: Instrument, expected: number, tolerance: number): Promise<number> {

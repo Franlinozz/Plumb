@@ -8,7 +8,7 @@ import {
   type DecisionEvent,
 } from '@plumb/core';
 
-import type { PlaceOrderRequest, OrderRef, VenueOrder } from './atk.js';
+import { AtkError, type PlaceOrderRequest, type OrderRef, type VenueOrder } from './atk.js';
 import {
   AgentTradeKitCompetitionExecutor,
   CompetitionExecutionRejected,
@@ -372,7 +372,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       const { slTriggerPx: _stop, attachAlgoId: _algo, ...withoutStop } = order;
       return withoutStop;
     };
-    await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
+    await expect(executor(venue).execute(input())).rejects.toThrow(/exact attached protection/u);
     expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true });
   });
 
@@ -385,7 +385,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       const { tpTriggerPx: _target, ...withoutTarget } = order;
       return withoutTarget;
     };
-    await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
+    await expect(executor(venue).execute(input())).rejects.toThrow(/exact attached protection/u);
     expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true });
   });
 
@@ -407,7 +407,7 @@ describe('AgentTradeKitCompetitionExecutor', () => {
       }
     }
     const venue = new PartialWithoutTargetVenue();
-    await expect(executor(venue).execute(input())).rejects.toThrow(/stop or take-profit absent/u);
+    await expect(executor(venue).execute(input())).rejects.toThrow(/exact attached protection/u);
     expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true, sz: 0.1 });
     expect(await venue.getPositions(event.instrument)).toMatchObject([{ pos: 0 }]);
   });
@@ -422,7 +422,41 @@ describe('AgentTradeKitCompetitionExecutor', () => {
         return result;
       }
     }
-    await expect(executor(new PartialFillVenue()).execute(input())).rejects.toThrow(/partial/u);
+    const venue = new PartialFillVenue();
+    await expect(executor(venue).execute(input())).rejects.toThrow(/partial/u);
+    expect(await venue.getPositions(event.instrument)).toMatchObject([{ pos: 0 }]);
+  });
+
+  it('emergency-reduces when attached protection prices differ from the immutable event', async () => {
+    const venue = new CompetitionMock();
+    const original = venue.getOrder.bind(venue);
+    venue.getOrder = async (...args): Promise<VenueOrder | undefined> => {
+      const order = await original(...args);
+      return order === undefined ? undefined : { ...order, slTriggerPx: event.stopPrice + 1 };
+    };
+    await expect(executor(venue).execute(input())).rejects.toThrow(/exact attached protection/u);
+    expect(venue.placed.at(-1)).toMatchObject({ reduceOnly: true });
+  });
+
+  it('reconciles an ambiguous emergency-reduce write by clOrdId without resubmitting it', async () => {
+    class AmbiguousReduceVenue extends CompetitionMock {
+      override async placeOrder(request: PlaceOrderRequest): Promise<OrderRef> {
+        const order = await super.placeOrder(request);
+        if (request.reduceOnly === true) {
+          throw new AtkError('transport', 'connection dropped after reduce reached venue');
+        }
+        return order;
+      }
+
+      override async getOrder(...args: Parameters<CompetitionMock['getOrder']>): Promise<VenueOrder | undefined> {
+        const order = await super.getOrder(...args);
+        return order === undefined ? undefined : { ...order, slTriggerPx: event.stopPrice + 1 };
+      }
+    }
+    const venue = new AmbiguousReduceVenue();
+    await expect(executor(venue).execute(input())).rejects.toThrow(/exact attached protection/u);
+    expect(venue.placed.filter((order) => order.reduceOnly === true)).toHaveLength(1);
+    expect(await venue.getPositions(event.instrument)).toMatchObject([{ pos: 0 }]);
   });
 
   it('rejects any adapter not branded as Agent Trade Kit', () => {

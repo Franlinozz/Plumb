@@ -148,6 +148,35 @@ export async function placeBracket(
       });
       return { placed: true, duplicate: false, order, stopAttached: true, clOrdId, note: 'atomic bracket' };
     } catch (error) {
+      const outcomeUncertain = error instanceof AtkError &&
+        ['timeout', 'transport', 'malformed'].includes(error.kind);
+      if (outcomeUncertain) {
+        // The write may have reached the venue. Resolve only by the persisted
+        // client order id; never resend and never relabel uncertainty as failure.
+        let observed: Awaited<ReturnType<AtkClient['getOrder']>>;
+        try { observed = await client.getOrder(request.instId, { clOrdId }); }
+        catch (lookupError) {
+          store.append({ ts: now, kind: 'order_outcome_uncertain', signalId: request.signalId,
+            instId: request.instId, detail: `write and reconciliation uncertain: ${describe(lookupError)}` });
+          throw error;
+        }
+        if (observed !== undefined) {
+          store.markPlaced(clOrdId, observed.ordId, now);
+          store.append({ ts: now, kind: 'intent_recovered_after_write', signalId: request.signalId,
+            instId: request.instId, detail: `ambiguous write resolved to venue order ${observed.ordId}` });
+          return {
+            placed: true, duplicate: false,
+            order: { ordId: observed.ordId, clOrdId, instId: request.instId },
+            stopAttached: observed.slTriggerPx !== undefined,
+            clOrdId, note: 'atomic bracket recovered by clOrdId',
+          };
+        }
+        store.append({ ts: now, kind: 'order_outcome_uncertain', signalId: request.signalId,
+          instId: request.instId, detail: `write returned ${describe(error)}; no venue order is observable yet` });
+        // Leave the intent pending. A later reconciliation may discover a
+        // delayed order; an automated new entry is forbidden while it exists.
+        throw error;
+      }
       store.markFailed(clOrdId, describe(error), now);
       throw error;
     }
@@ -167,8 +196,26 @@ export async function placeBracket(
     });
     store.markPlaced(clOrdId, order.ordId, now);
   } catch (error) {
-    store.markFailed(clOrdId, describe(error), now);
-    throw error;
+    const outcomeUncertain = error instanceof AtkError &&
+      ['timeout', 'transport', 'malformed'].includes(error.kind);
+    if (!outcomeUncertain) {
+      store.markFailed(clOrdId, describe(error), now);
+      throw error;
+    }
+    let observed: Awaited<ReturnType<AtkClient['getOrder']>>;
+    try { observed = await client.getOrder(request.instId, { clOrdId }); }
+    catch (lookupError) {
+      store.append({ ts: now, kind: 'order_outcome_uncertain', signalId: request.signalId,
+        instId: request.instId, detail: `write and reconciliation uncertain: ${describe(lookupError)}` });
+      throw error;
+    }
+    if (observed === undefined) {
+      store.append({ ts: now, kind: 'order_outcome_uncertain', signalId: request.signalId,
+        instId: request.instId, detail: `write returned ${describe(error)}; no venue order is observable yet` });
+      throw error;
+    }
+    order = { ordId: observed.ordId, clOrdId, instId: request.instId };
+    store.markPlaced(clOrdId, observed.ordId, now);
   }
 
   try {

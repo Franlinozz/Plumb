@@ -63,7 +63,10 @@ export class CompetitionTimeStopExecutor {
     if (!secondEntry && !deadlineContingency && !finalWindowContingency) {
       throw new CompetitionExecutionRejected('time stop is scoped only to the authorised additional entry');
     }
-    if (input.now < SECOND_ENTRY_AMENDMENT.hardExitAt) {
+    const hardExitAt = finalWindowContingency ? FINAL_WINDOW_CONTINGENCY_AMENDMENT.hardExitAt
+      : deadlineContingency ? DEADLINE_CONTINGENCY_AMENDMENT.hardExitAt
+        : SECOND_ENTRY_AMENDMENT.hardExitAt;
+    if (input.now < hardExitAt) {
       return { decisionId: event.decisionId, instrument: event.instrument,
         closed: false, alreadyClosed: false };
     }
@@ -130,8 +133,12 @@ export class CompetitionTimeStopExecutor {
       this.deps.venue.getOrder(event.instrument, { ordId: orderId }),
       this.deps.venue.getFills(event.instrument),
     ]);
+    const expectedSide = event.direction === 'long' ? 'sell' : 'buy';
+    const expectedSize = Math.abs(this.deps.ledger.get(event.instrument)?.signedPosition ?? 0);
     if (Math.abs(after) > tolerance / 2 || order?.state !== 'filled' ||
-        !fills.some((fill) => fill.ordId === orderId && fill.clOrdId === clOrdId)) {
+        !fills.some((fill) => fill.ordId === orderId && fill.clOrdId === clOrdId &&
+          fill.instId === event.instrument && fill.side === expectedSide &&
+          Math.abs(fill.fillSz - expectedSize) <= tolerance / 2)) {
       throw new CompetitionExecutionRejected('time-stop close is not fully filled, flat and attributable');
     }
     this.deps.ledger.set({ instrument: event.instrument, signedPosition: 0,

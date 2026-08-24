@@ -96,6 +96,7 @@ export {
   exactDeliverableMatches,
   isRetryableDeliveryFailure,
   redactDeliveryDiagnostic,
+  requireExplicitDeliverySuccess,
   type DeliverableRecord,
 } from './delivery-reconciliation.js';
 

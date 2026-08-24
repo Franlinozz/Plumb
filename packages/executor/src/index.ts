@@ -24,6 +24,7 @@ export const EXECUTOR_PACKAGE = Object.freeze({
 
 export {
   AtkError,
+  COMPETITION_BIN,
   DEFAULT_BIN,
   DEFAULT_RETRY,
   assertDemo,

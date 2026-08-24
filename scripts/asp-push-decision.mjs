@@ -12,6 +12,7 @@ import {
   describeDeliveryCommandFailure,
   formatDecisionEventForDelivery,
   isRetryableDeliveryFailure,
+  requireExplicitDeliverySuccess,
 } from '@plumb/asp';
 import { finalizeDecisionEvent } from '@plumb/core';
 
@@ -68,7 +69,7 @@ function runJson(command, commandArgs) {
   return payload;
 }
 
-function deliverWithOfficialExitContract(jobId, signal) {
+function deliverOnceWithExplicitAcknowledgement(jobId, signal) {
   const result = spawnSync('onchainos', [
     'agent', 'deliver', jobId, '--deliverable-text', signal, '--agent-id', agentId,
   ], {
@@ -79,15 +80,16 @@ function deliverWithOfficialExitContract(jobId, signal) {
   }
   let payload;
   try { payload = lastJson(result.stdout); } catch { /* current CLI may emit no JSON on success */ }
-  if (result.status !== 0 || payload?.ok === false || payload?.delivered === false) {
-    throw new CommandFailure(describeDeliveryCommandFailure({
-      command: 'onchainos agent deliver', status: result.status, payload, stderr: result.stderr,
-    }));
+  try {
+    return { acknowledgement: requireExplicitDeliverySuccess({
+      status: result.status, payload, stderr: result.stderr,
+    }) };
+  } catch (error) {
+    // The official service contract says an unclear outcome must be verified
+    // and must not be resent. No current command provides a remote delivery
+    // receipt, so blank output remains uncertain and blocks venue execution.
+    throw new CommandFailure(error instanceof Error ? error.message : String(error));
   }
-  // The current official ASP reference defines delivery success as exit code 0
-  // when no JSON acknowledgement is emitted. Never retry this write: its remote
-  // outcome cannot be disproved by inspecting the local deliverable inventory.
-  return { acknowledgement: payload?.delivered === true ? 'business_response' : 'official_exit_status' };
 }
 
 const releaseDeliveryLock = acquireDeliveryLock(deliveryLockPath);
@@ -151,7 +153,7 @@ try {
       .run(jobId, deliveryKey, deliveryAt, deliveryAt);
     let payload;
     try {
-      payload = deliverWithOfficialExitContract(jobId, signalText);
+      payload = deliverOnceWithExplicitAcknowledgement(jobId, signalText);
       runtime.prepare("UPDATE deliveries SET status='delivered',updated_at=?,error=NULL WHERE job_id=? AND delivery_key=?")
         .run(new Date().toISOString(), jobId, deliveryKey);
     } catch (error) {

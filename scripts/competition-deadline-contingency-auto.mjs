@@ -88,8 +88,72 @@ const save = (state) => {
   renameSync(temporary, statePath);
 };
 
+const reconcileExits = async () => {
+  const run = await runNode('competition-reconcile-exits.mjs', []);
+  const result = parseLastJson(run.stdout);
+  if (result.event !== 'competition_exit_reconciliation_complete') {
+    throw new Error('competition exit reconciler returned an invalid acknowledgement');
+  }
+  for (const exit of result.reconciled) {
+    await notify([
+      '✅ **PLUMB PROTECTIVE EXIT VERIFIED AND RECONCILED**',
+      `${exit.instrument} · Decision ${exit.decisionId}`,
+      `${String(exit.exitKind).toUpperCase()} filled at ${exit.exitPrice} · Realized PnL ${exit.realisedPnl.toFixed(8)} USDT`,
+      'Venue is signed-flat and the durable competition ledger now matches.',
+    ].join('\n'));
+  }
+  return result;
+};
+
 if (existsSync(statePath)) {
   const existing = JSON.parse(readFileSync(statePath, 'utf8'));
+  if (existing.status !== 'complete' && existing.incidentAlertedAt === undefined) {
+    await notify([
+      '🚨 **PLUMB FINAL-WINDOW ENTRY REQUIRES MANUAL RECONCILIATION**',
+      `${existing.instrument ?? instrument}${existing.decisionId ? ` · Decision ${existing.decisionId}` : ''}`,
+      `Durable workflow state is ${existing.status ?? 'unknown'} after a prior process ended. No automatic retry will occur.`,
+      'Inspect venue, A2A publication and signed ledger state before any further action.',
+    ].join('\n'));
+    existing.incidentAlertedAt = new Date().toISOString();
+    existing.updatedAt = existing.incidentAlertedAt;
+    save(existing);
+  }
+  if (existing.status === 'complete') {
+    try {
+      await reconcileExits();
+      const run = await runNode('competition-time-stop.mjs', []);
+      const result = parseLastJson(run.stdout);
+      if (result.event === 'competition_time_stop_complete' &&
+          (result.closed === true || result.alreadyClosed === true)) {
+        existing.timeStopStatus = result.closed ? 'closed' : 'already-flat';
+        existing.timeStopOrderId = result.orderId ?? null;
+        existing.updatedAt = new Date().toISOString();
+        save(existing);
+        if (result.closed === true && existing.timeStopNotifiedAt === undefined) {
+          await notify([
+            '✅ **PLUMB HARD TIME-STOP EXECUTED AND RECONCILED**',
+            `${result.instrument} · Decision ${result.decisionId}`,
+            `Reduce-only order ${result.orderId} closed the position through Agent Trade Kit.`,
+          ].join('\n'));
+          existing.timeStopNotifiedAt = new Date().toISOString();
+          save(existing);
+        }
+      }
+    } catch (error) {
+      if (existing.timeStopIncidentAlertedAt === undefined) {
+        existing.timeStopStatus = 'uncertain';
+        existing.timeStopIncidentAlertedAt = new Date().toISOString();
+        existing.updatedAt = existing.timeStopIncidentAlertedAt;
+        save(existing);
+        await notify([
+          '🚨 **PLUMB FINAL-WINDOW EXIT REQUIRES MANUAL RECONCILIATION**',
+          `${existing.instrument} · Decision ${existing.decisionId}`,
+          `${String(error).slice(0, 500)} No automatic order resubmission will occur.`,
+        ].join('\n'));
+      }
+      throw error;
+    }
+  }
   console.log(JSON.stringify({
     event: 'deadline_contingency_blocked_by_shared_claim',
     status: existing.status ?? 'unknown',
@@ -97,6 +161,8 @@ if (existsSync(statePath)) {
   }));
   process.exit(0);
 }
+
+await reconcileExits();
 const now = Date.now();
 if (now < FINAL_WINDOW_CONTINGENCY_AMENDMENT.earliestEntryAt) {
   console.log(JSON.stringify({

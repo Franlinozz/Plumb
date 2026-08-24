@@ -4,7 +4,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 import { DecisionPublicationStore } from '@plumb/asp';
-import { SECOND_ENTRY_AMENDMENT, finalizeDecisionEvent } from '@plumb/core';
+import {
+  DEADLINE_CONTINGENCY_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
+  SECOND_ENTRY_AMENDMENT,
+  finalizeDecisionEvent,
+} from '@plumb/core';
 import { CliAtkClient, CompetitionLedgerStore, CompetitionTimeStopExecutor, IntentStore } from '@plumb/executor';
 
 const expectedUid = process.env.PLUMB_COMPETITION_UID?.trim() ?? '';
@@ -20,14 +25,19 @@ const state = JSON.parse(readFileSync(statePath, 'utf8'));
 if (state.status !== 'complete' || typeof state.bundlePath !== 'string') {
   throw new Error('second-entry workflow is not complete; time stop refuses uncertain state');
 }
-if (now < SECOND_ENTRY_AMENDMENT.hardExitAt) {
+const bundle = JSON.parse(readFileSync(state.bundlePath, 'utf8'));
+const event = finalizeDecisionEvent(bundle.event);
+const amendment = event.approvalBasis === FINAL_WINDOW_CONTINGENCY_AMENDMENT.approvalBasis
+  ? FINAL_WINDOW_CONTINGENCY_AMENDMENT
+  : event.approvalBasis === DEADLINE_CONTINGENCY_AMENDMENT.approvalBasis
+    ? DEADLINE_CONTINGENCY_AMENDMENT
+    : SECOND_ENTRY_AMENDMENT;
+if (now < amendment.hardExitAt) {
   console.log(JSON.stringify({ event: 'competition_time_stop_not_due',
-    dueAt: new Date(SECOND_ENTRY_AMENDMENT.hardExitAt).toISOString() }));
+    dueAt: new Date(amendment.hardExitAt).toISOString() }));
   process.exit(0);
 }
 
-const bundle = JSON.parse(readFileSync(state.bundlePath, 'utf8'));
-const event = finalizeDecisionEvent(bundle.event);
 if (event.decisionId !== state.decisionId || event.instrument !== state.instrument) {
   throw new Error('time-stop state and immutable DecisionEvent disagree');
 }

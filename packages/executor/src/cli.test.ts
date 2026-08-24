@@ -1,7 +1,7 @@
 import { signEligibility, type EligibilitySummary } from '@plumb/core';
 import { describe, expect, it } from 'vitest';
 
-import { AtkError } from './atk.js';
+import { AtkError, COMPETITION_BIN, DEFAULT_BIN } from './atk.js';
 import { CliAtkClient, FORBIDDEN_CHILD_ENV, sanitizeEnv } from './cli.js';
 import {
   DemoOverrideRefused,
@@ -25,6 +25,11 @@ function recording(responses: Record<string, unknown> | ((args: readonly string[
 }
 
 describe('CLI argument construction', () => {
+  it('keeps the competition and P8 Trade Kit installations physically separate', () => {
+    expect(COMPETITION_BIN).not.toBe(DEFAULT_BIN);
+    expect(COMPETITION_BIN).toContain('atk-competition');
+    expect(DEFAULT_BIN).toContain('/atk/');
+  });
   it('always passes --json and --demo', async () => {
     const { client, calls } = recording({ positions: [] });
     await client.getPositions();
@@ -144,6 +149,103 @@ describe('CLI argument construction', () => {
     });
     // This is how idempotency asks "has this signal already been placed?".
     await expect(client.getOrder('BTC-USDT-SWAP', { clOrdId: 'X' })).resolves.toBeUndefined();
+  });
+
+  it('does not convert an arbitrary rejected order lookup into absence', async () => {
+    const client = new CliAtkClient({
+      demo: true,
+      exec: async () => { throw new AtkError('rejected', 'lookup parameters rejected'); },
+    });
+    await expect(client.getOrder('BTC-USDT-SWAP', { clOrdId: 'X' }))
+      .rejects.toThrow(/lookup parameters rejected/u);
+  });
+
+  it('never retries a write after an ambiguous transport failure', async () => {
+    let calls = 0;
+    const client = new CliAtkClient({
+      demo: true,
+      retry: { maxAttempts: 3 },
+      exec: async () => {
+        calls += 1;
+        throw new AtkError('transport', 'socket hang up after write');
+      },
+    });
+    await expect(client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'ONCEONLY',
+    })).rejects.toThrow(/socket hang up/u);
+    expect(calls).toBe(1);
+  });
+
+  it('rejects exit-zero business failures and mismatched order acknowledgements', async () => {
+    const business = recording(() => [{ sCode: '51020', sMsg: 'Order quantity invalid' }]);
+    await expect(business.client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'BUSINESSFAIL',
+    })).rejects.toThrow(/quantity invalid/u);
+
+    const mismatch = recording(() => [{ ordId: 'ORD1', clOrdId: 'SOMEONEELSE' }]);
+    await expect(mismatch.client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'EXPECTEDID',
+    })).rejects.toThrow(/different clOrdId/u);
+
+    const envelopeFailure = recording(() => ({ ok: false, code: '51020', message: 'envelope rejected' }));
+    await expect(envelopeFailure.client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'ENVELOPEFAIL',
+    })).rejects.toThrow(/envelope rejected/u);
+
+    const blank = recording(() => []);
+    await expect(blank.client.closePosition('BTC-USDT-SWAP'))
+      .rejects.toThrow(/no business acknowledgement/u);
+  });
+
+  it('rejects malformed position state instead of silently treating it as flat', async () => {
+    const malformed = recording({ positions: [{ instId: 'BTC-USDT-SWAP', posSide: 'net', pos: 'not-a-number' }] });
+    await expect(malformed.client.getPositions('BTC-USDT-SWAP')).rejects.toThrow(/position size/u);
+  });
+
+  it('rejects malformed orders, fills, balances, fees, and size limits instead of inventing zeros', async () => {
+    const malformedOrder = recording({ get: [{ ordId: 'ORD1', instId: 'BTC-USDT-SWAP',
+      state: 'mystery', side: 'buy', sz: '1', cTime: '1' }] });
+    await expect(malformedOrder.client.getOrder('BTC-USDT-SWAP', { ordId: 'ORD1' }))
+      .rejects.toThrow(/identity\/state\/side/u);
+
+    const malformedFill = recording({ fills: [{ instId: 'BTC-USDT-SWAP', ordId: 'ORD1',
+      side: 'buy', fillSz: 'bad', fillPx: '1', fee: '0', ts: '1' }] });
+    await expect(malformedFill.client.getFills('BTC-USDT-SWAP')).rejects.toThrow(/fill size/u);
+
+    const malformedBalance = recording({ balance: [{ details: [{ ccy: 'USDT', eq: 'bad', availEq: '1' }] }] });
+    await expect(malformedBalance.client.getBalance()).rejects.toThrow(/balance equity/u);
+
+    const malformedFee = recording({ fees: [{ maker: 'bad', taker: '-0.0005' }] });
+    await expect(malformedFee.client.getFeeRates('BTC-USDT-SWAP')).rejects.toThrow(/maker fee/u);
+
+    const malformedLimit = recording({ 'max-avail-size': [{ availBuy: 'bad', availSell: '1' }] });
+    await expect(malformedLimit.client.getMaxAvailableSize('BTC-USDT-SWAP'))
+      .rejects.toThrow(/maximum buy size/u);
+  });
+
+  it('checks business success and never retries cancel, amend, or close writes', async () => {
+    for (const operation of ['cancel', 'amend', 'close'] as const) {
+      let calls = 0;
+      const client = new CliAtkClient({
+        demo: true,
+        retry: { maxAttempts: 3 },
+        exec: async () => {
+          calls += 1;
+          return JSON.stringify([{ sCode: '51000', sMsg: `${operation} rejected` }]);
+        },
+      });
+      const promise = operation === 'cancel'
+        ? client.cancelOrder('BTC-USDT-SWAP', 'ORD1')
+        : operation === 'amend'
+          ? client.amendOrder('BTC-USDT-SWAP', 'ORD1', { sz: 1 })
+          : client.closePosition('BTC-USDT-SWAP');
+      await expect(promise).rejects.toThrow(new RegExp(`${operation} rejected`, 'u'));
+      expect(calls).toBe(1);
+    }
   });
 
   it('surfaces a malformed response rather than guessing', async () => {

@@ -35,6 +35,20 @@ export function describeDeliveryCommandFailure(input: {
   );
 }
 
+export function requireExplicitDeliverySuccess(input: {
+  readonly status: number | null;
+  readonly payload?: unknown;
+  readonly stderr?: string;
+}): 'business_response' {
+  const payload = input.payload as { readonly ok?: unknown; readonly delivered?: unknown } | undefined;
+  if (input.status !== 0 || payload?.ok !== true || payload.delivered !== true) {
+    throw new Error(describeDeliveryCommandFailure({
+      command: 'onchainos agent deliver', ...input,
+    }));
+  }
+  return 'business_response';
+}
+
 function nestedNumbers(value: unknown, output: number[] = []): number[] {
   if (typeof value === 'number' && Number.isFinite(value)) output.push(value);
   else if (value !== null && typeof value === 'object') {

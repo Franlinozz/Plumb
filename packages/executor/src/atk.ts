@@ -160,6 +160,8 @@ export interface CliClientOptions {
 }
 
 export const DEFAULT_BIN = '/root/.plumb/atk/node_modules/.bin/okx';
+/** Current Trade Kit isolated for scored competition activity; P8 keeps DEFAULT_BIN pinned. */
+export const COMPETITION_BIN = '/root/.plumb/atk-competition/node_modules/.bin/okx';
 
 /**
  * Guardrail 10, enforced at construction.
