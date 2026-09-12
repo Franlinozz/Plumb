@@ -21,6 +21,7 @@
     "paper": "node scripts/phase-pending.mjs paper 8 \"paper-trading loop against live market data, fake execution\"",
     "record-fixtures": "node scripts/record-fixtures.mjs",
     "snapshot": "node scripts/live-snapshot.mjs",
+    "forward:record": "node scripts/forward-recorder.mjs",
     "backfill": "node scripts/backfill.mjs",
     "divergence": "node scripts/indicator-divergence.mjs",
     "probe:regimes": "node scripts/probe-regimes.mjs",
@@ -36,7 +37,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "typescript": "^5.6.0",
-    "vitest": "^3.0.0"
+    "vitest": "^5.0.0"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,

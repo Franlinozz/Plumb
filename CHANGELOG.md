@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Post-competition
+- Merged the complete `competition/okxai` history into `main` after Season 1 concluded.
+- Reframed the project around untouched forward data, shadow trading and evidence-gated canary
+  execution; expired competition exceptions do not authorise future trades.
+- Added `npm run forward:record` and hardened systemd templates for credential-free continuous
+  public observation collection.
+- Replaced stale Phase 1 and security stubs with current architecture, status and deployment
+  guidance.
+- Updated the test toolchain and transitive production dependencies to remediate current npm
+  advisories.
+
 ### Fixed
 - **The governor permitted an opposing position on an instrument it already held.** Rule 6 only
   caught the *same* direction ("averaging down"), so a short signal on an open long was approved.

@@ -18,6 +18,7 @@ import {
 } from '@plumb/market';
 
 const DB_PATH = process.env.PLUMB_COMPETITION_MARKET_DB ?? '/var/lib/plumb-okxai/market-observations.db';
+const EVENT_NAME = process.env.PLUMB_MARKET_RECORDER_EVENT ?? 'competition_market_recorded';
 const client = new OkxPublicClient();
 mkdirSync(dirname(DB_PATH), { recursive: true });
 const store = new MarketObservationStore(DB_PATH);
@@ -54,7 +55,7 @@ try {
 
   console.log(JSON.stringify({
     ts: new Date().toISOString(),
-    event: 'competition_market_recorded',
+    event: EVENT_NAME,
     inserted,
     total: store.count(),
     instruments: tradableUniverse().length,

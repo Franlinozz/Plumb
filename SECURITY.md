@@ -1,6 +1,8 @@
-# SECURITY.md
+# Security policy
 
-> Stub. Expanded when the ASP is publicly reachable (Phase 9–10).
+Plumb contains code capable of placing leveraged perpetual-futures orders. Treat changes to the
+executor, risk governor, signal publication, reconciliation, deployment units and dependency lock
+as security-sensitive even when no conventional vulnerability is involved.
 
 ## Reporting
 
@@ -16,13 +18,31 @@ public issue.
   holds exactly the competition capital and nothing else.
 - Secrets reach the running process through the environment (`EnvironmentFile` under systemd), never
   through a committed file, a CLI argument, or a log line.
-- Live keys **do not exist before Phase 9**. Everything up to that point runs in `PLUMB_MODE=fake`
-  or against public, unauthenticated market endpoints.
+- Forward research uses `PLUMB_MODE=fake` or public, unauthenticated market endpoints. Live keys
+  are not supplied until the forward evidence and canary gates in `POST_COMPETITION.md` pass.
 - Nothing in this repo signs a withdrawal. The API key is provisioned trade-only; withdrawal
   permission is never enabled.
 
 ## Blast radius
 
-The worst case Plumb can reach on its own is losing the 400 USDT in the sub-account, and the risk
-governor exists to make even that require a chain of failures: per-trade risk is 4 USDT, the daily
-loss limit is 20 USDT, and the kill switch halts permanently at 335 USDT equity.
+The worst case must be bounded by the funds intentionally placed in the isolated trading
+sub-account. The governor adds per-trade, daily-loss, notional, leverage and kill-switch limits, but
+it is not insurance against exchange failure, credential compromise, gaps through stops or defects.
+
+## Trust boundaries
+
+- `@plumb/market` and the forward recorder have no credential or order dependency.
+- `@plumb/strategy` is pure and cannot reach the executor through workspace dependencies.
+- Only `@plumb/executor` may invoke Agent Trade Kit order operations.
+- An order requires a published approved signal and exact client-order identity.
+- A missing, malformed or ambiguous venue response fails closed and requires reconciliation.
+- Discord and general webhook URLs are credentials. Store them in root-readable environment files,
+  never source, command arguments or logs.
+
+## Deployment minimums
+
+- Run as a dedicated unprivileged user with a private state directory.
+- Use a trade-only, withdrawal-disabled sub-account key and IP allowlisting.
+- Keep public ASP/subscriber delivery isolated from exchange credentials.
+- Pin production dependencies with `npm ci` and run `npm audit --omit=dev` before deployment.
+- Never enable competition-era one-shot timers; their windows and authorisations have expired.

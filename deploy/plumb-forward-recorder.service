@@ -1,0 +1,20 @@
+[Unit]
+Description=Plumb public forward-market observation round
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/plumb
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--dns-result-order=ipv4first
+Environment=PLUMB_FORWARD_DB=/var/lib/plumb/forward-observations.db
+ExecStart=/usr/bin/node /opt/plumb/scripts/forward-recorder.mjs
+User=plumb
+Group=plumb
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/plumb

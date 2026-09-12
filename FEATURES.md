@@ -9,6 +9,9 @@ Rules for this table:
   or `internal` if it is only reachable from other Plumb code.
 - "Test" names the test file (and case, where useful) that would fail if the capability broke.
 
+Post-competition status: the complete competition implementation is retained as audit history.
+Live execution is locked while the forward evidence programme in `POST_COMPETITION.md` runs.
+
 | Capability | Package | Surface | Test |
 | --- | --- | --- | --- |
 | Locked competition parameters, frozen and tripwired | `@plumb/core` | internal | `core/src/locked.test.ts` |
@@ -102,6 +105,7 @@ Rules for this table:
 | Four free MCP tools for agent consumers | `@plumb/asp` | MCP | `asp.test.ts` › MCP tools |
 | Rate limiting, body caps, sanitised errors, no secret leakage | `@plumb/asp` | HTTP | `asp.test.ts` › leaks no secret |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
+| Durable credential-free forward observation round | `@plumb/market` | `npm run forward:record` | `market/src/observation-store.test.ts` |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
 | Indicator divergence vs OKX Agent Trade Kit | — | `npm run divergence` | manual, findings in AGENTS.md |

@@ -2,68 +2,117 @@
 
 **Every signal, measured before it's sent.**
 
-A disciplined, risk-first perpetual-futures signal service — a Trading Agent Service Provider for
-the OKX.AI Hackathon Season 1 (Trading), by Xyndicate.
+Plumb is a risk-first autonomous perpetual-futures research and execution system. It observes
+BTC-USDT-SWAP, ETH-USDT-SWAP and SOL-USDT-SWAP, produces deterministic strategy signals, subjects
+them to a persisted risk governor, publishes approved signals before execution, and reconciles
+every venue fill back to the signal that caused it.
 
-Plumb publishes every signal with its rationale **before any order exists**, then executes only what
-it published. Strategy proposes, a deterministic risk governor disposes, and the executor obeys the
-published ledger — so every fill is joinable to the signal that caused it.
+## Current status
 
-> **Status: Phase 1.** Market data, indicators, snapshots and the data watchdog work and are
-> exercised against real recorded OKX payloads. No strategy edge is claimed, no backtest has been
-> run, and **no API key exists or is needed yet** — every endpoint used so far is public. See
-> [PLUMB.md](./PLUMB.md) for the vision and [FEATURES.md](./FEATURES.md) for what actually works.
+The OKX.AI Season 1 competition is complete. Its implementation and audit history have been merged
+into `main`; the former `competition/okxai` branch is historical.
 
-## Layout
+The execution machinery is built and tested, but **autonomous live trading is not armed**. The
+competition candidates did not pass their protected evidence gates after realistic fees, slippage
+and funding. Plumb is now in forward-research mode: collect untouched public observations, evaluate
+a small number of frozen hypotheses, shadow-trade qualifying signals, and promote a strategy only
+after it passes a predeclared forward gate. This is an evidence boundary, not a missing switch.
 
+See [POST_COMPETITION.md](./POST_COMPETITION.md) for the active roadmap and
+[`reports/competition-autonomy-audit.md`](./reports/competition-autonomy-audit.md) for the final
+competition state.
+
+## Architecture
+
+```text
+OKX public market data
+        ↓
+deterministic strategy proposals (no order capability)
+        ↓
+signal, portfolio and transaction-cost gates
+        ↓
+persisted deterministic risk governor
+        ↓
+hash-chained public signal ledger
+        ↓
+OKX Agent Trade Kit executor (eligible live configurations only)
+        ↓
+fill/position reconciliation → halt on uncertainty
+        ↓
+watchdog, Discord/webhook alerts and public track record
 ```
-packages/
-  core       locked parameters, domain types, time + money primitives
-  market     market data ingest (OKX public endpoints)
-  strategy   signal generation — cannot place orders
-  risk       deterministic risk governor — may veto any signal
-  backtest   historical replay + honest metrics
-  executor   OKX Agent Trade Kit execution, brackets, reconciliation
-  asp        subscription feed + published signal ledger
-  ops        alerts, daily review, health
-```
 
-## Getting started
+| Package | Responsibility |
+| --- | --- |
+| `@plumb/core` | Locked limits, domain types and time primitives |
+| `@plumb/market` | Public OKX data, indicators and durable observations |
+| `@plumb/strategy` | Pure signal generation; cannot reach an order path |
+| `@plumb/risk` | Sizing, vetoes, drawdown controls and persisted halt state |
+| `@plumb/backtest` | Cost-aware replay, walk-forward analysis and evidence gates |
+| `@plumb/asp` | Published feed, subscription delivery and track record |
+| `@plumb/executor` | Bracketed placement, idempotency and reconciliation |
+| `@plumb/ops` | Watchdog, alerts, reviews, backups and health |
+
+## Safety invariants
+
+- Strategy proposes; only the executor can place an order.
+- Publish before execute: an unpublished signal cannot become a fill.
+- Every position opens with an attached stop.
+- Models may produce labels and prose, never order prices, size, leverage, stops or targets.
+- Ambiguous venue writes are reconciled by deterministic client ID and are never blindly retried.
+- An unmatched fill, state drift or uncertain position halts trading.
+- Averaging down is prohibited and there is at most one position per instrument.
+- Exchange access uses a trade-only sub-account key with withdrawals disabled.
+
+The complete constitution and immutable limits are in [AGENTS.md](./AGENTS.md).
+
+## Development
+
+Requires Node.js 22 or newer.
 
 ```bash
-npm install
-npm run build       # tsc -b, topological across workspaces
-npm run typecheck   # full re-check, includes test files
-npm test            # vitest, PLUMB_MODE=fake, zero network, zero spend
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm audit --omit=dev
 ```
 
-`PLUMB_MODE=fake` is the default everywhere. Copy `.env.example` to `.env` for local overrides;
-`.env` is gitignored and must never contain a real key before Phase 9.
+Tests default to deterministic fixtures and make no paid model or authenticated venue calls.
 
-## Scripts
+## Forward observation
 
-| Script | What it does |
+Start or continue the untouched post-competition dataset with public endpoints only:
+
+```bash
+npm run forward:record
+```
+
+The default database is `data/forward-observations.db`. Duplicate samples are idempotent and a
+currently forming candle may only advance to its final closed form. For continuous collection, use
+`deploy/plumb-forward-recorder.service` with `deploy/plumb-forward-recorder.timer` after reviewing
+their paths. No API key, account access or order capability is present in this recorder.
+
+## Useful commands
+
+| Command | Purpose |
 | --- | --- |
-| `npm run build` | `tsc -b` across all workspaces in dependency order |
-| `npm run typecheck` | `tsc -b --force` — full re-check including `*.test.ts` |
-| `npm test` | Vitest across all workspaces |
-| `npm run snapshot` | Fetch live public data and print a MarketSnapshot per instrument |
-| `npm run backfill -- --days 180 --tf 15m,1H` | Download historical candles into `data/plumb.db` |
-| `npm run record-fixtures` | Re-record the offline test fixtures from the live public API |
-| `npm run divergence` | Compare local indicators against the OKX Agent Trade Kit |
-| `npm run backtest` | Historical replay (Phase 6) |
-| `npm run paper` | Paper-trading loop (Phase 8) |
+| `npm run snapshot` | Inspect current public market snapshots |
+| `npm run forward:record` | Append one bounded round of forward observations |
+| `npm run backfill -- --days 180 --tf 15m,1H` | Backfill research candles |
+| `npm run backtest` | Run the cost-aware historical evaluation |
+| `npm run replay -- --tf 1H` | Replay signals over stored history |
+| `npm run hostile` | Attack the risk governor with an adversarial strategy |
+| `npm run demo-session` | Exercise the end-to-end fake execution path |
 
-## Documents
+## Documentation
 
-| File | What it is |
-| --- | --- |
-| [AGENTS.md](./AGENTS.md) | The build constitution — locked parameters, guardrails, gotchas. Read first. |
-| [PLUMB.md](./PLUMB.md) | Vision: signal primacy, why risk-first, the subscription business |
-| [FEATURES.md](./FEATURES.md) | Capability × package × surface × test |
-| [RUNBOOK.md](./RUNBOOK.md) | Operations (stub until Phase 10) |
-| [SECURITY.md](./SECURITY.md) | Key handling and blast radius |
-| [CHANGELOG.md](./CHANGELOG.md) | Keep a Changelog |
+- [POST_COMPETITION.md](./POST_COMPETITION.md) — active roadmap and promotion gates
+- [PLUMB.md](./PLUMB.md) — product thesis and public track-record model
+- [FEATURES.md](./FEATURES.md) — shipped capabilities and their proving tests
+- [RUNBOOK.md](./RUNBOOK.md) — operational and incident procedures
+- [SECURITY.md](./SECURITY.md) — trust boundaries and key handling
+- `reports/` — immutable competition research and incident evidence
 
 ## License
 

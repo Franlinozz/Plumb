@@ -11,6 +11,17 @@ long-term goal is a subscription signal service with a public, verifiable track 
 
 Tagline: **"Every signal, measured before it's sent."**
 
+## CURRENT PHASE — POST-COMPETITION FORWARD RESEARCH (2026-09-12)
+
+Season 1 is complete and its reward has been claimed. All competition deadlines, one-shot
+authorisations and evidence exceptions are expired historical records. They must never be treated
+as authority for a new order.
+
+The active plan is `POST_COMPETITION.md`: collect untouched public observations, test only
+predeclared hypotheses, shadow-trade a frozen candidate, then require a fresh operator decision for
+canary execution. Until that forward gate passes, live execution remains locked. The guardrails and
+LOCKED PARAMETERS below remain unchanged.
+
 ## LOCKED PARAMETERS — immutable, never changed by you, only by the operator in writing
 
 ```
