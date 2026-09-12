@@ -55,3 +55,19 @@ export {
   type EligibilitySummary,
 } from './eligibility.js';
 
+export {
+  DecisionEventSchema,
+  DecisionEventRejected,
+  MIN_EXPECTED_EDGE_COST_MULTIPLE,
+  decisionPositionsReconciled,
+  finalizeDecisionEvent,
+  type DecisionEvent,
+} from './decision-event.js';
+
+export {
+  COMPETITION_V2_AMENDMENT,
+  DEADLINE_CONTINGENCY_AMENDMENT,
+  FINAL_WINDOW_CONTINGENCY_AMENDMENT,
+  EMERGENCY_PARTICIPATION_AMENDMENT,
+  SECOND_ENTRY_AMENDMENT,
+} from './competition-amendment.js';

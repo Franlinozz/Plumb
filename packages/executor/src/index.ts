@@ -24,6 +24,7 @@ export const EXECUTOR_PACKAGE = Object.freeze({
 
 export {
   AtkError,
+  COMPETITION_BIN,
   DEFAULT_BIN,
   DEFAULT_RETRY,
   assertDemo,
@@ -109,3 +110,26 @@ export {
   type OverrideContext,
 } from './demo-override.js';
 
+export {
+  AgentTradeKitCompetitionExecutor,
+  CompetitionExecutionRejected,
+  type CompetitionExecutionInput,
+  type CompetitionExecutionResult,
+  type CompetitionExecutorDeps,
+  type CompetitionFeeRates,
+  type CompetitionInstrumentMetadata,
+  type CompetitionPublicationProof,
+  type CompetitionRiskState,
+  type CompetitionVenue,
+} from './competition.js';
+
+export {
+  CompetitionLedgerStore,
+  type CompetitionLedgerPosition,
+} from './competition-ledger.js';
+
+export {
+  CompetitionTimeStopExecutor,
+  type CompetitionTimeStopDeps,
+  type CompetitionTimeStopResult,
+} from './competition-time-stop.js';

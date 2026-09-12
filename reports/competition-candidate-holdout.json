@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-08-18T09:04:45.210Z",
+  "scope": "single-use-protected-holdout",
+  "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+  "auditConfigHash": "7ceee41a072da808",
+  "fromTs": 1778544000000,
+  "toTs": 1786320000000,
+  "passed": false,
+  "checks": [
+    {
+      "name": "sample size",
+      "passed": true,
+      "actual": 14,
+      "required": ">= 12"
+    },
+    {
+      "name": "net PnL",
+      "passed": false,
+      "actual": -15.451277947841334,
+      "required": "> 0 USDT"
+    },
+    {
+      "name": "profit factor",
+      "passed": false,
+      "actual": 0.49444285538242794,
+      "required": "> 1"
+    },
+    {
+      "name": "max drawdown",
+      "passed": true,
+      "actual": 6.903140720161488,
+      "required": "<= 20%"
+    },
+    {
+      "name": "kill floor",
+      "passed": true,
+      "actual": 384.54872205215867,
+      "required": "> 335 USDT"
+    },
+    {
+      "name": "outlier independence",
+      "passed": false,
+      "actual": -22.46121998323606,
+      "required": "positive without best trade"
+    },
+    {
+      "name": "governor stops",
+      "passed": true,
+      "actual": "0/0",
+      "required": "0/0"
+    },
+    {
+      "name": "boundaries",
+      "passed": true,
+      "actual": true,
+      "required": true
+    }
+  ],
+  "metrics": {
+    "maxDrawdownUsdt": 28.514323282431178,
+    "maxDrawdownPct": 6.903140720161488,
+    "minEquity": 384.54872205215867,
+    "longestDrawdownBars": 1356,
+    "longestDrawdownDays": 56.5,
+    "startingEquity": 400,
+    "finalEquity": 384.54872205215867,
+    "totalReturnUsdt": -15.451277947841334,
+    "totalReturnPct": -3.862819486960333,
+    "cagrPct": -14.765573063142767,
+    "days": 90,
+    "sharpe": -1.9389233289979608,
+    "sortino": -2.804650953047478,
+    "calmar": -2.1389645179936805,
+    "tradeCount": 14,
+    "winRate": 35.714285714285715,
+    "averageWinUsdt": 3.022318671262108,
+    "averageLossUsdt": -3.3958745893502122,
+    "profitFactor": 0.49444285538242794,
+    "expectancyUsdt": -1.103662710560098,
+    "largestLossUsdt": -4.733959830439141,
+    "largestWinUsdt": 7.0099420353946895,
+    "longestLosingStreak": 7,
+    "averageHoldBars": 31.642857142857142,
+    "totalFeesUsdt": 2.3903750368264243,
+    "fundingPaidUsdt": 0.29626092672237336,
+    "fundingReceivedUsdt": 0.14422354192070203,
+    "fundingFallbackSettlements": 0,
+    "pctTimeBelowStartingCapital": 24.757056918093475,
+    "governorVetoes": {},
+    "gateRejections": {
+      "regime_low_confidence": 18,
+      "stop_too_wide": 1
+    },
+    "killSwitchTriggers": 0,
+    "dailyLimitTriggers": 0,
+    "signalsEmitted": 14,
+    "cycles": 2161
+  },
+  "outlier": {
+    "passed": false,
+    "total": -15.45127794784137,
+    "withoutBest": -22.46121998323606,
+    "bestTradeUsdt": 7.0099420353946895,
+    "bestTradeShareOfProfit": 0,
+    "detail": "the result is not positive to begin with"
+  },
+  "signature": "d0da36c4ea8293b8cede7a5cad6279106f1c0835fc6277e210d40c21202b7591"
+}

@@ -78,7 +78,7 @@ valid**. The three things that kill entrants are disqualification (trades not tr
 signals), downtime (ASP offline or subscription service deleted), and blowup (leverage destroying the
 account before day 14). All three are engineering problems. Build accordingly.
 
-## COMPETITION STATUS — Season 1 NOT ENTERED (operator decision, 2026-08-09)
+## COMPETITION STATUS — Season 1 REGISTERED (2026-08-10)
 
 Verified live from https://www.okx.ai/hackathon on 2026-08-09:
 
@@ -93,10 +93,11 @@ Verified live from https://www.okx.ai/hackathon on 2026-08-09:
 | Subscription service | **Exactly one**, snapshotted at start as the scoring basis; if several exist the earliest-created is used; **deleting it mid-competition loses eligibility** |
 | Other eligibility | ≥1 valid trade during the period; ASP online and subscribable throughout |
 
-The binding constraint was ASP review: it takes ~24h and must COMPLETE before competition
-registration, which left ~12 working hours. **The operator elected not to enter Season 1** and to
-build Plumb properly across all ten phases as a subscription signal product, targeting a later
-event.
+Plumb was created as a new Trading ASP, approved, and irreversibly registered for Season 1 with the
+dedicated CeFi competition UID on 2026-08-10. The registration response returned
+`registered: true`. The UID is intentionally not stored in this repository. Competition trading
+must remain disabled until the dedicated Trade Kit profile, funding, canonical DecisionEvent and
+competition-only execution gates pass.
 
 **Nothing else in this constitution changes.** The LOCKED PARAMETERS stay exactly as they are —
 they are sound risk discipline for a real signal service, not competition-specific tuning — and
@@ -234,6 +235,45 @@ that touches payments, subscriptions or the trade kit.
 - **P7 · The network outage was scoped per-unit, not host-wide.** `IPAddressDeny=any` on
   `plumb-runner.service` alone. A host-wide block would have cut egress for ASSAY, Occestra and
   Sigil, all listed and taking real sales.
+- **OKX.AI delivery · runtime help overrides the pasted reference script.** The installed current
+  identity CLI requires `heartbeat --chain-index 196`, not the older reference script's agent-id
+  form. The isolated delivery daemon uses the installed interface and cross-checks the official
+  active fan-out with provider status before sending anything.
+- **Competition amendment · the operator authorised narrower first-trade risk in writing on
+  2026-08-18.** This does not revive or replace the failed protected-holdout candidate. Any future
+  eligible event is additionally limited to ETH, one entry, 0.25 USDT stop risk, 0.35 USDT total
+  planned loss, 40 USDT notional and 10% position, inside 2026-08-19T20:15Z–2026-08-23T00:00Z.
+- **A2A documentation drift · Trading Signal v1.2 replaced V1.1 by 2026-08-18.** Executable
+  perpetual messages now use `【Futures】`, a Market/Reference Price pair, one specific price, fixed
+  field order and at most 200 characters. Decision correlation stays in the immutable publication
+  record and Agent Trade Kit `clOrdId`; adding an undocumented text field would break the grammar.
+- **Emergency participation · the operator explicitly authorised the amendment on 2026-08-20.**
+  Exactly one ETH minimum-venue-lot entry may bypass only the independent-holdout and calibrated-
+  edge requirements, with `expectedEdgeBps: 0` recorded honestly. Closed-4H trend/ADX, matching
+  24H price and OI participation, moderate 1H RSI, the governor, exact A2A publication, ATK-only
+  execution, attached exits, signed reconciliation and decision-specific live confirmation remain
+  mandatory. Maximum stop risk is 0.05 USDT and maximum planned loss is 0.08 USDT.
+- **Emergency OI boundary · hourly OI must be sampled at or before the rolling boundary.** The
+  first implementation selected the first observation after `now − 24H`, silently shortened the
+  window and reversed the sign during the 2026-08-20 qualifying interval. A shared tested helper
+  now fails closed without a boundary-reaching sample, and both monitors and preparation use it.
+- **Unattended second entry · the operator explicitly authorised one-shot automation on
+  2026-08-21, expanding the universe to ETH on 2026-08-22.** Only a frozen
+  `competition_trend_pullback@3.0.0` BTC/ETH/SOL DecisionEvent may use
+  it, within the separately recorded second-entry time/damage envelope. The state claim is durable
+  before A2A publication; publication must fully acknowledge before Agent Trade Kit execution; any
+  crash or uncertainty blocks every automatic retry and raises Discord. All other live writes keep
+  decision-specific confirmation. The unit reads a UID-only allowlist, never `secrets.env`.
+- **Native TP/SL exits need explicit ledger reconciliation.** OKX closes an attached OCO with a
+  new venue order/client-order ID, so an entry-only ledger can remain non-zero while the account is
+  flat. Accept flat only after Agent Trade Kit proves the exact entry, TP/SL algo, opposite fill,
+  direction/size and closed-position record; otherwise fail closed. This first occurred when
+  `DEC-ydBHBkzgyA` hit TP on 2026-08-21.
+- **The second-entry hard exit is an authorised risk reduction, not a new signal.** At or after
+  2026-08-25T03:30Z, only the exact fully-published BTC/ETH/SOL DecisionEvent may be closed. The close
+  uses a separately persisted deterministic intent and an Agent Trade Kit reduce-only market order;
+  it must verify order, fill, signed-flat venue and ledger. A pending/uncertain intent is queried,
+  never resubmitted blindly.
 
 (append-only log — one line of reasoning each)
 
@@ -456,3 +496,65 @@ that touches payments, subscriptions or the trade kit.
   parameter, so encoding it as `averagingDown: false` would be the first step toward a config value
   that enables it. Instead the tripwire asserts no key in `LOCKED` matches an averaging-down-shaped
   name.
+- **Competition one-shot · distinguish a candidate rejection from post-write uncertainty.** The
+  systemd unit evaluates BTC and then SOL with sequential `ExecStart=` commands. A public-check or
+  private-preflight rejection before the durable one-shot claim and before every external write must
+  log/alert and exit successfully so the other authorised instrument is still evaluated. Once the
+  claim exists, every failure remains terminal `uncertain` and nonzero: never continue to the other
+  instrument and never retry automatically after a possibly completed publication or order.
+- **Competition payoff amendment · size for the prize-zone objective without relaxing evidence.**
+  On 2026-08-22 the operator raised only the one-shot second-entry caps to 3.00 USDT stop risk,
+  3.25 USDT planned loss, 150 USDT notional, 37% position and a 4.00 USDT minimum projected net
+  target. At 409.97 USDT equity the stop cap is about 0.73%, inside the original 0.75% mandate.
+  The frozen trigger, one-entry count, 3x ceiling, A2A-first ordering and all failure gates remain.
+- **Final payoff ceiling · “6 USDT” means gross, not a 6 USDT stop.** On 2026-08-22 the operator
+  authorised the maximum normal-risk form: 4.00 USDT stop risk, 4.35 USDT planned loss, 200 USDT
+  notional, 50% position and 5.50 USDT minimum projected net. A literal 6 USDT net at the frozen
+  1.5R first target would require more than 1% account risk after costs, so it remains forbidden.
+- **Competition research · the replay engine originally omitted take-profit exits.** Stops,
+  timeouts and flattening were modeled, but the first attached venue target was not. The corrected
+  engine now closes at TP with exit friction and pessimistically assigns the stop when one candle
+  touches both. A like-for-like v3 re-audit fell from +141.42/PF 1.90 to +15.22/PF 1.12 and failed
+  its frozen robustness conditions (negative second half and negative without its best three).
+  The isolated competition auto-entry timer was therefore paused fail-closed; P8 stayed active.
+- **Competition research · frequency was not a free improvement.** Three predeclared attempts to
+  make the trigger easier all failed on development data after realistic costs: 15m continuation
+  -166.54/PF 0.924; broad 1H continuation -350.76/PF 0.824; final 4H-trend/1H-reclaim candidate
+  -212.12/PF 0.731. None read the protected holdout or competition period, none was armed, and no
+  further candidate may be derived from those failures during this competition.
+- **TP-aware v3 prize option · operator explicitly accepted the corrected evidence failure on
+  2026-08-23 at 06:05 UTC.** The written authorization `AUTHORIZE TP-AWARE V3 PRIZE-OPTION` permits
+  re-arming only the existing one-shot BTC/ETH/SOL v3 workflow through its unchanged
+  2026-08-23T16:00:00Z personal cutoff. It does not make v3 evidence-approved, relax any trigger,
+  permit a fallback strategy, or expand the previously authorised $4.00 stop-risk / $4.35 planned-
+  loss / $200 notional / 50% position / $5.50 minimum projected-net envelope.
+- **Deadline contingency v1 · authorised, implemented, then paused on new adverse evidence on
+  2026-08-23.** The operator authorised a separate ETH/SOL post-v3-cutoff contest-risk path with
+  the same one-additional-entry and damage envelope. Its exact frozen development-only audit then
+  produced 722 OOS trades, -244.77 USDT, PF 0.846, 42.94% wins and 19/47 profitable windows; both
+  instruments lost. Because that material result was unknown at authorization time, the deploy
+  unit remains uninstalled and the contingency cannot trade without a fresh written decision that
+  explicitly accepts the measured negative expectancy. V3 remains active through 16:00 UTC.
+- **Deadline contingency v1 · negative expectancy explicitly accepted and timer armed on
+  2026-08-23 at 07:49 UTC.** The operator supplied
+  `ACCEPT MEASURED NEGATIVE EXPECTANCY — ARM DEADLINE CONTINGENCY V1` after receiving the frozen
+  audit. This is a contest-utility exception, not evidence approval. The reviewed systemd timer is
+  enabled, the pre-cutoff smoke returned `waiting_for_v3_cutoff` for ETH and SOL, the v3 timer is
+  still active/enabled, and the shared one-shot state remained absent. The contingency cannot
+  evaluate before 16:00 UTC and retains the frozen one-entry, A2A-first, Agent Trade Kit-only and
+  $4.35 maximum-planned-loss bounds.
+- **A green contingency decision is not proof of publication.** On 2026-08-23 SOL decision
+  `DEC-ru44MLpWgI` passed every public/private gate, but the first A2A executable delivery returned
+  a business non-success. The account stayed flat and all three deliverable histories proved zero
+  signal acknowledgements. Repairs preserve structured errors, retry only network/429/5xx once
+  while fresh and only after a timestamp-scoped absence check, never treat persistence alone as an
+  acknowledgement, and suppress routine no-trade notices while any competition claim exists. The
+  guarded resume archives the expired decision rather than replaying it; the uncertain database
+  row remains audit evidence.
+- **Final-window contingency V2 · separately authorised on 2026-08-24 at 06:42 UTC.** The written
+  authorization `AUTHORIZE FINAL-WINDOW CONTINGENCY V2` reopens only the existing ETH/SOL,
+  one-additional-entry contest-risk path through 2026-08-25T00:00:00Z. V1 remains closed and
+  immutable. V2 changes no closed-bar/OI/funding/spread gate, claims zero expected edge, retains
+  the $4.00 stop-risk / $4.35 planned-loss / $200 notional / 50% position / $5.50 projected-net
+  envelope, requires complete A2A acknowledgement before Agent Trade Kit execution, and keeps the
+  existing 2026-08-25T03:30:00Z hard exit.

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Plumb read-only Strategy v2 monitor every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=20
+Unit=plumb-okxai-v2-monitor.service
+
+[Install]
+WantedBy=timers.target

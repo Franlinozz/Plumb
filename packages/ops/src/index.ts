@@ -73,3 +73,36 @@ export {
 } from './snapshot.js';
 
 export { Heartbeat, type HeartbeatOptions, type HeartbeatState } from './heartbeat.js';
+
+export {
+  CompetitionDecisionRejected,
+  FROZEN_COMPETITION_CONFIG_HASH,
+  competitionConfigHash,
+  createCompetitionDecision,
+  signCompetitionHoldoutEvidence,
+  verifyCompetitionHoldoutEvidence,
+  type CompetitionCostEstimate,
+  type CompetitionDecisionInput,
+  type CompetitionDecisionState,
+  type CompetitionEvidence,
+  type CompetitionHoldoutEvidence,
+} from './competition-decision.js';
+
+export {
+  createEmergencyParticipationDecision,
+  type EmergencyParticipationInput,
+  type EmergencyParticipationMetadata,
+} from './emergency-participation-decision.js';
+
+export {
+  createSecondEntryDecision,
+  type SecondEntryInput,
+  type SecondEntryMetadata,
+} from './second-entry-decision.js';
+
+export {
+  createDeadlineContingencyDecision,
+  createFinalWindowContingencyDecision,
+  type DeadlineContingencyInput,
+  type DeadlineContingencyMetadata,
+} from './deadline-contingency-decision.js';

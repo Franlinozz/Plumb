@@ -4,7 +4,14 @@ import type { StrategyContext } from './module.js';
 import { classifyRegime } from './regime.js';
 import type { SignalDraft } from '@plumb/core';
 import { stopIsOnCorrectSide } from '@plumb/core';
-import { ALL_STRATEGIES, breakoutRange, fundingSkew, revertBand, trendEma } from './strategies/index.js';
+import {
+  ALL_STRATEGIES,
+  breakoutRange,
+  fundingSkew,
+  isTrendAlignedBreakout,
+  revertBand,
+  trendEma,
+} from './strategies/index.js';
 import { EVENT_SPECS, REGIME_SPECS, snapshotOf, syntheticCandles } from './testkit.js';
 import { DEFAULT_STRATEGY_CONFIG, EMPTY_STATE, type RegimeAssessment } from './types.js';
 
@@ -90,6 +97,18 @@ describe('every strategy, unconditionally', () => {
     // everything before a draft can escape. Proven in engine.test.ts. Here we only confirm the
     // context can carry the flag so that test is meaningful.
     expect(degraded().snapshot.degraded).toBe(true);
+  });
+});
+
+describe('vol_expansion trend alignment', () => {
+  it('allows only breakouts that agree with an established trend', () => {
+    expect(isTrendAlignedBreakout('long', 'trending_up')).toBe(true);
+    expect(isTrendAlignedBreakout('short', 'trending_down')).toBe(true);
+    expect(isTrendAlignedBreakout('short', 'trending_up')).toBe(false);
+    expect(isTrendAlignedBreakout('long', 'trending_down')).toBe(false);
+    expect(isTrendAlignedBreakout('long', 'ranging')).toBe(false);
+    expect(isTrendAlignedBreakout('short', 'compressed')).toBe(false);
+    expect(isTrendAlignedBreakout('long', 'expanding')).toBe(false);
   });
 });
 

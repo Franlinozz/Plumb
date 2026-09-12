@@ -108,6 +108,8 @@ export interface HoldoutAccessRequest {
   readonly reason: string;
   readonly actor: string;
   readonly now: number;
+  /** Caller must derive this from the durable audit log immediately before requesting access. */
+  readonly previouslyUsed?: boolean;
 }
 
 export interface HoldoutAccessGrant {
@@ -155,6 +157,13 @@ export function requestHoldoutAccess(
       granted: false,
       code: 'missing_reason',
       message: 'a holdout read must carry a reason — an unexplained look is an unexplained result',
+    };
+  }
+  if (request.previouslyUsed === true) {
+    return {
+      granted: false,
+      code: 'already_used',
+      message: 'the protected holdout has already been read and cannot be opened again',
     };
   }
 

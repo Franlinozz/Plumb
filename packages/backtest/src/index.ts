@@ -36,6 +36,7 @@ export {
 
 export {
   LookaheadError,
+  SeriesAlignmentError,
   assertNoLookahead,
   runBacktest,
   type BacktestOptions,
@@ -118,6 +119,13 @@ export {
 } from './holdout.js';
 
 export {
+  calibrateExpectedGrossEdge,
+  verifyEdgeCalibration,
+  type EdgeCalibrationInput,
+  type EdgeCalibrationRecord,
+} from './edge_calibration.js';
+
+export {
   accrueFunding,
   buildFundingModel,
   conservativeRateFrom,
@@ -139,4 +147,3 @@ export {
   type RegimePeriod,
   type RegimeThresholds,
 } from './regimes.js';
-

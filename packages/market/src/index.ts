@@ -142,3 +142,10 @@ export {
   type InstrumentSpec,
 } from './instruments.js';
 
+export {
+  MarketObservationStore,
+  type MarketObservation,
+  type ObservationKind,
+} from './observation-store.js';
+
+export { openInterestChangeOverWindow } from './open-interest.js';

@@ -1,9 +1,21 @@
 import type { Instrument } from '@plumb/core';
 import { fixtureCandles, type Candle } from '@plumb/market';
 import { describe, expect, it } from 'vitest';
+import {
+  DEFAULT_STRATEGY_CONFIG,
+  makeDraft,
+  type StrategyContext,
+  type StrategyModule,
+} from '@plumb/strategy';
 
 import { DEFAULT_COSTS, ZERO_COSTS } from './costs.js';
-import { LookaheadError, assertNoLookahead, runBacktest, type BacktestOptions } from './engine.js';
+import {
+  LookaheadError,
+  SeriesAlignmentError,
+  assertNoLookahead,
+  runBacktest,
+  type BacktestOptions,
+} from './engine.js';
 import { computeMetrics } from './metrics.js';
 import { PERMISSIVE_CONFIG, permissiveStrategy } from './testkit.js';
 
@@ -72,6 +84,20 @@ describe('lookahead detection', () => {
     const sizes = new Set<number>();
     run({ lookbackBars: 150, onWindow: (_i, window) => sizes.add(window.length) });
     expect([...sizes]).toEqual([150]);
+  });
+
+  it('fails closed when instrument series are not aligned by timestamp', () => {
+    const input = candles();
+    const eth = input['ETH-USDT-SWAP'] as readonly Candle[];
+    const shifted = eth.map((candle, index) =>
+      index === 120 ? { ...candle, ts: candle.ts + 3_600_000 } : candle,
+    );
+    expect(() =>
+      runBacktest({
+        candles: { ...input, 'ETH-USDT-SWAP': shifted },
+        lookbackBars: 120,
+      }),
+    ).toThrow(SeriesAlignmentError);
   });
 });
 
@@ -150,6 +176,52 @@ describe('the cost model changes the result in the expected direction', () => {
 });
 
 describe('replay mechanics', () => {
+  const targetReplay = (ambiguous: boolean) => {
+    const tf = 3_600_000;
+    const input: Candle[] = Array.from({ length: 100 }, (_, index) => {
+      const close = 100 + Math.sin(index / 3) * 0.1;
+      return { ts: index * tf, open: close, high: close + 0.1, low: close - 0.1, close,
+        volume: 100, volumeCcy: 100, volumeQuote: 10_000, closed: true };
+    });
+    const signalAt = (input[60] as Candle).ts;
+    const signalEntry = (input[60] as Candle).close;
+    input[61] = { ...(input[61] as Candle), open: signalEntry,
+      high: signalEntry + 3, low: ambiguous ? signalEntry - 3 : signalEntry - 0.2,
+      close: signalEntry + 1 };
+    const module: StrategyModule = Object.freeze({
+      id: 'target_replay_test', version: '1.0.0-test', requiresConfirmation: false,
+      evaluate: (context: StrategyContext) => context.now !== signalAt ? [] : [makeDraft({
+        snapshot: context.snapshot, side: 'long', entryPrice: signalEntry,
+        stopPrice: signalEntry - 2, stopBasis: 'structure', timeframe: '1H',
+        strategyId: 'target_replay_test', version: '1.0.0-test', regime: context.regime,
+        inputs: { adx: 20, regimeConfidence: context.regime.confidence },
+        conditions: ['test'], config: context.config, now: context.now,
+      })],
+    });
+    const config = {
+      ...DEFAULT_STRATEGY_CONFIG,
+      enabled: Object.freeze({ target_replay_test: true }),
+      regime: Object.freeze({ ...DEFAULT_STRATEGY_CONFIG.regime, trendAdxMin: 100, rangeAdxMax: 100 }),
+      gate: Object.freeze({ minRegimeConfidence: 0, cooldownMs: 0 }),
+      takeProfitR: Object.freeze([1]),
+    };
+    return runBacktest({ candles: { 'BTC-USDT-SWAP': input }, lookbackBars: 60,
+      modules: [module], strategyConfig: config });
+  };
+
+  it('models the first attached take-profit and charges exit friction', () => {
+    const result = targetReplay(false);
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0]?.exitReason).toBe('target');
+    expect(result.trades[0]?.netPnlUsdt).toBeLessThan(result.trades[0]?.grossPnlUsdt ?? 0);
+  });
+
+  it('takes the stop pessimistically when stop and target occur in one candle', () => {
+    const result = targetReplay(true);
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0]?.exitReason).toBe('stop');
+  });
+
   it('is deterministic', () => {
     const a = run();
     const b = run();
@@ -168,9 +240,14 @@ describe('replay mechanics', () => {
 
   it('honours a time window', () => {
     const all = run();
-    const half = run({ fromTs: all.fromTs, toTs: all.fromTs + (all.toTs - all.fromTs) / 2 });
+    const cutoff = all.fromTs + (all.toTs - all.fromTs) / 2;
+    const half = runPermissive({ fromTs: all.fromTs, toTs: cutoff });
     expect(half.cycles).toBeLessThan(all.cycles);
-    expect(half.toTs).toBeLessThanOrEqual(all.toTs);
+    expect(half.toTs).toBeLessThanOrEqual(cutoff);
+    expect(half.trades.length).toBeGreaterThan(0);
+    expect(half.trades.every((trade) => trade.openedAt <= cutoff)).toBe(true);
+    expect(half.trades.every((trade) => trade.closedAt <= cutoff)).toBe(true);
+    expect(half.trades.every((trade) => trade.holdBars <= PERMISSIVE_CONFIG.maxHoldBars)).toBe(true);
   });
 
   it('fills entries at the NEXT bar open, not the signal bar close', () => {

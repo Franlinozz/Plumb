@@ -12,7 +12,7 @@
 
 import { execFile } from 'node:child_process';
 
-import { AtkError, DEFAULT_BIN, DEFAULT_RETRY, assertDemo, classifyError, withRetry } from './atk.js';
+import { AtkError, COMPETITION_BIN, DEFAULT_BIN, DEFAULT_RETRY, assertDemo, classifyError, withRetry } from './atk.js';
 import type {
   AtkClient,
   CliClientOptions,
@@ -24,6 +24,7 @@ import type {
   VenueOrder,
   VenuePosition,
 } from './atk.js';
+import type { CompetitionFeeRates, CompetitionInstrumentMetadata } from './competition.js';
 
 /**
  * Credentials the Trade Kit binary must NEVER inherit from our environment.
@@ -51,6 +52,15 @@ export function sanitizeEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 const num = (value: unknown): number => {
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
+};
+
+const requiredNum = (value: unknown, field: string): number => {
+  if (value === undefined || value === null || value === '') {
+    throw new AtkError('malformed', `CLI response has invalid ${field}`);
+  }
+  const number = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(number)) throw new AtkError('malformed', `CLI response has invalid ${field}`);
+  return number;
 };
 
 function defaultExec(binPath: string) {
@@ -84,6 +94,9 @@ function defaultExec(binPath: string) {
 
 export class CliAtkClient implements AtkClient {
   readonly demo: boolean;
+  /** Runtime brand used by the competition adapter to reject direct-REST implementations. */
+  readonly transport = 'agent-trade-kit' as const;
+  readonly profileName: string;
   /** Overrides `posSide` on every order. Set from `resolvePosSide` for a net-mode account. */
   posSideOverride: 'long' | 'short' | 'net' | undefined;
   private readonly exec: (args: readonly string[], timeoutMs: number) => Promise<string>;
@@ -98,26 +111,26 @@ export class CliAtkClient implements AtkClient {
   constructor(options: CliClientOptions = {}) {
     assertDemo(options);
     this.demo = options.demo ?? true;
-    this.exec = options.exec ?? defaultExec(options.binPath ?? DEFAULT_BIN);
+    const binPath = options.binPath ?? (options.profile === 'competition' ? COMPETITION_BIN : DEFAULT_BIN);
+    this.exec = options.exec ?? defaultExec(binPath);
     this.timeoutMs = options.timeoutMs ?? 20_000;
     this.retry = { ...DEFAULT_RETRY, ...options.retry };
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.random = options.random ?? Math.random;
     this.profile = options.profile;
+    this.profileName = options.profile ?? '';
   }
 
-  private async run(args: readonly string[]): Promise<unknown> {
+  private async run(args: readonly string[], allowRetry = true): Promise<unknown> {
     const full = [...args, '--json'];
     if (this.demo) full.push('--demo');
     if (this.profile !== undefined) full.push('--profile', this.profile);
     this.calls.push(full.join(' '));
 
-    const stdout = await withRetry(
-      () => this.exec(full, this.timeoutMs),
-      this.retry,
-      this.sleep,
-      this.random,
-    );
+    const operation = () => this.exec(full, this.timeoutMs);
+    const stdout = allowRetry
+      ? await withRetry(operation, this.retry, this.sleep, this.random)
+      : await operation();
     const text = stdout.trim();
     if (text.length === 0) return [];
     try {
@@ -129,9 +142,33 @@ export class CliAtkClient implements AtkClient {
 
   private async rows(args: readonly string[]): Promise<readonly Record<string, unknown>[]> {
     const parsed = await this.run(args);
-    if (Array.isArray(parsed)) return parsed as Record<string, unknown>[];
-    if (parsed !== null && typeof parsed === 'object') return [parsed as Record<string, unknown>];
-    return [];
+    const rows = Array.isArray(parsed) ? parsed as Record<string, unknown>[]
+      : parsed !== null && typeof parsed === 'object' ? [parsed as Record<string, unknown>] : [];
+    const rejected = rows.find((row) => row['sCode'] !== undefined && String(row['sCode']) !== '0');
+    if (rejected !== undefined) {
+      throw new AtkError('rejected', String(rejected['sMsg'] ?? `business code ${String(rejected['sCode'])}`));
+    }
+    return rows;
+  }
+
+  private async writeRows(args: readonly string[]): Promise<readonly Record<string, unknown>[]> {
+    const parsed = await this.run(args, false);
+    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const envelope = parsed as Record<string, unknown>;
+      if (envelope['ok'] === false || envelope['success'] === false ||
+          (envelope['code'] !== undefined && String(envelope['code']) !== '0')) {
+        throw new AtkError('rejected', String(envelope['error'] ?? envelope['message'] ??
+          `business code ${String(envelope['code'])}`));
+      }
+    }
+    const rows = Array.isArray(parsed) ? parsed as Record<string, unknown>[]
+      : parsed !== null && typeof parsed === 'object' ? [parsed as Record<string, unknown>] : [];
+    const rejected = rows.find((row) => row['sCode'] !== undefined && String(row['sCode']) !== '0');
+    if (rejected !== undefined) {
+      throw new AtkError('rejected', String(rejected['sMsg'] ?? `business code ${String(rejected['sCode'])}`));
+    }
+    if (rows.length === 0) throw new AtkError('malformed', 'write returned no business acknowledgement');
+    return rows;
   }
 
   async placeOrder(request: PlaceOrderRequest): Promise<OrderRef> {
@@ -155,6 +192,10 @@ export class CliAtkClient implements AtkClient {
     ];
     if (request.px !== undefined) args.push('--px', String(request.px));
     if (request.reduceOnly === true) args.push('--reduceOnly');
+    if (request.tpTriggerPx !== undefined) {
+      args.push('--tpTriggerPx', String(request.tpTriggerPx));
+      args.push(`--tpOrdPx=${String(request.tpOrdPx ?? -1)}`);
+    }
     if (request.slTriggerPx !== undefined) {
       args.push('--slTriggerPx', String(request.slTriggerPx));
       // GOTCHA (found against the real demo venue): a NEGATIVE option value is parsed as another
@@ -163,10 +204,15 @@ export class CliAtkClient implements AtkClient {
       args.push(`--slOrdPx=${String(request.slOrdPx ?? -1)}`);
     }
 
-    const rows = await this.rows(args);
+    // A write is never retried automatically. A timeout or transport failure
+    // has an unknown venue outcome and must be reconciled by clOrdId.
+    const rows = await this.writeRows(args);
     const row = rows[0] ?? {};
     const ordId = String(row['ordId'] ?? '');
     if (ordId === '') throw new AtkError('malformed', `place returned no ordId: ${JSON.stringify(row)}`);
+    if (row['clOrdId'] !== undefined && String(row['clOrdId']) !== request.clOrdId) {
+      throw new AtkError('malformed', 'place returned a different clOrdId than the submitted intent');
+    }
     return {
       ordId,
       // The venue echoes the clOrdId back. The caller compares it to what was SENT.
@@ -176,14 +222,14 @@ export class CliAtkClient implements AtkClient {
   }
 
   async cancelOrder(instId: string, ordId: string): Promise<void> {
-    await this.run(['swap', 'cancel', instId, '--ordId', ordId]);
+    await this.writeRows(['swap', 'cancel', instId, '--ordId', ordId]);
   }
 
   async amendOrder(instId: string, ordId: string, changes: { sz?: number; px?: number }): Promise<void> {
     const args = ['swap', 'amend', '--instId', instId, '--ordId', ordId];
     if (changes.sz !== undefined) args.push('--sz', String(changes.sz));
     if (changes.px !== undefined) args.push('--px', String(changes.px));
-    await this.run(args);
+    await this.writeRows(args);
   }
 
   async getOrder(
@@ -200,7 +246,7 @@ export class CliAtkClient implements AtkClient {
       return toOrder(row);
     } catch (error) {
       // "not found" is an ANSWER, not a failure — it is how idempotency asks its question.
-      if (error instanceof AtkError && (error.kind === 'not_found' || error.kind === 'rejected')) {
+      if (error instanceof AtkError && error.kind === 'not_found') {
         return undefined;
       }
       throw error;
@@ -216,42 +262,69 @@ export class CliAtkClient implements AtkClient {
   async getPositions(instId?: string): Promise<readonly VenuePosition[]> {
     const args = ['swap', 'positions'];
     if (instId !== undefined) args.push('--instId', instId);
-    return (await this.rows(args)).map((row) => ({
-      instId: String(row['instId'] ?? ''),
-      posSide: (String(row['posSide'] ?? 'net') as VenuePosition['posSide']),
-      pos: num(row['pos']),
-      avgPx: num(row['avgPx']),
-      upl: num(row['upl']),
-    }));
+    return (await this.rows(args)).map((row) => {
+      const instId = String(row['instId'] ?? '');
+      const posSide = String(row['posSide'] ?? '');
+      if (instId === '' || !['long', 'short', 'net'].includes(posSide)) {
+        throw new AtkError('malformed', 'position response is missing instrument or position side');
+      }
+      const position = requiredNum(row['pos'], 'position size');
+      // OKX may retain a zero-size instrument row after a position closes and represent
+      // avgPx/upl as empty strings. That row is still unambiguously flat. Empty metrics remain
+      // malformed for any non-zero position, where accepting them would hide real exposure.
+      const flatMetric = (value: unknown, field: string): number =>
+        position === 0 && (value === undefined || value === null || value === '')
+          ? 0
+          : requiredNum(value, field);
+      return {
+        instId,
+        posSide: posSide as VenuePosition['posSide'],
+        pos: position,
+        avgPx: flatMetric(row['avgPx'], 'position average price'),
+        upl: flatMetric(row['upl'], 'position unrealised PnL'),
+      };
+    });
   }
 
   async getFills(instId?: string): Promise<readonly VenueFill[]> {
     const args = ['swap', 'fills'];
     if (instId !== undefined) args.push('--instId', instId);
-    return (await this.rows(args)).map((row) => ({
-      instId: String(row['instId'] ?? ''),
-      ordId: String(row['ordId'] ?? ''),
-      clOrdId: String(row['clOrdId'] ?? ''),
-      side: (String(row['side'] ?? 'buy') as 'buy' | 'sell'),
-      fillSz: num(row['fillSz']),
-      fillPx: num(row['fillPx']),
-      fee: num(row['fee']),
-      ts: num(row['ts'] ?? row['fillTime']),
-    }));
+    return (await this.rows(args)).map((row) => {
+      const fillInstId = String(row['instId'] ?? '');
+      const ordId = String(row['ordId'] ?? '');
+      const side = String(row['side'] ?? '');
+      if (fillInstId === '' || ordId === '' || !['buy', 'sell'].includes(side)) {
+        throw new AtkError('malformed', 'fill response is missing instrument, order id, or side');
+      }
+      return {
+        instId: fillInstId,
+        ordId,
+        clOrdId: String(row['clOrdId'] ?? ''),
+        side: side as 'buy' | 'sell',
+        fillSz: requiredNum(row['fillSz'], 'fill size'),
+        fillPx: requiredNum(row['fillPx'], 'fill price'),
+        fee: requiredNum(row['fee'], 'fill fee'),
+        ts: requiredNum(row['ts'] ?? row['fillTime'], 'fill timestamp'),
+      };
+    });
   }
 
   async getBalance(): Promise<readonly VenueBalance[]> {
     const rows = await this.rows(['account', 'balance']);
     const details = (rows[0]?.['details'] ?? []) as Array<Record<string, unknown>>;
-    return details.map((d) => ({
-      ccy: String(d['ccy'] ?? ''),
-      eq: num(d['eq'] ?? d['cashBal']),
-      availEq: num(d['availBal'] ?? d['availEq']),
-    }));
+    return details.map((d) => {
+      const ccy = String(d['ccy'] ?? '');
+      if (ccy === '') throw new AtkError('malformed', 'balance response is missing currency');
+      return {
+        ccy,
+        eq: requiredNum(d['eq'] ?? d['cashBal'], 'balance equity'),
+        availEq: requiredNum(d['availBal'] ?? d['availEq'], 'available balance equity'),
+      };
+    });
   }
 
   async closePosition(instId: string, mgnMode: 'cross' | 'isolated' = 'cross'): Promise<void> {
-    await this.run(['swap', 'close', '--instId', instId, '--mgnMode', mgnMode]);
+    await this.writeRows(['swap', 'close', '--instId', instId, '--mgnMode', mgnMode]);
   }
 
   /**
@@ -266,12 +339,20 @@ export class CliAtkClient implements AtkClient {
     readonly acctLv: string;
     readonly posMode: string;
     readonly canTradeSwaps: boolean;
+    /**
+     * The account this key actually controls. Reported so a caller can refuse to write to the
+     * wrong account — with several OKX accounts and sub-accounts in play, "the key authenticates"
+     * and "the key is the one we meant" are different questions, and only the second one matters
+     * before an order.
+     */
+    readonly uid: string;
   }> {
     const rows = await this.rows(['account', 'config']);
     const row = rows[0] ?? {};
     const acctLv = String(row['acctLv'] ?? '');
     return {
       acctLv,
+      uid: String(row['uid'] ?? ''),
       posMode: String(row['posMode'] ?? ''),
       // Level 1 is Spot mode. Anything from 2 (single-currency margin) upward can hold a swap.
       canTradeSwaps: acctLv !== '' && acctLv !== '1',
@@ -282,6 +363,62 @@ export class CliAtkClient implements AtkClient {
   async resolvePosSide(requested: 'long' | 'short'): Promise<'long' | 'short' | 'net'> {
     const config = await this.getAccountConfig();
     return config.posMode === 'net_mode' ? 'net' : requested;
+  }
+
+  /** Current instrument metadata, queried immediately before a competition write. */
+  async getInstrumentMetadata(instId: import('@plumb/core').Instrument): Promise<CompetitionInstrumentMetadata> {
+    const rows = await this.rows(['market', 'instruments', '--instType', 'SWAP', '--instId', instId]);
+    const row = rows.find((candidate) => String(candidate['instId'] ?? '') === instId) ?? rows[0] ?? {};
+    const metadata = {
+      ctVal: num(row['ctVal']),
+      ctMult: num(row['ctMult'] ?? 1),
+      minSz: num(row['minSz']),
+      lotSz: num(row['lotSz']),
+      tickSz: num(row['tickSz']),
+      state: String(row['state'] ?? ''),
+    };
+    if (metadata.ctVal <= 0 || metadata.ctMult <= 0 || metadata.minSz <= 0 ||
+        metadata.lotSz <= 0 || metadata.tickSz <= 0) {
+      throw new AtkError('malformed', `instrument metadata is incomplete for ${instId}`);
+    }
+    return metadata;
+  }
+
+  /** Fee rates are returned as signed rates by some OKX account modes; costs use magnitudes. */
+  async getFeeRates(instId: import('@plumb/core').Instrument): Promise<CompetitionFeeRates> {
+    // Current Agent Trade Kit 1.4.2/OKX rejects `instType=SWAP` combined with a USDT-SWAP
+    // `instId` as "instId and instType don't match". Swap fees are returned for the account's
+    // SWAP fee group, so query the documented type-wide form and retain `instId` only for a
+    // useful fail-closed error message below.
+    const rows = await this.rows(['account', 'fees', '--instType', 'SWAP']);
+    const row = rows[0] ?? {};
+    const maker = Math.abs(requiredNum(row['maker'] ?? row['makerU'], 'maker fee'));
+    const taker = Math.abs(requiredNum(row['taker'] ?? row['takerU'], 'taker fee'));
+    if (maker === 0 && taker === 0) throw new AtkError('malformed', `fee rates are missing for ${instId}`);
+    return { maker, taker };
+  }
+
+  async getLastPrice(instId: import('@plumb/core').Instrument): Promise<number> {
+    const rows = await this.rows(['market', 'ticker', instId]);
+    const last = num(rows[0]?.['last']);
+    if (last <= 0) throw new AtkError('malformed', `ticker returned no usable last price for ${instId}`);
+    return last;
+  }
+
+  async getLeverage(instId: import('@plumb/core').Instrument): Promise<number> {
+    const rows = await this.rows(['swap', 'get-leverage', '--instId', instId, '--mgnMode', 'cross']);
+    const leverage = num(rows[0]?.['lever']);
+    if (leverage <= 0) throw new AtkError('malformed', `leverage is missing for ${instId}`);
+    return leverage;
+  }
+
+  async getMaxAvailableSize(instId: import('@plumb/core').Instrument): Promise<{ readonly buy: number; readonly sell: number }> {
+    const rows = await this.rows(['account', 'max-avail-size', '--instId', instId, '--tdMode', 'cross']);
+    const row = rows[0] ?? {};
+    const buy = requiredNum(row['availBuy'], 'maximum buy size');
+    const sell = requiredNum(row['availSell'], 'maximum sell size');
+    if (buy < 0 || sell < 0) throw new AtkError('malformed', `maximum available size is invalid for ${instId}`);
+    return { buy, sell };
   }
 }
 
@@ -294,17 +431,30 @@ function toOrder(row: Record<string, unknown>): VenueOrder {
   const attached = Array.isArray(row['attachAlgoOrds'])
     ? ((row['attachAlgoOrds'] as unknown[])[0] as Record<string, unknown> | undefined)
     : undefined;
-  const slTriggerPx = num(row['slTriggerPx']) || num(attached?.['slTriggerPx']);
+  const ordId = String(row['ordId'] ?? '');
+  const instId = String(row['instId'] ?? '');
+  const state = String(row['state'] ?? '');
+  const side = String(row['side'] ?? '');
+  if (ordId === '' || instId === '' ||
+      !['live', 'filled', 'canceled', 'partially_filled'].includes(state) ||
+      !['buy', 'sell'].includes(side)) {
+    throw new AtkError('malformed', 'order response is missing or has invalid identity/state/side');
+  }
+  const rawSl = row['slTriggerPx'] || attached?.['slTriggerPx'];
+  const rawTp = row['tpTriggerPx'] || attached?.['tpTriggerPx'];
+  const slTriggerPx = rawSl === undefined || rawSl === '' ? 0 : requiredNum(rawSl, 'stop trigger price');
+  const tpTriggerPx = rawTp === undefined || rawTp === '' ? 0 : requiredNum(rawTp, 'take-profit trigger price');
   return {
-    ordId: String(row['ordId'] ?? ''),
+    ordId,
     clOrdId: String(row['clOrdId'] ?? ''),
-    instId: String(row['instId'] ?? ''),
-    state: (String(row['state'] ?? 'live') as VenueOrder['state']),
-    side: (String(row['side'] ?? 'buy') as 'buy' | 'sell'),
-    sz: num(row['sz']),
-    avgPx: num(row['avgPx'] ?? row['px']),
-    ts: num(row['cTime'] ?? row['uTime'] ?? row['ts']),
+    instId,
+    state: state as VenueOrder['state'],
+    side: side as 'buy' | 'sell',
+    sz: requiredNum(row['sz'], 'order size'),
+    avgPx: requiredNum(row['avgPx'] || row['px'] || 0, 'order average price'),
+    ts: requiredNum(row['cTime'] ?? row['uTime'] ?? row['ts'], 'order timestamp'),
     ...(slTriggerPx > 0 ? { slTriggerPx } : {}),
+    ...(tpTriggerPx > 0 ? { tpTriggerPx } : {}),
     ...(attached?.['attachAlgoId'] === undefined || attached['attachAlgoId'] === ''
       ? {}
       : { attachAlgoId: String(attached['attachAlgoId']) }),

@@ -1,7 +1,7 @@
 import { signEligibility, type EligibilitySummary } from '@plumb/core';
 import { describe, expect, it } from 'vitest';
 
-import { AtkError } from './atk.js';
+import { AtkError, COMPETITION_BIN, DEFAULT_BIN } from './atk.js';
 import { CliAtkClient, FORBIDDEN_CHILD_ENV, sanitizeEnv } from './cli.js';
 import {
   DemoOverrideRefused,
@@ -25,6 +25,11 @@ function recording(responses: Record<string, unknown> | ((args: readonly string[
 }
 
 describe('CLI argument construction', () => {
+  it('keeps the competition and P8 Trade Kit installations physically separate', () => {
+    expect(COMPETITION_BIN).not.toBe(DEFAULT_BIN);
+    expect(COMPETITION_BIN).toContain('atk-competition');
+    expect(DEFAULT_BIN).toContain('/atk/');
+  });
   it('always passes --json and --demo', async () => {
     const { client, calls } = recording({ positions: [] });
     await client.getPositions();
@@ -43,11 +48,15 @@ describe('CLI argument construction', () => {
       ordType: 'market',
       sz: 0.1,
       clOrdId: 'SIGabc',
+      tpTriggerPx: 68_000,
       slTriggerPx: 64_000,
     });
     const args = calls[0] as string[];
     expect(args).toContain('--slOrdPx=-1');
+    expect(args).toContain('--tpOrdPx=-1');
     expect(args).not.toContain('--slOrdPx');
+    expect(args).not.toContain('--tpOrdPx');
+    expect(args[args.indexOf('--tpTriggerPx') + 1]).toBe('68000');
     expect(args[args.indexOf('--slTriggerPx') + 1]).toBe('64000');
   });
 
@@ -86,7 +95,13 @@ describe('CLI argument construction', () => {
       acctLv: '1',
       posMode: 'net_mode',
       canTradeSwaps: false,
+      uid: '',
     });
+
+    // The uid is surfaced so a caller can refuse to write to the wrong account. Absent rather
+    // than guessed when the venue does not report it.
+    const identified = recording({ config: [{ acctLv: '2', posMode: 'net_mode', uid: 'test-uid' }] });
+    expect((await identified.client.getAccountConfig()).uid).toBe('test-uid');
 
     const margin = recording({ config: [{ acctLv: '2', posMode: 'long_short_mode' }] });
     const config = await margin.client.getAccountConfig();
@@ -95,6 +110,34 @@ describe('CLI argument construction', () => {
 
     const net = recording({ config: [{ acctLv: '3', posMode: 'net_mode' }] });
     expect(await net.client.resolvePosSide('short')).toBe('net');
+  });
+
+  it('queries current competition metadata, fee rates, and last price through the CLI', async () => {
+    const { client, calls } = recording((args) => {
+      if (args[0] === 'market' && args[1] === 'instruments') {
+        return [{ instId: 'BTC-USDT-SWAP', ctVal: '0.01', ctMult: '1', minSz: '0.01',
+          lotSz: '0.01', tickSz: '0.1', state: 'live' }];
+      }
+      if (args[0] === 'account' && args[1] === 'fees') return [{ maker: '-0.0002', taker: '-0.0005' }];
+      if (args[0] === 'market' && args[1] === 'ticker') return [{ last: '65000' }];
+      if (args[0] === 'swap' && args[1] === 'get-leverage') return [{ lever: '2' }];
+      if (args[0] === 'account' && args[1] === 'max-avail-size') return [{ availBuy: '4.2', availSell: '3.8' }];
+      return [];
+    });
+    await expect(client.getInstrumentMetadata('BTC-USDT-SWAP')).resolves.toMatchObject({
+      ctVal: 0.01, tickSz: 0.1, state: 'live',
+    });
+    await expect(client.getFeeRates('BTC-USDT-SWAP')).resolves.toEqual({ maker: 0.0002, taker: 0.0005 });
+    await expect(client.getLastPrice('BTC-USDT-SWAP')).resolves.toBe(65_000);
+    await expect(client.getLeverage('BTC-USDT-SWAP')).resolves.toBe(2);
+    await expect(client.getMaxAvailableSize('BTC-USDT-SWAP')).resolves.toEqual({ buy: 4.2, sell: 3.8 });
+    const feeCall = calls.find((call) => call[0] === 'account' && call[1] === 'fees');
+    expect(feeCall).toEqual(expect.arrayContaining(['--instType', 'SWAP']));
+    expect(feeCall).not.toContain('--instId');
+    expect(calls.map((call) => call.slice(0, 2))).toEqual([
+      ['market', 'instruments'], ['account', 'fees'], ['market', 'ticker'],
+      ['swap', 'get-leverage'], ['account', 'max-avail-size'],
+    ]);
   });
 
   it('treats a not-found order as an ANSWER, not a failure', async () => {
@@ -106,6 +149,118 @@ describe('CLI argument construction', () => {
     });
     // This is how idempotency asks "has this signal already been placed?".
     await expect(client.getOrder('BTC-USDT-SWAP', { clOrdId: 'X' })).resolves.toBeUndefined();
+  });
+
+  it('does not convert an arbitrary rejected order lookup into absence', async () => {
+    const client = new CliAtkClient({
+      demo: true,
+      exec: async () => { throw new AtkError('rejected', 'lookup parameters rejected'); },
+    });
+    await expect(client.getOrder('BTC-USDT-SWAP', { clOrdId: 'X' }))
+      .rejects.toThrow(/lookup parameters rejected/u);
+  });
+
+  it('never retries a write after an ambiguous transport failure', async () => {
+    let calls = 0;
+    const client = new CliAtkClient({
+      demo: true,
+      retry: { maxAttempts: 3 },
+      exec: async () => {
+        calls += 1;
+        throw new AtkError('transport', 'socket hang up after write');
+      },
+    });
+    await expect(client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'ONCEONLY',
+    })).rejects.toThrow(/socket hang up/u);
+    expect(calls).toBe(1);
+  });
+
+  it('rejects exit-zero business failures and mismatched order acknowledgements', async () => {
+    const business = recording(() => [{ sCode: '51020', sMsg: 'Order quantity invalid' }]);
+    await expect(business.client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'BUSINESSFAIL',
+    })).rejects.toThrow(/quantity invalid/u);
+
+    const mismatch = recording(() => [{ ordId: 'ORD1', clOrdId: 'SOMEONEELSE' }]);
+    await expect(mismatch.client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'EXPECTEDID',
+    })).rejects.toThrow(/different clOrdId/u);
+
+    const envelopeFailure = recording(() => ({ ok: false, code: '51020', message: 'envelope rejected' }));
+    await expect(envelopeFailure.client.placeOrder({
+      instId: 'BTC-USDT-SWAP', side: 'buy', posSide: 'long', ordType: 'market',
+      sz: 0.1, clOrdId: 'ENVELOPEFAIL',
+    })).rejects.toThrow(/envelope rejected/u);
+
+    const blank = recording(() => []);
+    await expect(blank.client.closePosition('BTC-USDT-SWAP'))
+      .rejects.toThrow(/no business acknowledgement/u);
+  });
+
+  it('rejects malformed position state instead of silently treating it as flat', async () => {
+    const malformed = recording({ positions: [{ instId: 'BTC-USDT-SWAP', posSide: 'net', pos: 'not-a-number' }] });
+    await expect(malformed.client.getPositions('BTC-USDT-SWAP')).rejects.toThrow(/position size/u);
+  });
+
+  it('accepts empty venue metrics only for an explicitly zero signed position', async () => {
+    const flat = recording({ positions: [{
+      instId: 'ETH-USDT-SWAP', posSide: 'net', pos: '0', avgPx: '', upl: '',
+    }] });
+    await expect(flat.client.getPositions('ETH-USDT-SWAP')).resolves.toEqual([{
+      instId: 'ETH-USDT-SWAP', posSide: 'net', pos: 0, avgPx: 0, upl: 0,
+    }]);
+
+    const exposed = recording({ positions: [{
+      instId: 'ETH-USDT-SWAP', posSide: 'net', pos: '1', avgPx: '', upl: '',
+    }] });
+    await expect(exposed.client.getPositions('ETH-USDT-SWAP'))
+      .rejects.toThrow(/position average price/u);
+  });
+
+  it('rejects malformed orders, fills, balances, fees, and size limits instead of inventing zeros', async () => {
+    const malformedOrder = recording({ get: [{ ordId: 'ORD1', instId: 'BTC-USDT-SWAP',
+      state: 'mystery', side: 'buy', sz: '1', cTime: '1' }] });
+    await expect(malformedOrder.client.getOrder('BTC-USDT-SWAP', { ordId: 'ORD1' }))
+      .rejects.toThrow(/identity\/state\/side/u);
+
+    const malformedFill = recording({ fills: [{ instId: 'BTC-USDT-SWAP', ordId: 'ORD1',
+      side: 'buy', fillSz: 'bad', fillPx: '1', fee: '0', ts: '1' }] });
+    await expect(malformedFill.client.getFills('BTC-USDT-SWAP')).rejects.toThrow(/fill size/u);
+
+    const malformedBalance = recording({ balance: [{ details: [{ ccy: 'USDT', eq: 'bad', availEq: '1' }] }] });
+    await expect(malformedBalance.client.getBalance()).rejects.toThrow(/balance equity/u);
+
+    const malformedFee = recording({ fees: [{ maker: 'bad', taker: '-0.0005' }] });
+    await expect(malformedFee.client.getFeeRates('BTC-USDT-SWAP')).rejects.toThrow(/maker fee/u);
+
+    const malformedLimit = recording({ 'max-avail-size': [{ availBuy: 'bad', availSell: '1' }] });
+    await expect(malformedLimit.client.getMaxAvailableSize('BTC-USDT-SWAP'))
+      .rejects.toThrow(/maximum buy size/u);
+  });
+
+  it('checks business success and never retries cancel, amend, or close writes', async () => {
+    for (const operation of ['cancel', 'amend', 'close'] as const) {
+      let calls = 0;
+      const client = new CliAtkClient({
+        demo: true,
+        retry: { maxAttempts: 3 },
+        exec: async () => {
+          calls += 1;
+          return JSON.stringify([{ sCode: '51000', sMsg: `${operation} rejected` }]);
+        },
+      });
+      const promise = operation === 'cancel'
+        ? client.cancelOrder('BTC-USDT-SWAP', 'ORD1')
+        : operation === 'amend'
+          ? client.amendOrder('BTC-USDT-SWAP', 'ORD1', { sz: 1 })
+          : client.closePosition('BTC-USDT-SWAP');
+      await expect(promise).rejects.toThrow(new RegExp(`${operation} rejected`, 'u'));
+      expect(calls).toBe(1);
+    }
   });
 
   it('surfaces a malformed response rather than guessing', async () => {

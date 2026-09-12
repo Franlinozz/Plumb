@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate the final-window Plumb contingency after every completed check
+
+[Timer]
+OnBootSec=10s
+OnUnitInactiveSec=10s
+Persistent=true
+Unit=plumb-okxai-deadline-contingency.service
+
+[Install]
+WantedBy=timers.target

@@ -77,3 +77,30 @@ export {
   requirePublished,
   type PublishAndExecuteDeps,
 } from './publish_gate.js';
+
+export {
+  ExecutableSignalRejected,
+  formatDecisionEventForDelivery,
+  validateV12PerpetualSignal,
+  type ExecutableSignalGate,
+} from './decision-delivery.js';
+
+export {
+  DecisionPublicationStore,
+  type DecisionPublication,
+  type PublicationStatus,
+} from './decision-publication-store.js';
+
+export {
+  describeDeliveryCommandFailure,
+  exactDeliverableMatches,
+  isRetryableDeliveryFailure,
+  redactDeliveryDiagnostic,
+  requireExplicitDeliverySuccess,
+  type DeliverableRecord,
+} from './delivery-reconciliation.js';
+
+export {
+  acquireDeliveryLock,
+  type DeliveryLockOptions,
+} from './delivery-lock.js';

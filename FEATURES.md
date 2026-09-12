@@ -62,6 +62,7 @@ Rules for this table:
 | Hostile-strategy simulation over real history | `@plumb/risk` | `npm run hostile` | `risk/src/hostile.test.ts` |
 | Funding-rate history storage + backfill | `@plumb/market` | `npm run backfill` | `backtest/src/costs.test.ts` |
 | Full-pipeline bar-by-bar replay (governor in the loop) | `@plumb/backtest` | internal | `backtest/src/engine.test.ts` |
+| First attached take-profit replay with pessimistic same-bar stop precedence and exit friction | `@plumb/backtest` | internal | `engine.test.ts` › "models the first attached take-profit" + ambiguous-candle test |
 | Lookahead detection — a cheating window throws | `@plumb/backtest` | internal | `engine.test.ts` › lookahead |
 | Pessimistic cost model — taker fees, slippage, gap-side stop fills, real funding | `@plumb/backtest` | internal | `backtest/src/costs.test.ts` |
 | Walk-forward IS/OOS windows that never overlap | `@plumb/backtest` | internal | `backtest/src/analysis.test.ts` |
@@ -79,6 +80,19 @@ Rules for this table:
 | Cycle loop — never overlaps, overrun skipped not queued | `@plumb/executor` | internal | `executor.test.ts` › cycle loop |
 | Eligibility lock — refuses unsigned/failed/forged records | `@plumb/executor` | internal | `executor.test.ts` › eligibility lock |
 | **Publish-before-execute — the executor cannot reach an unpublished signal** | `@plumb/asp` | internal | `asp.test.ts` + `executor/src/publish_gate.test.ts` |
+| Trading Signal v1.2 perpetual formatter — one price, fixed field order, <=200 chars | `@plumb/asp` | A2A delivery | `asp/src/decision-delivery.test.ts` |
+| First-trade amendment — ETH only, one entry, $0.25 stop risk / $0.35 planned loss / $40 notional | `@plumb/core`, `@plumb/ops`, `@plumb/executor` | competition | `ops/src/competition-decision.test.ts` + `executor/src/competition.test.ts` |
+| Emergency participation amendment — one ETH minimum-lot entry, zero edge claimed, all signal/publication/execution safety retained | `@plumb/core`, `@plumb/strategy`, `@plumb/ops`, `@plumb/asp`, `@plumb/executor` | competition | `core/src/decision-event.test.ts` + `ops/src/emergency-participation-decision.test.ts` + `executor/src/competition.test.ts` |
+| Boundary-correct rolling OI confirmation (sample at/before boundary; fail closed on insufficient history) | `@plumb/market` | competition monitors + emergency preparation | `market/src/open-interest.test.ts` |
+| Read-only first-trade condition monitor; no publication or order path | script + isolated timer | `node scripts/competition-v2-monitor.mjs` | `ops/src/competition-monitor.test.ts` + live public-data smoke test |
+| Evidence-limited second-entry factory — BTC/ETH/SOL, multi-window OI, $4.00 stop / $4.35 planned-loss / $200 notional caps | `@plumb/core`, `@plumb/ops`, `@plumb/executor` | competition | `ops/src/second-entry-decision.test.ts` + `executor/src/competition.test.ts` |
+| One-shot unattended second-entry orchestration — public gate → private preparation → A2A acknowledgement → Agent Trade Kit, uncertainty never retried | script + isolated timer | `competition-second-entry-auto.mjs` | `ops/src/competition-monitor.test.ts` + `executor/src/competition.test.ts` |
+| Venue-native competition TP/SL exit reconciliation — exact entry intent + algo execution + fill + closed-position proof before signed ledger update | script + competition ledger | `competition-reconcile-exits.mjs` | live Agent Trade Kit proof + `ops/src/competition-monitor.test.ts` |
+| Authorised competition hard time-stop — idempotent reduce-only Agent Trade Kit close at 2026-08-25T03:30Z with fill/flat/ledger proof | `@plumb/executor` + armed timer | `CompetitionTimeStopExecutor` | `competition-time-stop.test.ts` + `competition-monitor.test.ts` |
+| Idempotent Discord readiness/result alerts | script + isolated timer | `competition-v3-discord-alert.mjs` | `ops/src/competition-monitor.test.ts` |
+| Deadline contingency v1 — distinct zero-edge approval basis, shared one-shot claim, ETH/SOL only; **armed by explicit operator exception after disclosure of negative frozen audit** | `@plumb/core`, `@plumb/strategy`, `@plumb/ops`, `@plumb/asp`, `@plumb/executor` | enabled post-cutoff competition path | `deadline-contingency-decision.test.ts` + `deadline_contingency.test.ts` + executor/time-stop/monitor tests |
+| Final-window contingency V2 — immutable new approval identity, ETH/SOL only, one entry through 2026-08-25T00:00Z, unchanged V1 signal/risk/publication/execution gates | `@plumb/core`, `@plumb/strategy`, `@plumb/ops`, `@plumb/asp`, `@plumb/executor` | explicitly authorised final-day competition path | `competition-amendment.test.ts` + `final_window_contingency.test.ts` + decision/executor/time-stop/monitor tests |
+| Executable A2A delivery reconciliation — structured errors, exact timestamp-scoped postcondition, network/429/5xx-only single retry, persistence-without-ack remains uncertain | `@plumb/asp` + scripts | publication-first competition path | `delivery-reconciliation.test.ts` + `competition-monitor.test.ts` |
 | Hash-chained append-only published feed; tampering detected | `@plumb/asp` | internal | `asp.test.ts` › the published feed |
 | Claude rationale with schema validation + deterministic template fallback | `@plumb/asp` | internal | `asp.test.ts` › rationale |
 | No model output reaches the signal object (signal frozen first) | `@plumb/asp` | internal | `asp.test.ts` › guardrail 4 |

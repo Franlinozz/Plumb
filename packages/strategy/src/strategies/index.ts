@@ -6,7 +6,47 @@ import { revertBand, REVERT_BAND_ID } from './revert_band.js';
 import { oiDivergence, OI_DIVERGENCE_ID } from './oi_divergence.js';
 import { trendEma, TREND_EMA_ID } from './trend_ema.js';
 import { sessionBias, SESSION_BIAS_ID } from './session_bias.js';
-import { volExpansion, VOL_EXPANSION_ID } from './vol_expansion.js';
+import { isTrendAlignedBreakout, volExpansion, VOL_EXPANSION_ID } from './vol_expansion.js';
+import {
+  aggregateClosedFourHour,
+  classifyFourHourTrend,
+  competitionTrendPullback,
+  COMPETITION_TREND_PULLBACK_ID,
+} from './competition_trend_pullback.js';
+import {
+  emergencyParticipation,
+  EMERGENCY_PARTICIPATION_ID,
+} from './emergency_participation.js';
+import {
+  aggregateClosedOneHour,
+  competitionIntradayContinuation,
+  createCompetitionIntradayContinuation,
+  COMPETITION_INTRADAY_CONTINUATION_ID,
+  COMPETITION_INTRADAY_CONTINUATION_SETTINGS,
+  type CompetitionIntradayContinuationSettings,
+} from './competition_intraday_continuation.js';
+import {
+  competitionTrendContinuation,
+  createCompetitionTrendContinuation,
+  COMPETITION_TREND_CONTINUATION_ID,
+  COMPETITION_TREND_CONTINUATION_SETTINGS,
+  type CompetitionTrendContinuationSettings,
+} from './competition_trend_continuation.js';
+import {
+  competitionTrendReclaim,
+  createCompetitionTrendReclaim,
+  COMPETITION_TREND_RECLAIM_ID,
+  COMPETITION_TREND_RECLAIM_SETTINGS,
+  type CompetitionTrendReclaimSettings,
+} from './competition_trend_reclaim.js';
+import {
+  deadlineContingency,
+  DEADLINE_CONTINGENCY_ID,
+} from './deadline_contingency.js';
+import {
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
+} from './final_window_contingency.js';
 
 /**
  * The four candidates. **No edge is claimed for any of them.** P4's backtest decides which, if
@@ -40,6 +80,7 @@ export {
   sessionBias,
   trendEma,
   volExpansion,
+  isTrendAlignedBreakout,
   BREAKOUT_RANGE_ID,
   FUNDING_SKEW_ID,
   OI_DIVERGENCE_ID,
@@ -47,6 +88,32 @@ export {
   SESSION_BIAS_ID,
   TREND_EMA_ID,
   VOL_EXPANSION_ID,
+  competitionTrendPullback,
+  aggregateClosedFourHour,
+  classifyFourHourTrend,
+  COMPETITION_TREND_PULLBACK_ID,
+  emergencyParticipation,
+  EMERGENCY_PARTICIPATION_ID,
+  aggregateClosedOneHour,
+  competitionIntradayContinuation,
+  createCompetitionIntradayContinuation,
+  COMPETITION_INTRADAY_CONTINUATION_ID,
+  COMPETITION_INTRADAY_CONTINUATION_SETTINGS,
+  type CompetitionIntradayContinuationSettings,
+  competitionTrendContinuation,
+  createCompetitionTrendContinuation,
+  COMPETITION_TREND_CONTINUATION_ID,
+  COMPETITION_TREND_CONTINUATION_SETTINGS,
+  type CompetitionTrendContinuationSettings,
+  competitionTrendReclaim,
+  createCompetitionTrendReclaim,
+  COMPETITION_TREND_RECLAIM_ID,
+  COMPETITION_TREND_RECLAIM_SETTINGS,
+  type CompetitionTrendReclaimSettings,
+  deadlineContingency,
+  DEADLINE_CONTINGENCY_ID,
+  finalWindowContingency,
+  FINAL_WINDOW_CONTINGENCY_ID,
 };
 export { SURVIVING_HOURS } from './session_bias.js';
 export { classifyOiState, TRADED_STATES, type OiState } from './oi_divergence.js';
