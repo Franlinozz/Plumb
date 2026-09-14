@@ -355,3 +355,16 @@ Competition clock is **UTC+8**. Internal accounting is **UTC**. Every conversion
 
 The daily loss limit resets at **00:00 UTC = 08:00 competition time**. If you are looking at the
 leaderboard at competition midnight wondering why the limit has not cleared, this is why.
+# Forward observation alerts
+
+`plumb-forward-recorder.service` runs `scripts/forward-alert.mjs` after every invocation. Successful
+runs exit silently. A failed recorder or freshness check sends an HTTPS webhook notification when
+`/etc/plumb/alerts.env` contains `PLUMB_ALERT_WEBHOOK`; without it the event is logged as skipped and
+the recorder remains failed. Test delivery explicitly with:
+
+```bash
+set -a
+. /etc/plumb/alerts.env
+set +a
+node /opt/plumb/scripts/forward-alert.mjs --test
+```
