@@ -35,6 +35,19 @@ describe('MarketObservationStore', () => {
     store.close();
   });
 
+  it('persists order-book snapshots by their venue timestamp', () => {
+    const store = new MarketObservationStore();
+    const book = {
+      ...observation,
+      kind: 'order_book' as const,
+      payload: { asks: [[101, 2]], bids: [[100, 3]], spreadBps: 99.5 },
+    };
+    expect(store.put(book)).toBe(true);
+    expect(store.put({ ...book, recordedAt: book.recordedAt + 1 })).toBe(false);
+    expect(store.count()).toBe(1);
+    store.close();
+  });
+
   it('replaces a partial candle exactly once when OKX confirms it closed', () => {
     const store = new MarketObservationStore();
     const partial = { ...observation, kind: 'candle' as const, timeframe: '1H', payload: { closed: false, close: 100 } };

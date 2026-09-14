@@ -14,6 +14,8 @@ import type {
   FundingRateHistoryEntry,
   IndexTicker,
   MarkPrice,
+  OrderBook,
+  OrderBookLevel,
   OiPeriod,
   OpenInterest,
   OpenInterestHistoryEntry,
@@ -163,6 +165,33 @@ export class OkxPublicClient {
       low24h: num(path, 'low24h', row['low24h']),
       vol24h: num(path, 'vol24h', row['vol24h']),
       ts: num(path, 'ts', row['ts']),
+    });
+  }
+
+  /**
+   * Public REST order-book snapshot. OKX permits 1–400 levels per side; Plumb defaults to 20 so a
+   * minute-level forward sample captures useful depth without turning the research DB into a raw
+   * feed archive.
+   */
+  async orderBook(instId: string, depth = 20): Promise<OrderBook> {
+    assertInstrument(instId);
+    if (!Number.isInteger(depth) || depth < 1 || depth > 400) {
+      throw new RangeError('order-book depth must be an integer from 1 to 400');
+    }
+    const path = '/api/v5/market/books';
+    const row = await this.one(path, { instId, sz: depth });
+    const asks = parseBookSide(path, 'asks', row['asks']);
+    const bids = parseBookSide(path, 'bids', row['bids']);
+    if (asks.length === 0 || bids.length === 0) {
+      throw new OkxParseError(path, 'asks/bids', row);
+    }
+    const sequenceId = optionalNum(row['seqId']);
+    return Object.freeze({
+      instId,
+      asks,
+      bids,
+      ts: num(path, 'ts', row['ts']),
+      sequenceId,
     });
   }
 
@@ -468,4 +497,23 @@ export function parseCandle(path: string, row: readonly unknown[]): Candle {
     volumeQuote: num(path, 'candle.volumeQuote', row[7]),
     closed: String(row[8]) === '1',
   });
+}
+
+function parseBookSide(
+  path: string,
+  side: 'asks' | 'bids',
+  raw: unknown,
+): readonly OrderBookLevel[] {
+  if (!Array.isArray(raw)) throw new OkxParseError(path, side, raw);
+  return Object.freeze(raw.map((level, index) => {
+    if (!Array.isArray(level) || level.length < 4) {
+      throw new OkxParseError(path, `${side}[${index}]`, level);
+    }
+    return Object.freeze({
+      price: num(path, `${side}[${index}].price`, level[0]),
+      size: num(path, `${side}[${index}].size`, level[1]),
+      liquidatedOrders: num(path, `${side}[${index}].liquidatedOrders`, level[2]),
+      orderCount: num(path, `${side}[${index}].orderCount`, level[3]),
+    });
+  }));
 }

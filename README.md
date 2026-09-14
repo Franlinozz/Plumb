@@ -99,6 +99,7 @@ their paths. No API key, account access or order capability is present in this r
 | --- | --- |
 | `npm run snapshot` | Inspect current public market snapshots |
 | `npm run forward:record` | Append one bounded round of forward observations |
+| `npm run forward:health` | Fail if any required forward stream is missing or stale |
 | `npm run backfill -- --days 180 --tf 15m,1H` | Backfill research candles |
 | `npm run backtest` | Run the cost-aware historical evaluation |
 | `npm run replay -- --tf 1H` | Replay signals over stored history |

@@ -62,6 +62,26 @@ export interface Ticker {
   readonly ts: number;
 }
 
+/** One aggregated level from OKX's public REST order book. */
+export interface OrderBookLevel {
+  readonly price: number;
+  /** Aggregate size in contracts at this price. */
+  readonly size: number;
+  /** Number of liquidated orders represented by the level. */
+  readonly liquidatedOrders: number;
+  /** Number of constituent orders represented by the level. */
+  readonly orderCount: number;
+}
+
+/** Point-in-time public depth snapshot; asks and bids retain venue ordering. */
+export interface OrderBook {
+  readonly instId: Instrument;
+  readonly asks: readonly OrderBookLevel[];
+  readonly bids: readonly OrderBookLevel[];
+  readonly ts: number;
+  readonly sequenceId: number | undefined;
+}
+
 export interface MarkPrice {
   readonly instId: Instrument;
   readonly markPx: number;

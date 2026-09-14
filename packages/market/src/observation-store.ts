@@ -8,6 +8,7 @@ export type ObservationKind =
   | 'index_price'
   | 'funding'
   | 'open_interest'
+  | 'order_book'
   | 'candle'
   | 'instrument_metadata';
 

@@ -128,6 +128,8 @@ export {
   type OiPeriod,
   type OpenInterest,
   type OpenInterestHistoryEntry,
+  type OrderBook,
+  type OrderBookLevel,
   type PriceLimit,
   type Ticker,
   type Timeframe,

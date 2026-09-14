@@ -106,6 +106,8 @@ Live execution is locked while the forward evidence programme in `POST_COMPETITI
 | Rate limiting, body caps, sanitised errors, no secret leakage | `@plumb/asp` | HTTP | `asp.test.ts` › leaks no secret |
 | Fixture recording | — | `npm run record-fixtures` | manual, once per phase |
 | Durable credential-free forward observation round | `@plumb/market` | `npm run forward:record` | `market/src/observation-store.test.ts` |
+| Typed 20-level public order-book snapshots with derived spread | `@plumb/market` | `npm run forward:record` | `market/src/client.test.ts`, `market/src/observation-store.test.ts` |
+| Forward-stream completeness and freshness check | `@plumb/market` | `npm run forward:health`, systemd `ExecStartPost` | live deployment smoke check |
 | Live snapshot inspection | — | `npm run snapshot` | manual eyeball check |
 | Historical backfill | — | `npm run backfill -- --days 180 --tf 15m,1H` | `history.test.ts` |
 | Indicator divergence vs OKX Agent Trade Kit | — | `npm run divergence` | manual, findings in AGENTS.md |

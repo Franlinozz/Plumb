@@ -49,6 +49,44 @@ describe('OkxPublicClient — parsing real recorded payloads', () => {
     expect(ticker.ts).toBeGreaterThan(1_600_000_000_000);
   });
 
+  it('parses public order-book depth and preserves venue ordering', async () => {
+    const calls: string[] = [];
+    const fetch: FetchLike = async (url) => {
+      calls.push(url);
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          code: '0',
+          msg: '',
+          data: [{
+            asks: [['65001', '2.5', '0', '3'], ['65002', '4', '0', '2']],
+            bids: [['65000', '1.5', '0', '4'], ['64999', '3', '0', '1']],
+            ts: '1786284960455',
+            seqId: 3235851742,
+          }],
+        }),
+      };
+    };
+    const books = new OkxPublicClient({ fetch, minIntervalMs: 0 });
+    const book = await books.orderBook('BTC-USDT-SWAP', 2);
+    expect(calls[0]).toContain('/api/v5/market/books?');
+    expect(calls[0]).toContain('sz=2');
+    expect(book.asks.map((level) => level.price)).toEqual([65001, 65002]);
+    expect(book.bids.map((level) => level.price)).toEqual([65000, 64999]);
+    expect(book.asks[0]?.orderCount).toBe(3);
+    expect(book.sequenceId).toBe(3235851742);
+  });
+
+  it('rejects invalid order-book depth before making a request', async () => {
+    const calls: string[] = [];
+    const client = offlineClient(calls);
+    await expect(client.orderBook('BTC-USDT-SWAP', 0)).rejects.toThrow(RangeError);
+    await expect(client.orderBook('BTC-USDT-SWAP', 401)).rejects.toThrow(RangeError);
+    await expect(client.orderBook('BTC-USDT-SWAP', 1.5)).rejects.toThrow(RangeError);
+    expect(calls).toEqual([]);
+  });
+
   it('parses candles, including the positional array and the confirm flag', async () => {
     const candles = await client.candles('ETH-USDT-SWAP', '15m', { limit: 10 });
     expect(candles).toHaveLength(10);
@@ -170,6 +208,7 @@ describe('OkxPublicClient — the locked instrument guard', () => {
     await expect(client.markPrice('XRP-USDT-SWAP')).rejects.toThrow(UnsupportedInstrumentError);
     await expect(client.fundingRate('')).rejects.toThrow(UnsupportedInstrumentError);
     await expect(client.openInterest('btc-usdt-swap')).rejects.toThrow(UnsupportedInstrumentError);
+    await expect(client.orderBook('DOGE-USDT-SWAP')).rejects.toThrow(UnsupportedInstrumentError);
     await expect(client.priceLimit('BTC-USDT-SWAP-250101')).rejects.toThrow(
       UnsupportedInstrumentError,
     );

@@ -22,6 +22,7 @@
     "record-fixtures": "node scripts/record-fixtures.mjs",
     "snapshot": "node scripts/live-snapshot.mjs",
     "forward:record": "node scripts/forward-recorder.mjs",
+    "forward:health": "node scripts/forward-health.mjs",
     "backfill": "node scripts/backfill.mjs",
     "divergence": "node scripts/indicator-divergence.mjs",
     "probe:regimes": "node scripts/probe-regimes.mjs",

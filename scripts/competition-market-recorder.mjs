@@ -29,8 +29,9 @@ const write = (kind, instrument, sourceTs, payload, timeframe) =>
 let inserted = 0;
 try {
   for (const instrument of tradableUniverse()) {
-    const [ticker, mark, index, funding, oi] = await Promise.all([
+    const [ticker, book, mark, index, funding, oi] = await Promise.all([
       client.ticker(instrument),
+      client.orderBook(instrument, 20),
       client.markPrice(instrument),
       client.indexTicker(instrument),
       client.fundingRate(instrument),
@@ -38,6 +39,17 @@ try {
     ]);
 
     inserted += Number(write('ticker', instrument, ticker.ts, ticker));
+    const bestAsk = book.asks[0]?.price;
+    const bestBid = book.bids[0]?.price;
+    if (!Number.isFinite(bestAsk) || !Number.isFinite(bestBid)) {
+      throw new Error(`order book for ${instrument} has no finite best prices`);
+    }
+    const midPx = (bestAsk + bestBid) / 2;
+    inserted += Number(write('order_book', instrument, book.ts, {
+      ...book,
+      midPx,
+      spreadBps: ((bestAsk - bestBid) / midPx) * 10_000,
+    }));
     inserted += Number(write('mark_price', instrument, mark.ts, mark));
     inserted += Number(write('index_price', instrument, index.ts, index));
     inserted += Number(write('funding', instrument, funding.ts, funding));

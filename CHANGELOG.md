@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   guidance.
 - Updated the test toolchain and transitive production dependencies to remediate current npm
   advisories.
+- Added typed public OKX order-book capture (20 levels per side), with best-price spread persisted
+  into every forward observation round for execution-cost and adverse-selection research.
+- Added a post-round health check that fails the recorder unit when a required instrument/data
+  stream is absent or stale. Point data uses two collection intervals; candles use two bar periods.
 
 ### Fixed
 - **The governor permitted an opposing position on an instrument it already held.** Rule 6 only
