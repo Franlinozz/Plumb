@@ -29,9 +29,10 @@ const write = (kind, instrument, sourceTs, payload, timeframe) =>
 let inserted = 0;
 try {
   for (const instrument of tradableUniverse()) {
-    const [ticker, book, mark, index, funding, oi] = await Promise.all([
+    const [ticker, book, trades, mark, index, funding, oi] = await Promise.all([
       client.ticker(instrument),
       client.orderBook(instrument, 20),
+      client.trades(instrument, 100),
       client.markPrice(instrument),
       client.indexTicker(instrument),
       client.fundingRate(instrument),
@@ -39,6 +40,7 @@ try {
     ]);
 
     inserted += Number(write('ticker', instrument, ticker.ts, ticker));
+    for (const trade of trades) inserted += Number(store.putTrade(trade));
     const bestAsk = book.asks[0]?.price;
     const bestBid = book.bids[0]?.price;
     if (!Number.isFinite(bestAsk) || !Number.isFinite(bestBid)) {
@@ -70,6 +72,7 @@ try {
     event: EVENT_NAME,
     inserted,
     total: store.count(),
+    trades: store.tradeCount(),
     instruments: tradableUniverse().length,
     requests: client.stats.requests,
   }));

@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 
 import type { Instrument } from '@plumb/core';
+import type { MarketTrade } from './types.js';
 
 export type ObservationKind =
   | 'ticker'
@@ -33,6 +34,19 @@ CREATE TABLE IF NOT EXISTS market_observations (
 );
 CREATE INDEX IF NOT EXISTS market_observations_recorded
   ON market_observations(recorded_at);
+CREATE TABLE IF NOT EXISTS market_trades (
+  instrument  TEXT    NOT NULL,
+  trade_id    TEXT    NOT NULL,
+  source_ts   INTEGER NOT NULL,
+  recorded_at INTEGER NOT NULL,
+  price       REAL    NOT NULL,
+  size        REAL    NOT NULL,
+  side        TEXT    NOT NULL CHECK (side IN ('buy', 'sell')),
+  payload     TEXT    NOT NULL,
+  PRIMARY KEY (instrument, trade_id)
+);
+CREATE INDEX IF NOT EXISTS market_trades_recorded
+  ON market_trades(recorded_at);
 `;
 
 /** Durable, restart-safe storage for public OKX observations. Duplicate samples are ignored. */
@@ -40,6 +54,7 @@ export class MarketObservationStore {
   private readonly db: Database.Database;
   private readonly insert;
   private readonly finalizeCandle;
+  private readonly insertTrade;
 
   constructor(path = ':memory:') {
     this.db = new Database(path);
@@ -66,6 +81,29 @@ export class MarketObservationStore {
         AND COALESCE(json_extract(payload, '$.closed'), 0) = 0
         AND json_extract(@payload, '$.closed') = 1
     `);
+    this.insertTrade = this.db.prepare(`
+      INSERT OR IGNORE INTO market_trades
+        (instrument, trade_id, source_ts, recorded_at, price, size, side, payload)
+      VALUES
+        (@instrument, @tradeId, @sourceTs, @recordedAt, @price, @size, @side, @payload)
+    `);
+  }
+
+  putTrade(trade: MarketTrade, recordedAt = Date.now()): boolean {
+    if (!Number.isFinite(trade.ts) || !Number.isFinite(recordedAt)) {
+      throw new TypeError('trade timestamps must be finite UTC epoch milliseconds');
+    }
+    const result = this.insertTrade.run({
+      instrument: trade.instId,
+      tradeId: trade.tradeId,
+      sourceTs: trade.ts,
+      recordedAt,
+      price: trade.price,
+      size: trade.size,
+      side: trade.side,
+      payload: JSON.stringify(trade),
+    });
+    return result.changes === 1;
   }
 
   put(observation: MarketObservation): boolean {
@@ -87,6 +125,11 @@ export class MarketObservationStore {
 
   count(): number {
     const row = this.db.prepare<[], { count: number }>('SELECT count(*) AS count FROM market_observations').get();
+    return row?.count ?? 0;
+  }
+
+  tradeCount(): number {
+    const row = this.db.prepare<[], { count: number }>('SELECT count(*) AS count FROM market_trades').get();
     return row?.count ?? 0;
   }
 

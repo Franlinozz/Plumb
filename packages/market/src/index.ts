@@ -125,6 +125,7 @@ export {
   type FundingRateHistoryEntry,
   type IndexTicker,
   type MarkPrice,
+  type MarketTrade,
   type OiPeriod,
   type OpenInterest,
   type OpenInterestHistoryEntry,

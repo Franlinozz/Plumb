@@ -87,6 +87,38 @@ describe('OkxPublicClient — parsing real recorded payloads', () => {
     expect(calls).toEqual([]);
   });
 
+  it('parses recent trades and preserves venue IDs and aggressor side', async () => {
+    const calls: string[] = [];
+    const fetch: FetchLike = async (url) => {
+      calls.push(url);
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          code: '0', msg: '', data: [
+            { instId: 'BTC-USDT-SWAP', tradeId: '991', px: '65000.1', sz: '2', side: 'buy', ts: '1786284960455' },
+            { instId: 'BTC-USDT-SWAP', tradeId: '990', px: '65000', sz: '1', side: 'sell', ts: '1786284960455' },
+          ],
+        }),
+      };
+    };
+    const client = new OkxPublicClient({ fetch, minIntervalMs: 0 });
+    const trades = await client.trades('BTC-USDT-SWAP', 2);
+    expect(calls[0]).toContain('/api/v5/market/trades?');
+    expect(calls[0]).toContain('limit=2');
+    expect(trades.map((trade) => trade.tradeId)).toEqual(['991', '990']);
+    expect(trades.map((trade) => trade.side)).toEqual(['buy', 'sell']);
+    expect(trades[0]?.price).toBe(65000.1);
+  });
+
+  it('rejects invalid trade limits before making a request', async () => {
+    const calls: string[] = [];
+    const client = offlineClient(calls);
+    await expect(client.trades('BTC-USDT-SWAP', 0)).rejects.toThrow(RangeError);
+    await expect(client.trades('BTC-USDT-SWAP', 501)).rejects.toThrow(RangeError);
+    expect(calls).toEqual([]);
+  });
+
   it('parses candles, including the positional array and the confirm flag', async () => {
     const candles = await client.candles('ETH-USDT-SWAP', '15m', { limit: 10 });
     expect(candles).toHaveLength(10);

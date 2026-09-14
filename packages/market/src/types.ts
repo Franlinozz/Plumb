@@ -82,6 +82,18 @@ export interface OrderBook {
   readonly sequenceId: number | undefined;
 }
 
+/** One public OKX trade, identified by the venue's stable trade ID. */
+export interface MarketTrade {
+  readonly instId: Instrument;
+  readonly tradeId: string;
+  readonly price: number;
+  /** Trade size in contracts. */
+  readonly size: number;
+  /** Aggressor side reported by OKX. */
+  readonly side: 'buy' | 'sell';
+  readonly ts: number;
+}
+
 export interface MarkPrice {
   readonly instId: Instrument;
   readonly markPx: number;

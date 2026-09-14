@@ -48,6 +48,23 @@ describe('MarketObservationStore', () => {
     store.close();
   });
 
+  it('persists every distinct venue trade even when timestamps collide', () => {
+    const store = new MarketObservationStore();
+    const trade = {
+      instId: 'BTC-USDT-SWAP' as const,
+      tradeId: '1001',
+      price: 100,
+      size: 2,
+      side: 'buy' as const,
+      ts: observation.sourceTs,
+    };
+    expect(store.putTrade(trade, observation.recordedAt)).toBe(true);
+    expect(store.putTrade({ ...trade, tradeId: '1002', side: 'sell' }, observation.recordedAt)).toBe(true);
+    expect(store.putTrade(trade, observation.recordedAt + 1)).toBe(false);
+    expect(store.tradeCount()).toBe(2);
+    store.close();
+  });
+
   it('replaces a partial candle exactly once when OKX confirms it closed', () => {
     const store = new MarketObservationStore();
     const partial = { ...observation, kind: 'candle' as const, timeframe: '1H', payload: { closed: false, close: 100 } };

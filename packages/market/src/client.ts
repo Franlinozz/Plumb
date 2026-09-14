@@ -14,6 +14,7 @@ import type {
   FundingRateHistoryEntry,
   IndexTicker,
   MarkPrice,
+  MarketTrade,
   OrderBook,
   OrderBookLevel,
   OiPeriod,
@@ -193,6 +194,34 @@ export class OkxPublicClient {
       ts: num(path, 'ts', row['ts']),
       sequenceId,
     });
+  }
+
+  /** Recent public trades, newest-first as returned by OKX. */
+  async trades(instId: string, limit = 100): Promise<readonly MarketTrade[]> {
+    assertInstrument(instId);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+      throw new RangeError('trade limit must be an integer from 1 to 500');
+    }
+    const path = '/api/v5/market/trades';
+    const rows = await this.many(path, { instId, limit });
+    return Object.freeze(rows.map((row, index) => {
+      const side = row['side'];
+      if (side !== 'buy' && side !== 'sell') {
+        throw new OkxParseError(path, `data[${index}].side`, side);
+      }
+      const tradeId = row['tradeId'];
+      if (typeof tradeId !== 'string' || tradeId.length === 0) {
+        throw new OkxParseError(path, `data[${index}].tradeId`, tradeId);
+      }
+      return Object.freeze({
+        instId,
+        tradeId,
+        price: num(path, `data[${index}].px`, row['px']),
+        size: num(path, `data[${index}].sz`, row['sz']),
+        side,
+        ts: num(path, `data[${index}].ts`, row['ts']),
+      });
+    }));
   }
 
   /**

@@ -16,7 +16,8 @@ auditable.
 
 - Record public ticker, mark, index, funding, open interest, instrument metadata and closed candles
   for BTC, ETH and SOL continuously.
-- Add event-level best bid/ask and depth observations before researching passive execution.
+- Record event-level public trades plus best bid/ask and 20-level depth observations before
+  researching passive execution or adverse selection.
 - Preserve raw source timestamps and ingestion timestamps.
 - Alert on recorder gaps and data staleness.
 - Never read the consumed 2026-05-12 → 2026-08-10 holdout for candidate selection.

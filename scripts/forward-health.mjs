@@ -38,11 +38,18 @@ try {
     FROM market_observations
     GROUP BY kind, instrument, timeframe
   `).all();
+  const tradeRows = db.prepare(`
+    SELECT instrument, max(recorded_at) AS recorded_at, count(*) AS samples
+    FROM market_trades
+    GROUP BY instrument
+  `).all();
   const now = Date.now();
   const observed = new Map(rows.map((row) => [
     `${row.kind}:${row.instrument}:${row.timeframe}`,
     row,
   ]));
+  for (const row of tradeRows) observed.set(`trade:${row.instrument}:`, row);
+  for (const instrument of instruments) expected.set(`trade:${instrument}:`, maxAgeMs);
   const missing = [...expected.keys()].filter((key) => !observed.has(key));
   const stale = [...expected].flatMap(([key, budgetMs]) => {
     const row = observed.get(key);
