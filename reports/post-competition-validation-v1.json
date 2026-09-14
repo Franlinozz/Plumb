@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-09-14T12:49:39.317Z",
+  "scope": "single-use-post-competition-validation",
+  "candidate": "H1 trend-aligned-volatility-expansion",
+  "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+  "fromTs": 1786406400000,
+  "toTs": 1789171199000,
+  "passed": false,
+  "checks": [
+    {
+      "name": "positive after costs",
+      "passed": false,
+      "actual": -4.884486599427589,
+      "required": "> 0 USDT"
+    },
+    {
+      "name": "profit factor",
+      "passed": false,
+      "actual": 0.5012947362381596,
+      "required": "> 1.0"
+    },
+    {
+      "name": "kill floor",
+      "passed": true,
+      "actual": 390.20566463930453,
+      "required": "> 335 USDT"
+    },
+    {
+      "name": "replay boundaries",
+      "passed": true,
+      "actual": true,
+      "required": true
+    }
+  ],
+  "metrics": {
+    "maxDrawdownUsdt": 9.79433536069547,
+    "maxDrawdownPct": 2.4485838401738675,
+    "minEquity": 390.20566463930453,
+    "longestDrawdownBars": 291,
+    "longestDrawdownDays": 12.125,
+    "startingEquity": 400,
+    "finalEquity": 395.1155134005724,
+    "totalReturnUsdt": -4.884486599427589,
+    "totalReturnPct": -1.2211216498568973,
+    "cagrPct": -13.09236551626971,
+    "days": 31.958333333333332,
+    "sharpe": -2.0257444501000363,
+    "sortino": -2.5919493305764925,
+    "calmar": -5.346913306158247,
+    "tradeCount": 4,
+    "winRate": 25,
+    "averageWinUsdt": 4.909848761267897,
+    "averageLossUsdt": -3.2647784535651447,
+    "profitFactor": 0.5012947362381596,
+    "expectancyUsdt": -1.2211216498568844,
+    "largestLossUsdt": -4.415056275138297,
+    "largestWinUsdt": 4.909848761267897,
+    "longestLosingStreak": 3,
+    "averageHoldBars": 23,
+    "totalFeesUsdt": 0.656076775297368,
+    "fundingPaidUsdt": 0,
+    "fundingReceivedUsdt": 0.0333823910710687,
+    "fundingFallbackSettlements": 0,
+    "pctTimeBelowStartingCapital": 37.890625,
+    "governorVetoes": {
+      "max_concurrent": 1
+    },
+    "gateRejections": {
+      "regime_low_confidence": 3
+    },
+    "killSwitchTriggers": 0,
+    "dailyLimitTriggers": 0,
+    "signalsEmitted": 5,
+    "cycles": 768
+  },
+  "outlier": {
+    "passed": false,
+    "total": -4.884486599427538,
+    "withoutBest": -9.794335360695435,
+    "bestTradeUsdt": 4.909848761267897,
+    "bestTradeShareOfProfit": 0,
+    "detail": "the result is not positive to begin with"
+  }
+}

@@ -2,6 +2,11 @@
 
 Status: **forward research active; autonomous live execution locked**.
 
+Stage 2 protocol v1 result (2026-09-14): H1 passed development but failed its single validation
+look; H3 failed development; H2 remains unmeasured pending a causal historical open-interest data
+path. Consequently no v1 candidate is eligible for Stage 3. See
+`reports/post-competition-development-v1.md` and `reports/post-competition-validation-v1.md`.
+
 Season 1 is finished and its reward has been claimed. Competition-only deadlines, one-shot entry
 authorisations and payoff exceptions are historical evidence; none authorises a future order.
 

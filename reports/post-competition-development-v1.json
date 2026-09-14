@@ -1,0 +1,416 @@
+{
+  "generatedAt": "2026-09-14T12:48:35.968Z",
+  "protocol": "reports/post-competition-hypothesis-protocol-v1.md",
+  "scope": "development-only",
+  "database": "/root/plumb/data/post-competition-research.db",
+  "developmentTo": 1786319999000,
+  "validationFrom": 1786406400000,
+  "validationRead": false,
+  "dataRows": {
+    "BTC-USDT-SWAP": 16847,
+    "ETH-USDT-SWAP": 16847,
+    "SOL-USDT-SWAP": 16847
+  },
+  "fundingRows": {
+    "BTC-USDT-SWAP": 188,
+    "ETH-USDT-SWAP": 188,
+    "SOL-USDT-SWAP": 188
+  },
+  "results": [
+    {
+      "id": "H1",
+      "label": "trend-aligned-volatility-expansion",
+      "strategyId": "vol_expansion",
+      "configHash": "7ceee41a072da808af0e32a05d7b0808e6bc348a7b31107b3b21cabc05318563",
+      "status": "PASS",
+      "passed": true,
+      "eligibility": {
+        "label": "trend-aligned-volatility-expansion",
+        "eligible": true,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 382.92",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": true,
+            "actual": "0.27%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 405.09 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": true,
+            "actual": "1.465",
+            "required": "> 1",
+            "detail": "net 75.01 USDT over 96 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "96 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": true,
+            "actual": "without best trade: 69.45 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "best trade 5.56 is 7% of profit; result survives without it (min equity then 400.00)"
+          }
+        ],
+        "failedOn": [],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 32.45805242736208,
+          "maxDrawdownPct": 6.396079857660491,
+          "minEquity": 400,
+          "longestDrawdownBars": 3165,
+          "longestDrawdownDays": 131.625,
+          "startingEquity": 400,
+          "finalEquity": 475.009852128075,
+          "totalReturnUsdt": 75.00985212807501,
+          "totalReturnPct": 18.752463032018753,
+          "cagrPct": 10.298504154059573,
+          "days": 640,
+          "sharpe": 1.3647258347510545,
+          "sortino": 2.3447964513350956,
+          "calmar": 1.6101275129836294,
+          "tradeCount": 96,
+          "winRate": 55.208333333333336,
+          "averageWinUsdt": 4.458024973633104,
+          "averageLossUsdt": -3.750359801732085,
+          "profitFactor": 1.4651327493867479,
+          "expectancyUsdt": 0.7813526263341121,
+          "largestLossUsdt": -5.392857565866238,
+          "largestWinUsdt": 5.562747454630721,
+          "longestLosingStreak": 6,
+          "averageHoldBars": 22.28125,
+          "totalFeesUsdt": 18.618714402460814,
+          "fundingPaidUsdt": 4.256926389203912,
+          "fundingReceivedUsdt": 0.04285681696258957,
+          "fundingFallbackSettlements": 243,
+          "pctTimeBelowStartingCapital": 0,
+          "governorVetoes": {
+            "max_concurrent": 6,
+            "correlated_exposure": 1,
+            "instrument_occupied": 1
+          },
+          "gateRejections": {
+            "regime_low_confidence": 99,
+            "stop_too_wide": 18
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 104,
+          "cycles": 15392
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 96,
+          "seed": 20260914,
+          "p5Equity": 405.08748583412387,
+          "p25Equity": 446.02415860138285,
+          "medianEquity": 474.6662744253168,
+          "p75Equity": 503.96185286293786,
+          "p95Equity": 543.3753359731666,
+          "meanEquity": 474.6823138321409,
+          "worstEquity": 329.938488925525,
+          "probabilityOfRuin": 0.0027,
+          "probabilityBelowStart": 0.0383,
+          "p5MaxDrawdownPct": 3.2249907891277263,
+          "medianMaxDrawdownPct": 5.79200576493174,
+          "worstMaxDrawdownPct": 20.757189401308665
+        },
+        "evaluatedAt": 1789390003700,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "1f1c2f3b1a6f5079cacabb3620c5532840efb9a3049fb7e944a84f886c2d5bfa"
+      },
+      "extraChecks": [
+        {
+          "name": "instrument breadth",
+          "passed": true,
+          "actual": 3,
+          "required": ">= 2 instruments with trades"
+        },
+        {
+          "name": "instrument concentration",
+          "passed": true,
+          "actual": 0.3844460536046757,
+          "required": "<= 0.70"
+        },
+        {
+          "name": "regime breadth",
+          "passed": true,
+          "actual": 2,
+          "required": ">= 2 regimes with trades"
+        },
+        {
+          "name": "regime concentration",
+          "passed": true,
+          "actual": 0.5814620669753479,
+          "required": "<= 0.80"
+        }
+      ],
+      "diagnostics": {
+        "byInstrument": {
+          "groups": {
+            "ETH-USDT-SWAP": {
+              "trades": 28,
+              "netPnlUsdt": 18.587963388159096,
+              "positiveGrossPnlUsdt": 69.07567367680855
+            },
+            "BTC-USDT-SWAP": {
+              "trades": 35,
+              "netPnlUsdt": 37.71724926356225,
+              "positiveGrossPnlUsdt": 95.79246808545956
+            },
+            "SOL-USDT-SWAP": {
+              "trades": 33,
+              "netPnlUsdt": 18.70463947635346,
+              "positiveGrossPnlUsdt": 84.30197505199502
+            }
+          },
+          "groupCountWithTrades": 3,
+          "maximumPositiveGrossShare": 0.3844460536046757
+        },
+        "byRegime": {
+          "groups": {
+            "trending_up": {
+              "trades": 48,
+              "netPnlUsdt": -1.272170293933926,
+              "positiveGrossPnlUsdt": 104.28714566295277
+            },
+            "trending_down": {
+              "trades": 48,
+              "netPnlUsdt": 76.28202242200871,
+              "positiveGrossPnlUsdt": 144.8829711513104
+            }
+          },
+          "groupCountWithTrades": 2,
+          "maximumPositiveGrossShare": 0.5814620669753479
+        }
+      }
+    },
+    {
+      "id": "H2",
+      "label": "open-interest-backed-continuation",
+      "strategyId": "oi_divergence",
+      "configHash": "10db6880742e91e30a5b37627782da53f4fd36bc779c2b903a1e29557bc5fd82",
+      "status": "BLOCKED_IMPLEMENTATION",
+      "passed": false,
+      "reason": "historical open interest is not yet persisted or injected by the backtest engine"
+    },
+    {
+      "id": "H3",
+      "label": "funding-crowding-fade",
+      "strategyId": "funding_skew",
+      "configHash": "7b13f5e86422b52777c5d428f0d987f61a5dbbe14951f99e1072c2bdde55e2f4",
+      "status": "FAIL",
+      "passed": false,
+      "eligibility": {
+        "label": "funding-crowding-fade",
+        "eligible": false,
+        "criteria": [
+          {
+            "name": "drawdown floor",
+            "passed": true,
+            "actual": "worst window min equity 373.75",
+            "required": "> 335 in every window",
+            "detail": "no walk-forward window breached the kill-switch floor"
+          },
+          {
+            "name": "P(ruin)",
+            "passed": false,
+            "actual": "9.47%",
+            "required": "<= 5.00%",
+            "detail": "5th-percentile equity 333.54 across 10000 resampled paths"
+          },
+          {
+            "name": "profit factor (OOS)",
+            "passed": false,
+            "actual": "0.654",
+            "required": "> 1",
+            "detail": "net -30.42 USDT over 38 out-of-sample trades"
+          },
+          {
+            "name": "sample size",
+            "passed": true,
+            "actual": "38 OOS trades",
+            "required": ">= 30",
+            "detail": "sample is large enough to carry a conclusion"
+          },
+          {
+            "name": "outlier independence",
+            "passed": false,
+            "actual": "without best trade: -35.65 USDT",
+            "required": "still positive without the single best trade",
+            "detail": "the result is not positive to begin with"
+          }
+        ],
+        "failedOn": [
+          "P(ruin)",
+          "profit factor (OOS)",
+          "outlier independence"
+        ],
+        "outOfSampleMetrics": {
+          "maxDrawdownUsdt": 51.37079725523898,
+          "maxDrawdownPct": 12.29038624096799,
+          "minEquity": 366.60465321516887,
+          "longestDrawdownBars": 912,
+          "longestDrawdownDays": 37.958333333333336,
+          "startingEquity": 400,
+          "finalEquity": 369.58049799529687,
+          "totalReturnUsdt": -30.419502004703133,
+          "totalReturnPct": -7.604875501175784,
+          "cagrPct": -4.410712018639673,
+          "days": 640,
+          "sharpe": -0.8494109738026449,
+          "sortino": -1.0873843706159974,
+          "calmar": -0.35887497204418906,
+          "tradeCount": 38,
+          "winRate": 42.10526315789473,
+          "averageWinUsdt": 3.596454152407115,
+          "averageLossUsdt": -3.998307656509861,
+          "profitFactor": 0.6541775282534456,
+          "expectancyUsdt": -0.8005132106500817,
+          "largestLossUsdt": -4.953719563968519,
+          "largestWinUsdt": 5.232144726880202,
+          "longestLosingStreak": 6,
+          "averageHoldBars": 13.578947368421053,
+          "totalFeesUsdt": 8.620752994625139,
+          "fundingPaidUsdt": 0.024213318818738918,
+          "fundingReceivedUsdt": 0.3387710709329038,
+          "fundingFallbackSettlements": 0,
+          "pctTimeBelowStartingCapital": 5.372920997920998,
+          "governorVetoes": {
+            "max_concurrent": 16,
+            "correlated_exposure": 5
+          },
+          "gateRejections": {
+            "regime_low_confidence": 266,
+            "regime_unclear": 162
+          },
+          "killSwitchTriggers": 0,
+          "dailyLimitTriggers": 0,
+          "signalsEmitted": 59,
+          "cycles": 15392
+        },
+        "monteCarlo": {
+          "iterations": 10000,
+          "pathLength": 38,
+          "seed": 20260914,
+          "p5Equity": 333.54308308760915,
+          "p25Equity": 353.3555451524949,
+          "medianEquity": 369.6432184514135,
+          "p75Equity": 386.1837192496802,
+          "p95Equity": 410.88053533833414,
+          "meanEquity": 370.4509902254804,
+          "worstEquity": 330.10762999151416,
+          "probabilityOfRuin": 0.0947,
+          "probabilityBelowStart": 0.8866,
+          "p5MaxDrawdownPct": 4.394650734165135,
+          "medianMaxDrawdownPct": 10.265180947232205,
+          "worstMaxDrawdownPct": 20.98956941873898
+        },
+        "evaluatedAt": 1789390115965,
+        "criteriaUsed": {
+          "killSwitchEquity": 335,
+          "maxProbabilityOfRuin": 0.05,
+          "minProfitFactor": 1,
+          "minOutOfSampleTrades": 30
+        },
+        "signature": "8673a02c3d428cf91c29b0ca9409528ca6b13ab11ce8f7646f82f585441beb6f"
+      },
+      "extraChecks": [
+        {
+          "name": "instrument breadth",
+          "passed": true,
+          "actual": 3,
+          "required": ">= 2 instruments with trades"
+        },
+        {
+          "name": "instrument concentration",
+          "passed": true,
+          "actual": 0.4930689326973417,
+          "required": "<= 0.70"
+        },
+        {
+          "name": "regime breadth",
+          "passed": true,
+          "actual": 5,
+          "required": ">= 2 regimes with trades"
+        },
+        {
+          "name": "regime concentration",
+          "passed": true,
+          "actual": 0.5285597020509286,
+          "required": "<= 0.80"
+        }
+      ],
+      "diagnostics": {
+        "byInstrument": {
+          "groups": {
+            "ETH-USDT-SWAP": {
+              "trades": 15,
+              "netPnlUsdt": -0.7451376045969584,
+              "positiveGrossPnlUsdt": 28.055130554117916
+            },
+            "BTC-USDT-SWAP": {
+              "trades": 14,
+              "netPnlUsdt": -0.46322856641566723,
+              "positiveGrossPnlUsdt": 30.072915465391166
+            },
+            "SOL-USDT-SWAP": {
+              "trades": 9,
+              "netPnlUsdt": -29.211135833690484,
+              "positiveGrossPnlUsdt": 2.8632545292332314
+            }
+          },
+          "groupCountWithTrades": 3,
+          "maximumPositiveGrossShare": 0.4930689326973417
+        },
+        "byRegime": {
+          "groups": {
+            "trending_up": {
+              "trades": 3,
+              "netPnlUsdt": -4.0447110585551345,
+              "positiveGrossPnlUsdt": 5.502777396569946
+            },
+            "trending_down": {
+              "trades": 4,
+              "netPnlUsdt": -6.218028446051375,
+              "positiveGrossPnlUsdt": 2.7486354315197037
+            },
+            "compressed": {
+              "trades": 6,
+              "netPnlUsdt": -1.259581915736336,
+              "positiveGrossPnlUsdt": 9.375234073265359
+            },
+            "ranging": {
+              "trades": 7,
+              "netPnlUsdt": -8.011235078900224,
+              "positiveGrossPnlUsdt": 11.127110001645427
+            },
+            "expanding": {
+              "trades": 18,
+              "netPnlUsdt": -10.885945505460045,
+              "positiveGrossPnlUsdt": 32.23754364574188
+            }
+          },
+          "groupCountWithTrades": 5,
+          "maximumPositiveGrossShare": 0.5285597020509286
+        }
+      }
+    }
+  ]
+}
